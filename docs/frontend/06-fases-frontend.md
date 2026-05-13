@@ -7,13 +7,14 @@
 - FE-3 completado: selección territorial con mocks.
 - FE-4 completado: resultado de visita y corte temprano visual.
 - FE-5 completado: vivienda y hogares con estado temporal.
+- FE-6 completado: personas y contactos por hogar con estado temporal.
 - La Sección 1 ya incluye selección territorial con mocks y resultado de visita.
-- La Sección 2 ya permite cargar datos de vivienda.
-- La Sección 2 ya permite agregar, editar, listar y eliminar hogares en memoria React.
+- La Sección 2 ya permite cargar datos de vivienda y hogares.
+- La Sección 3 ya permite cargar personas y contactos asociados a cada hogar.
 - No hay persistencia local todavía.
 - No hay backend conectado.
-- No hay personas, contactos, servicios ni salud todavía.
-- Próximo paso recomendado: personas/contactos por hogar o guardado local, según se defina.
+- No hay servicios ni salud todavía.
+- Próximo paso recomendado: servicios/salud por hogar o guardado local, según se defina.
 
 ## FE-0 — Documentación mínima frontend
 

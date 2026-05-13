@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Alert, Button, Card, Col, Row, Stack } from 'react-bootstrap';
+import { PersonasContactosSection } from '../components/PersonasContactosSection';
 import { ResultadoVisitaSelector } from '../components/ResultadoVisitaSelector';
 import { SectionPlaceholder } from '../components/SectionPlaceholder';
 import { SectionStepper } from '../components/SectionStepper';
 import { TerritorialSelector } from '../components/TerritorialSelector';
 import { ViviendaHogaresSection } from '../components/ViviendaHogaresSection';
+import type { PersonasContactosPorHogarState } from '../types/personaContacto';
 import {
   esCorteTemprano,
   permiteContinuarFormulario,
@@ -52,13 +54,12 @@ const sections: RelevamientoSection[] = [
     order: 3,
     title: 'Personas, contactos, servicios y salud por hogar',
     description:
-      'Sección reservada para cargar información específica dentro de cada hogar declarado.',
+      'Sección temporal para personas y contactos por hogar. Servicios y salud quedan para una fase posterior.',
     includes: [
-      'Personas por hogar.',
-      'Contactos por hogar.',
-      'Servicios por hogar.',
-      'Salud por hogar.',
-      'Observaciones por hogar.',
+      'Seleccionar hogar cargado en Sección 2.',
+      'Agregar, editar, listar y eliminar personas por hogar.',
+      'Agregar, editar, listar y eliminar contactos por hogar.',
+      'Servicios y salud pendientes.',
     ],
   },
   {
@@ -85,6 +86,8 @@ export function RelevamientoFlowPage() {
     useState<ResultadoVisitaFormState>(resultadoVisitaInicial);
   const [vivienda, setVivienda] = useState<ViviendaFormState>(viviendaInicial);
   const [hogares, setHogares] = useState<HogarFormState[]>([]);
+  const [personasContactosPorHogar, setPersonasContactosPorHogar] =
+    useState<PersonasContactosPorHogarState>({});
 
   const currentIndex = sections.findIndex((section) => section.id === currentSectionId);
   const currentSection = sections[currentIndex] ?? sections[0];
@@ -110,9 +113,14 @@ export function RelevamientoFlowPage() {
     return sections[currentIndex + 1]?.title ?? 'Siguiente sección';
   }, [canGoForward, currentIndex, currentSection.id, visitaTieneCorteTemprano]);
 
+  const resetPersonasContactos = () => {
+    setPersonasContactosPorHogar({});
+  };
+
   const resetViviendaHogares = () => {
     setVivienda(viviendaInicial);
     setHogares([]);
+    resetPersonasContactos();
   };
 
   const handlePredioSelected = (predioId: string, predioDetalle: PredioDetalle | null) => {
@@ -151,6 +159,12 @@ export function RelevamientoFlowPage() {
     setHogares((currentHogares) =>
       currentHogares.filter((hogar) => hogar.id !== hogarId),
     );
+
+    setPersonasContactosPorHogar((currentState) => {
+      const nextState = { ...currentState };
+      delete nextState[hogarId];
+      return nextState;
+    });
   };
 
   const isSectionDisabled = (section: RelevamientoSection) => {
@@ -194,11 +208,11 @@ export function RelevamientoFlowPage() {
           <Row className="align-items-center g-3">
             <Col lg={8}>
               <p className="text-uppercase text-secondary fw-semibold small mb-2">
-                FE-5 · Vivienda y hogares
+                FE-6 · Personas y contactos por hogar
               </p>
               <h1 className="h2 mb-2">Flujo inicial del relevamiento</h1>
               <p className="text-secondary mb-0">
-                Sección 2 con datos de vivienda y hogares en estado temporal.
+                Sección 3 con personas y contactos asociados a cada hogar.
                 No hay guardado local ni backend conectado.
               </p>
             </Col>
@@ -248,6 +262,14 @@ export function RelevamientoFlowPage() {
             onAddHogar={addHogar}
             onUpdateHogar={updateHogar}
             onRemoveHogar={removeHogar}
+          />
+        ) : null}
+
+        {currentSection.id === 'datos-por-hogar' ? (
+          <PersonasContactosSection
+            hogares={hogares}
+            personasContactosPorHogar={personasContactosPorHogar}
+            onChange={setPersonasContactosPorHogar}
           />
         ) : null}
       </SectionPlaceholder>
