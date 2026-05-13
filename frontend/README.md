@@ -4,7 +4,7 @@ Frontend web/PWA futura para tablets del Sistema de Relevamiento Territorial.
 
 ## Estado
 
-FE-5: vivienda y hogares con estado temporal.
+FE-6: personas y contactos por hogar.
 
 Incluye:
 
@@ -19,7 +19,8 @@ Incluye:
 - selección territorial Zona → Cuadrante → Predio con mocks locales;
 - datos precargados del predio seleccionado;
 - resultado de visita visual con corte temprano;
-- vivienda y hogares con estado temporal en React.
+- vivienda y hogares con estado temporal en React;
+- personas y contactos asociados a cada hogar.
 
 No incluye todavía:
 
