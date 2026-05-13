@@ -4,7 +4,7 @@ Frontend web/PWA futura para tablets del Sistema de Relevamiento Territorial.
 
 ## Estado
 
-FE-2: layout tablet y navegación inicial.
+FE-3: selección territorial con mocks.
 
 Incluye:
 
@@ -15,12 +15,14 @@ Incluye:
 - React-Bootstrap;
 - estructura inicial de carpetas;
 - layout base pensado para tablet;
-- navegación placeholder entre las 4 secciones del relevamiento.
+- navegación placeholder entre las 4 secciones del relevamiento;
+- selección territorial Zona → Cuadrante → Predio con mocks locales;
+- datos precargados del predio seleccionado.
 
 No incluye todavía:
 
 - formulario real;
-- selección real de zona, cuadrante o predio;
+- selección territorial conectada a backend real;
 - hogares funcionales;
 - personas por hogar;
 - guardado local;

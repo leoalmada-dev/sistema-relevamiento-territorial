@@ -1,11 +1,13 @@
-import { Alert, Badge, Card, ListGroup } from 'react-bootstrap';
+import type { ReactNode } from 'react';
+import { Alert, Badge, Card, ListGroup, Stack } from 'react-bootstrap';
 import type { RelevamientoSection } from '../types/relevamientoFlow';
 
 type SectionPlaceholderProps = {
   section: RelevamientoSection;
+  children?: ReactNode;
 };
 
-export function SectionPlaceholder({ section }: SectionPlaceholderProps) {
+export function SectionPlaceholder({ section, children }: SectionPlaceholderProps) {
   return (
     <Card className="border-0 shadow-sm">
       <Card.Header className="bg-white border-0 pt-4 px-4">
@@ -19,16 +21,20 @@ export function SectionPlaceholder({ section }: SectionPlaceholderProps) {
       </Card.Header>
 
       <Card.Body className="p-4">
-        <Alert variant="warning">
-          FE-2 solo define navegación y estructura visual. No hay formulario real,
-          campos definitivos, mocks ni conexión con backend.
-        </Alert>
+        <Stack gap={3}>
+          <Alert variant="warning" className="mb-0">
+            FE-3 agrega selección territorial con mocks locales. No hay formulario real,
+            creación de relevamiento ni integración con backend.
+          </Alert>
 
-        <ListGroup>
-          {section.includes.map((item) => (
-            <ListGroup.Item key={item}>{item}</ListGroup.Item>
-          ))}
-        </ListGroup>
+          {children}
+
+          <ListGroup>
+            {section.includes.map((item) => (
+              <ListGroup.Item key={item}>{item}</ListGroup.Item>
+            ))}
+          </ListGroup>
+        </Stack>
       </Card.Body>
     </Card>
   );
