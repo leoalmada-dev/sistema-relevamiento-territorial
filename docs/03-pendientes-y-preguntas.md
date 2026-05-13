@@ -1,0 +1,57 @@
+# Pendientes y preguntas
+
+## Objetivo
+
+Registrar decisiones abiertas que no deben inventarse durante el desarrollo.
+
+## Backend/API
+
+- Definir payload de `POST /api/relevamientos`.
+- Definir payload de `PATCH /api/relevamientos/{id}/borrador`.
+- Definir payload de `POST /api/relevamientos/{id}/finalizar`.
+- Definir estructura de errores.
+- Definir estados finales del relevamiento.
+- Definir si el backend guarda borradores por sección o documento completo.
+- Definir cómo se recupera un borrador existente.
+
+## Modelo de datos
+
+- Confirmar modelo final de Zona, Cuadrante y Predio.
+- Confirmar datos precargados del predio.
+- Confirmar relación final entre Predio, Relevamiento, Vivienda y Hogares.
+- Confirmar campos definitivos de Hogar.
+- Confirmar campos definitivos de Persona.
+- Confirmar campos definitivos de Contactos, Servicios y Salud por hogar.
+- Confirmar alcance de observaciones generales.
+
+## Frontend
+
+- Definir estructura final de pantallas.
+- Definir modelo temporal frontend.
+- Definir estrategia de guardado local.
+- Definir estados visuales de guardado, error, pendiente y finalizado.
+- Definir cómo se mostrará el corte temprano de Sección 1.
+
+## Operación
+
+- Definir cómo se identifica la tablet.
+- Definir si habrá PIN simple.
+- Definir cómo se asocia tablet con grupo operativo.
+- Definir si la asociación se administra por base de datos o panel mínimo.
+
+## Coordenadas
+
+- Confirmar si las coordenadas son obligatorias para finalizar.
+- Definir qué pasa si falla la captura de coordenadas.
+- Definir si habrá pin manual, geolocalización automática o ambas.
+
+## Fuera del MVP por ahora
+
+- Usuarios personales robustos.
+- App móvil nativa.
+- Geolocalización en tiempo real.
+- Mapa avanzado.
+- Reportes complejos.
+- Gráficas.
+- Acceso externo de Intendencia.
+- Offline completo de varios días.
