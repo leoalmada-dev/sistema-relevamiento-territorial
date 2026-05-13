@@ -5,11 +5,15 @@
 - FE-1 completado: base técnica frontend.
 - FE-2 completado: layout tablet y navegación inicial.
 - FE-3 completado: selección territorial con mocks.
-- La Sección 1 ya permite el flujo Zona → Cuadrante → Predio con mocks.
-- Los datos del predio seleccionado se muestran desde mocks y services internos.
-- No hay backend real conectado.
-- No hay `fetch`, `axios` ni endpoints reales.
-- El próximo punto de decisión es definir si FE-4 será resultado de visita y corte temprano o formulario por secciones.
+- FE-4 completado: resultado de visita y corte temprano visual.
+- La Sección 1 ya incluye selección territorial con mocks.
+- La Sección 1 ya permite elegir `ENTREVISTA_REALIZADA`, `SE_NIEGA` y `NO_SE_ENCUENTRA`.
+- `ENTREVISTA_REALIZADA` permite avanzar a Sección 2.
+- `SE_NIEGA` y `NO_SE_ENCUENTRA` muestran campos simples y bloquean el avance al formulario completo.
+- No hay guardado real.
+- No hay backend conectado.
+- No hay borrador local todavía.
+- Próximo paso recomendado: FE-5 — Vivienda y hogares.
 
 ## FE-0 — Documentación mínima frontend
 

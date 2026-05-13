@@ -1,5 +1,13 @@
 # Flujo de pantallas
 
+## Estado actual de la Sección 1
+
+- La Sección 1 ya incluye selección territorial con mocks.
+- La Sección 1 ya permite elegir `ENTREVISTA_REALIZADA`, `SE_NIEGA` y `NO_SE_ENCUENTRA`.
+- `ENTREVISTA_REALIZADA` permite avanzar a Sección 2.
+- `SE_NIEGA` y `NO_SE_ENCUENTRA` muestran campos simples y bloquean el avance al formulario completo.
+- No hay guardado real, backend conectado ni borrador local todavía.
+
 ## Objetivo
 
 Definir el flujo inicial de pantallas alineado con las 4 secciones acordadas en DOCS-0.
