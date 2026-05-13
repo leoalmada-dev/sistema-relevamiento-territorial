@@ -6,12 +6,20 @@ import {
   getPrediosByCuadrante,
   getZonas,
 } from '../services/territorioService';
+import type { PredioDetalle } from '../types/territorio';
 
-export function TerritorialSelector() {
+type TerritorialSelectorProps = {
+  selectedPredioId: string;
+  onPredioSelected: (predioId: string, predioDetalle: PredioDetalle | null) => void;
+};
+
+export function TerritorialSelector({
+  selectedPredioId,
+  onPredioSelected,
+}: TerritorialSelectorProps) {
   const zonas = useMemo(() => getZonas(), []);
   const [zonaId, setZonaId] = useState('');
   const [cuadranteId, setCuadranteId] = useState('');
-  const [predioId, setPredioId] = useState('');
 
   const cuadrantes = useMemo(() => {
     if (!zonaId) {
@@ -30,22 +38,27 @@ export function TerritorialSelector() {
   }, [cuadranteId]);
 
   const predioDetalle = useMemo(() => {
-    if (!predioId) {
+    if (!selectedPredioId) {
       return null;
     }
 
-    return getPredioById(predioId);
-  }, [predioId]);
+    return getPredioById(selectedPredioId);
+  }, [selectedPredioId]);
 
   const handleZonaChange = (nextZonaId: string) => {
     setZonaId(nextZonaId);
     setCuadranteId('');
-    setPredioId('');
+    onPredioSelected('', null);
   };
 
   const handleCuadranteChange = (nextCuadranteId: string) => {
     setCuadranteId(nextCuadranteId);
-    setPredioId('');
+    onPredioSelected('', null);
+  };
+
+  const handlePredioChange = (nextPredioId: string) => {
+    const nextPredioDetalle = nextPredioId ? getPredioById(nextPredioId) : null;
+    onPredioSelected(nextPredioId, nextPredioDetalle);
   };
 
   return (
@@ -102,8 +115,8 @@ export function TerritorialSelector() {
               <Form.Group controlId="predio">
                 <Form.Label>Predio</Form.Label>
                 <Form.Select
-                  value={predioId}
-                  onChange={(event) => setPredioId(event.target.value)}
+                  value={selectedPredioId}
+                  onChange={(event) => handlePredioChange(event.target.value)}
                   disabled={!cuadranteId}
                 >
                   <option value="">Seleccionar predio</option>
