@@ -6,14 +6,14 @@
 - FE-2 completado: layout tablet y navegación inicial.
 - FE-3 completado: selección territorial con mocks.
 - FE-4 completado: resultado de visita y corte temprano visual.
-- La Sección 1 ya incluye selección territorial con mocks.
-- La Sección 1 ya permite elegir `ENTREVISTA_REALIZADA`, `SE_NIEGA` y `NO_SE_ENCUENTRA`.
-- `ENTREVISTA_REALIZADA` permite avanzar a Sección 2.
-- `SE_NIEGA` y `NO_SE_ENCUENTRA` muestran campos simples y bloquean el avance al formulario completo.
-- No hay guardado real.
+- FE-5 completado: vivienda y hogares con estado temporal.
+- La Sección 1 ya incluye selección territorial con mocks y resultado de visita.
+- La Sección 2 ya permite cargar datos de vivienda.
+- La Sección 2 ya permite agregar, editar, listar y eliminar hogares en memoria React.
+- No hay persistencia local todavía.
 - No hay backend conectado.
-- No hay borrador local todavía.
-- Próximo paso recomendado: FE-5 — Vivienda y hogares.
+- No hay personas, contactos, servicios ni salud todavía.
+- Próximo paso recomendado: personas/contactos por hogar o guardado local, según se defina.
 
 ## FE-0 — Documentación mínima frontend
 

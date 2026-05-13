@@ -8,6 +8,14 @@
 - `SE_NIEGA` y `NO_SE_ENCUENTRA` muestran campos simples y bloquean el avance al formulario completo.
 - No hay guardado real, backend conectado ni borrador local todavía.
 
+## Estado actual de la Sección 2
+
+- La Sección 2 ya permite cargar datos de vivienda.
+- La Sección 2 ya permite agregar, editar, listar y eliminar hogares en memoria React.
+- No hay persistencia local todavía.
+- No hay backend conectado.
+- No hay personas, contactos, servicios ni salud todavía.
+
 ## Objetivo
 
 Definir el flujo inicial de pantallas alineado con las 4 secciones acordadas en DOCS-0.
