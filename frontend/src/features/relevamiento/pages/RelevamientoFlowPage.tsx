@@ -4,6 +4,7 @@ import { ResultadoVisitaSelector } from '../components/ResultadoVisitaSelector';
 import { SectionPlaceholder } from '../components/SectionPlaceholder';
 import { SectionStepper } from '../components/SectionStepper';
 import { TerritorialSelector } from '../components/TerritorialSelector';
+import { ViviendaHogaresSection } from '../components/ViviendaHogaresSection';
 import {
   esCorteTemprano,
   permiteContinuarFormulario,
@@ -12,6 +13,12 @@ import {
 } from '../types/resultadoVisita';
 import type { RelevamientoSection, RelevamientoSectionId } from '../types/relevamientoFlow';
 import type { PredioDetalle } from '../types/territorio';
+import {
+  crearHogarInicial,
+  viviendaInicial,
+  type HogarFormState,
+  type ViviendaFormState,
+} from '../types/viviendaHogar';
 
 const sections: RelevamientoSection[] = [
   {
@@ -32,11 +39,12 @@ const sections: RelevamientoSection[] = [
     order: 2,
     title: 'Vivienda y hogares',
     description:
-      'Sección reservada para datos generales de vivienda y declaración de hogares dentro del predio.',
+      'Sección temporal para datos generales de vivienda y gestión de varios hogares dentro del predio.',
     includes: [
-      'Lugar reservado para datos de vivienda.',
-      'Lugar reservado para cantidad de hogares.',
-      'Lugar reservado para vínculo entre hogares.',
+      'Cantidad de hogares declarada.',
+      'Vínculo entre hogares.',
+      'Observaciones de vivienda.',
+      'Agregar, editar, listar y eliminar hogares en memoria React.',
     ],
   },
   {
@@ -75,6 +83,8 @@ export function RelevamientoFlowPage() {
   const [selectedPredio, setSelectedPredio] = useState<PredioDetalle | null>(null);
   const [resultadoVisita, setResultadoVisita] =
     useState<ResultadoVisitaFormState>(resultadoVisitaInicial);
+  const [vivienda, setVivienda] = useState<ViviendaFormState>(viviendaInicial);
+  const [hogares, setHogares] = useState<HogarFormState[]>([]);
 
   const currentIndex = sections.findIndex((section) => section.id === currentSectionId);
   const currentSection = sections[currentIndex] ?? sections[0];
@@ -100,11 +110,47 @@ export function RelevamientoFlowPage() {
     return sections[currentIndex + 1]?.title ?? 'Siguiente sección';
   }, [canGoForward, currentIndex, currentSection.id, visitaTieneCorteTemprano]);
 
+  const resetViviendaHogares = () => {
+    setVivienda(viviendaInicial);
+    setHogares([]);
+  };
+
   const handlePredioSelected = (predioId: string, predioDetalle: PredioDetalle | null) => {
     setSelectedPredioId(predioId);
     setSelectedPredio(predioDetalle);
     setResultadoVisita(resultadoVisitaInicial);
+    resetViviendaHogares();
     setCurrentSectionId('inicio-predio-visita');
+  };
+
+  const handleResultadoVisitaChange = (nextResultado: ResultadoVisitaFormState) => {
+    setResultadoVisita(nextResultado);
+
+    if (!permiteContinuarFormulario(nextResultado.resultado)) {
+      resetViviendaHogares();
+      setCurrentSectionId('inicio-predio-visita');
+    }
+  };
+
+  const addHogar = () => {
+    setHogares((currentHogares) => [
+      ...currentHogares,
+      crearHogarInicial(currentHogares.length + 1),
+    ]);
+  };
+
+  const updateHogar = (updatedHogar: HogarFormState) => {
+    setHogares((currentHogares) =>
+      currentHogares.map((hogar) =>
+        hogar.id === updatedHogar.id ? updatedHogar : hogar,
+      ),
+    );
+  };
+
+  const removeHogar = (hogarId: string) => {
+    setHogares((currentHogares) =>
+      currentHogares.filter((hogar) => hogar.id !== hogarId),
+    );
   };
 
   const isSectionDisabled = (section: RelevamientoSection) => {
@@ -148,12 +194,12 @@ export function RelevamientoFlowPage() {
           <Row className="align-items-center g-3">
             <Col lg={8}>
               <p className="text-uppercase text-secondary fw-semibold small mb-2">
-                FE-4 · Resultado de visita y corte temprano
+                FE-5 · Vivienda y hogares
               </p>
               <h1 className="h2 mb-2">Flujo inicial del relevamiento</h1>
               <p className="text-secondary mb-0">
-                Sección 1 con selección territorial mock y resultado de visita.
-                No hay guardado real ni backend conectado.
+                Sección 2 con datos de vivienda y hogares en estado temporal.
+                No hay guardado local ni backend conectado.
               </p>
             </Col>
 
@@ -184,7 +230,7 @@ export function RelevamientoFlowPage() {
             {selectedPredio ? (
               <ResultadoVisitaSelector
                 value={resultadoVisita}
-                onChange={setResultadoVisita}
+                onChange={handleResultadoVisitaChange}
               />
             ) : (
               <Alert variant="secondary" className="mb-0">
@@ -192,6 +238,17 @@ export function RelevamientoFlowPage() {
               </Alert>
             )}
           </Stack>
+        ) : null}
+
+        {currentSection.id === 'vivienda-hogares' ? (
+          <ViviendaHogaresSection
+            vivienda={vivienda}
+            hogares={hogares}
+            onViviendaChange={setVivienda}
+            onAddHogar={addHogar}
+            onUpdateHogar={updateHogar}
+            onRemoveHogar={removeHogar}
+          />
         ) : null}
       </SectionPlaceholder>
 
