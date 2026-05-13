@@ -4,7 +4,7 @@ Frontend web/PWA futura para tablets del Sistema de Relevamiento Territorial.
 
 ## Estado
 
-FE-1: base técnica inicial.
+FE-2: layout tablet y navegación inicial.
 
 Incluye:
 
@@ -14,14 +14,15 @@ Incluye:
 - Bootstrap;
 - React-Bootstrap;
 - estructura inicial de carpetas;
-- pantalla mínima institucional.
+- layout base pensado para tablet;
+- navegación placeholder entre las 4 secciones del relevamiento.
 
 No incluye todavía:
 
 - formulario real;
-- selección de zona, cuadrante o predio;
-- hogares;
-- personas;
+- selección real de zona, cuadrante o predio;
+- hogares funcionales;
+- personas por hogar;
 - guardado local;
 - mocks funcionales;
 - services reales;
