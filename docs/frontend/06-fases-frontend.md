@@ -1,5 +1,16 @@
 # Fases frontend
 
+## Estado actual frontend
+
+- FE-1 completado: base técnica frontend.
+- FE-2 completado: layout tablet y navegación inicial.
+- FE-3 completado: selección territorial con mocks.
+- La Sección 1 ya permite el flujo Zona → Cuadrante → Predio con mocks.
+- Los datos del predio seleccionado se muestran desde mocks y services internos.
+- No hay backend real conectado.
+- No hay `fetch`, `axios` ni endpoints reales.
+- El próximo punto de decisión es definir si FE-4 será resultado de visita y corte temprano o formulario por secciones.
+
 ## FE-0 — Documentación mínima frontend
 
 Objetivo: crear los documentos mínimos del frontend.
