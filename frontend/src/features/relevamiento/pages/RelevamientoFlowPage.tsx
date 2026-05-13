@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Alert, Button, Card, Col, Row, Stack } from 'react-bootstrap';
 import { SectionPlaceholder } from '../components/SectionPlaceholder';
+import { TerritorialSelector } from '../components/TerritorialSelector';
 import { SectionStepper } from '../components/SectionStepper';
 import type { RelevamientoSection, RelevamientoSectionId } from '../types/relevamientoFlow';
 
@@ -12,8 +13,8 @@ const sections: RelevamientoSection[] = [
     description:
       'Punto de entrada del relevamiento. Define si la entrevista continúa o si aplica corte temprano.',
     includes: [
-      'Identificación visual del flujo.',
-      'Lugar reservado para predio seleccionado.',
+      'Selección de zona, cuadrante y predio con mocks locales.',
+      'Visualización de datos precargados del predio.',
       'Lugar reservado para resultado de visita.',
       'Corte temprano pendiente de implementación.',
     ],
@@ -124,7 +125,9 @@ export function RelevamientoFlowPage() {
         onSelectSection={setCurrentSectionId}
       />
 
-      <SectionPlaceholder section={currentSection} />
+      <SectionPlaceholder section={currentSection}>
+        {currentSection.id === 'inicio-predio-visita' ? <TerritorialSelector /> : null}
+      </SectionPlaceholder>
 
       <Card className="border-0 shadow-sm">
         <Card.Body>
