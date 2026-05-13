@@ -1,0 +1,27 @@
+# Sistemas operativos
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Variables de entorno
+.env
+.env.*
+
+# Dependencias futuras
+node_modules/
+vendor/
+
+# Builds futuros
+dist/
+build/
+coverage/
+
+# Temporales
+tmp/
+temp/
