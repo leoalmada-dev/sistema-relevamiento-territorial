@@ -21,10 +21,11 @@
 - La Sección 3 ya permite seleccionar un hogar cargado en Sección 2.
 - La Sección 3 ya permite agregar, editar, listar y eliminar personas asociadas a cada hogar.
 - La Sección 3 ya permite agregar, editar, listar y eliminar contactos asociados a cada hogar.
+- La Sección 3 ya permite cargar servicios y salud asociados a cada hogar.
 - El objetivo inicial de contactos es cargar hasta dos por hogar.
 - No hay persistencia local todavía.
 - No hay backend conectado.
-- No hay servicios ni salud todavía.
+- No hay coordenadas ni finalización real todavía.
 
 ## Objetivo
 

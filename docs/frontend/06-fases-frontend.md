@@ -8,13 +8,14 @@
 - FE-4 completado: resultado de visita y corte temprano visual.
 - FE-5 completado: vivienda y hogares con estado temporal.
 - FE-6 completado: personas y contactos por hogar con estado temporal.
+- FE-7 completado: servicios y salud por hogar con estado temporal.
 - La Sección 1 ya incluye selección territorial con mocks y resultado de visita.
 - La Sección 2 ya permite cargar datos de vivienda y hogares.
-- La Sección 3 ya permite cargar personas y contactos asociados a cada hogar.
+- La Sección 3 ya permite cargar personas, contactos, servicios y salud asociados a cada hogar.
 - No hay persistencia local todavía.
 - No hay backend conectado.
-- No hay servicios ni salud todavía.
-- Próximo paso recomendado: servicios/salud por hogar o guardado local, según se defina.
+- No hay coordenadas ni finalización real todavía.
+- Próximo paso recomendado: guardado local de borradores o coordenadas/finalización, según se defina.
 
 ## FE-0 — Documentación mínima frontend
 
