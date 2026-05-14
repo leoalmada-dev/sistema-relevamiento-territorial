@@ -4,7 +4,7 @@ Frontend web/PWA futura para tablets del Sistema de Relevamiento Territorial.
 
 ## Estado
 
-FE-6: personas y contactos por hogar.
+FE-7: servicios y salud por hogar.
 
 Incluye:
 
@@ -20,7 +20,8 @@ Incluye:
 - datos precargados del predio seleccionado;
 - resultado de visita visual con corte temprano;
 - vivienda y hogares con estado temporal en React;
-- personas y contactos asociados a cada hogar.
+- personas y contactos asociados a cada hogar;
+- servicios y salud asociados a cada hogar.
 
 No incluye todavía:
 

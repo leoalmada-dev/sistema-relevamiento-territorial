@@ -59,7 +59,7 @@ const sections: RelevamientoSection[] = [
       'Seleccionar hogar cargado en Sección 2.',
       'Agregar, editar, listar y eliminar personas por hogar.',
       'Agregar, editar, listar y eliminar contactos por hogar.',
-      'Servicios y salud pendientes.',
+      'Servicios y salud por hogar en memoria React.',
     ],
   },
   {
@@ -208,11 +208,11 @@ export function RelevamientoFlowPage() {
           <Row className="align-items-center g-3">
             <Col lg={8}>
               <p className="text-uppercase text-secondary fw-semibold small mb-2">
-                FE-6 · Personas y contactos por hogar
+                FE-7 · Servicios y salud por hogar
               </p>
               <h1 className="h2 mb-2">Flujo inicial del relevamiento</h1>
               <p className="text-secondary mb-0">
-                Sección 3 con personas y contactos asociados a cada hogar.
+                Sección 3 con personas, contactos, servicios y salud asociados a cada hogar.
                 No hay guardado local ni backend conectado.
               </p>
             </Col>
