@@ -4,7 +4,7 @@ Frontend web/PWA futura para tablets del Sistema de Relevamiento Territorial.
 
 ## Estado
 
-FE-8: revisión final placeholder.
+FE-9: borrador local MVP.
 
 Incluye:
 
@@ -22,7 +22,8 @@ Incluye:
 - vivienda y hogares con estado temporal en React;
 - personas y contactos asociados a cada hogar;
 - servicios y salud asociados a cada hogar;
-- observaciones generales, coordenadas placeholder y revisión final simulada.
+- observaciones generales, coordenadas placeholder y revisión final simulada;
+- borrador local MVP con localStorage.
 
 No incluye todavía:
 

@@ -38,6 +38,16 @@
 - No hay backend conectado.
 - No hay finalización real todavía.
 
+## Estado actual de borrador local
+
+- FE-9 agrega borrador local MVP usando `localStorage`.
+- El borrador local permite continuar o descartar un único borrador activo.
+- La key usada es `relevamientoTerritorial:draft:v1`.
+- No es offline completo.
+- No es guardado en servidor.
+- Puede contener datos personales o sensibles y requiere tablets autorizadas/controladas.
+- No hay sincronización con backend ni guardado final real todavía.
+
 ## Objetivo
 
 Definir el flujo inicial de pantallas alineado con las 4 secciones acordadas en DOCS-0.

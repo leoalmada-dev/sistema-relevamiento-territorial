@@ -10,14 +10,15 @@
 - FE-6 completado: personas y contactos por hogar con estado temporal.
 - FE-7 completado: servicios y salud por hogar con estado temporal.
 - FE-8 completado: observaciones generales, coordenadas placeholder y revisión final simulada.
-- La Sección 1 ya incluye selección territorial con mocks y resultado de visita.
-- La Sección 2 ya permite cargar datos de vivienda y hogares.
-- La Sección 3 ya permite cargar personas, contactos, servicios y salud asociados a cada hogar.
-- La Sección 4 ya permite cargar observaciones generales, coordenadas placeholder y revisión final visual.
-- No hay persistencia local todavía.
+- FE-9 completado: borrador local MVP con localStorage.
+- El flujo visual principal está completo de Sección 1 a Sección 4.
+- Existe un único borrador local activo con key `relevamientoTerritorial:draft:v1`.
+- El borrador local no es offline completo.
+- El borrador local no es guardado en servidor.
+- `localStorage` puede contener datos personales o sensibles y requiere tablets autorizadas/controladas.
 - No hay backend conectado.
 - No hay geolocalización real, mapa real, pin real ni finalización real todavía.
-- Próximo paso recomendado: guardado local de borradores o integración backend, según se defina.
+- Próximo paso recomendado: integración backend, guardado final real o endurecimiento del borrador, según se defina.
 
 ## FE-0 — Documentación mínima frontend
 
