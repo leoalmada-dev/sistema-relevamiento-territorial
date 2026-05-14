@@ -27,6 +27,17 @@
 - No hay backend conectado.
 - No hay coordenadas ni finalización real todavía.
 
+## Estado actual de la Sección 4
+
+- La Sección 4 ya permite cargar observaciones generales.
+- La Sección 4 ya permite cargar latitud, longitud y hora de captura como placeholder.
+- La Sección 4 ya muestra revisión final visual del relevamiento.
+- La Sección 4 ya permite una finalización simulada sin guardado real.
+- No hay geolocalización real, mapa real ni pin real.
+- No hay persistencia local todavía.
+- No hay backend conectado.
+- No hay finalización real todavía.
+
 ## Objetivo
 
 Definir el flujo inicial de pantallas alineado con las 4 secciones acordadas en DOCS-0.
