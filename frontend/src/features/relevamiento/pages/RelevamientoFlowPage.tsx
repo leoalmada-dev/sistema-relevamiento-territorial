@@ -1,11 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Alert, Button, Card, Col, Row, Stack } from 'react-bootstrap';
+import { CierreRelevamientoSection } from '../components/CierreRelevamientoSection';
 import { PersonasContactosSection } from '../components/PersonasContactosSection';
 import { ResultadoVisitaSelector } from '../components/ResultadoVisitaSelector';
 import { SectionPlaceholder } from '../components/SectionPlaceholder';
 import { SectionStepper } from '../components/SectionStepper';
 import { TerritorialSelector } from '../components/TerritorialSelector';
 import { ViviendaHogaresSection } from '../components/ViviendaHogaresSection';
+import {
+  cierreRelevamientoInicial,
+  type CierreRelevamientoFormState,
+} from '../types/cierreRelevamiento';
 import type { PersonasContactosPorHogarState } from '../types/personaContacto';
 import {
   esCorteTemprano,
@@ -54,7 +59,7 @@ const sections: RelevamientoSection[] = [
     order: 3,
     title: 'Personas, contactos, servicios y salud por hogar',
     description:
-      'Sección temporal para personas y contactos por hogar. Servicios y salud quedan para una fase posterior.',
+      'Sección temporal para personas, contactos, servicios y salud por hogar.',
     includes: [
       'Seleccionar hogar cargado en Sección 2.',
       'Agregar, editar, listar y eliminar personas por hogar.',
@@ -67,12 +72,12 @@ const sections: RelevamientoSection[] = [
     order: 4,
     title: 'Observaciones, coordenadas y finalización',
     description:
-      'Cierre del relevamiento con observaciones generales, coordenadas y confirmación final.',
+      'Cierre visual del relevamiento con observaciones generales, coordenadas placeholder y revisión final.',
     includes: [
       'Observaciones generales del relevamiento.',
-      'Coordenadas asociadas al relevamiento completo.',
-      'Revisión final pendiente.',
-      'Finalización pendiente.',
+      'Coordenadas placeholder asociadas al relevamiento completo.',
+      'Revisión final visual.',
+      'Finalización simulada sin guardado real.',
     ],
   },
 ];
@@ -88,6 +93,9 @@ export function RelevamientoFlowPage() {
   const [hogares, setHogares] = useState<HogarFormState[]>([]);
   const [personasContactosPorHogar, setPersonasContactosPorHogar] =
     useState<PersonasContactosPorHogarState>({});
+  const [cierre, setCierre] =
+    useState<CierreRelevamientoFormState>(cierreRelevamientoInicial);
+  const [finalizacionSimulada, setFinalizacionSimulada] = useState(false);
 
   const currentIndex = sections.findIndex((section) => section.id === currentSectionId);
   const currentSection = sections[currentIndex] ?? sections[0];
@@ -113,8 +121,14 @@ export function RelevamientoFlowPage() {
     return sections[currentIndex + 1]?.title ?? 'Siguiente sección';
   }, [canGoForward, currentIndex, currentSection.id, visitaTieneCorteTemprano]);
 
+  const resetCierre = () => {
+    setCierre(cierreRelevamientoInicial);
+    setFinalizacionSimulada(false);
+  };
+
   const resetPersonasContactos = () => {
     setPersonasContactosPorHogar({});
+    resetCierre();
   };
 
   const resetViviendaHogares = () => {
@@ -145,6 +159,7 @@ export function RelevamientoFlowPage() {
       ...currentHogares,
       crearHogarInicial(currentHogares.length + 1),
     ]);
+    setFinalizacionSimulada(false);
   };
 
   const updateHogar = (updatedHogar: HogarFormState) => {
@@ -153,6 +168,7 @@ export function RelevamientoFlowPage() {
         hogar.id === updatedHogar.id ? updatedHogar : hogar,
       ),
     );
+    setFinalizacionSimulada(false);
   };
 
   const removeHogar = (hogarId: string) => {
@@ -165,6 +181,13 @@ export function RelevamientoFlowPage() {
       delete nextState[hogarId];
       return nextState;
     });
+
+    setFinalizacionSimulada(false);
+  };
+
+  const handleCierreChange = (nextCierre: CierreRelevamientoFormState) => {
+    setCierre(nextCierre);
+    setFinalizacionSimulada(false);
   };
 
   const isSectionDisabled = (section: RelevamientoSection) => {
@@ -208,12 +231,12 @@ export function RelevamientoFlowPage() {
           <Row className="align-items-center g-3">
             <Col lg={8}>
               <p className="text-uppercase text-secondary fw-semibold small mb-2">
-                FE-7 · Servicios y salud por hogar
+                FE-8 · Revisión final placeholder
               </p>
-              <h1 className="h2 mb-2">Flujo inicial del relevamiento</h1>
+              <h1 className="h2 mb-2">Flujo visual del relevamiento</h1>
               <p className="text-secondary mb-0">
-                Sección 3 con personas, contactos, servicios y salud asociados a cada hogar.
-                No hay guardado local ni backend conectado.
+                Flujo visual completo con revisión final simulada. No hay guardado local,
+                geolocalización real ni backend conectado.
               </p>
             </Col>
 
@@ -270,6 +293,20 @@ export function RelevamientoFlowPage() {
             hogares={hogares}
             personasContactosPorHogar={personasContactosPorHogar}
             onChange={setPersonasContactosPorHogar}
+          />
+        ) : null}
+
+        {currentSection.id === 'cierre-finalizacion' ? (
+          <CierreRelevamientoSection
+            cierre={cierre}
+            selectedPredio={selectedPredio}
+            resultadoVisita={resultadoVisita}
+            vivienda={vivienda}
+            hogares={hogares}
+            personasContactosPorHogar={personasContactosPorHogar}
+            finalizacionSimulada={finalizacionSimulada}
+            onCierreChange={handleCierreChange}
+            onFinalizarSimulado={() => setFinalizacionSimulada(true)}
           />
         ) : null}
       </SectionPlaceholder>
