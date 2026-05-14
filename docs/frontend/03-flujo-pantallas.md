@@ -1,5 +1,25 @@
 # Flujo de pantallas
 
+## Estado actual de integración territorial
+
+- FE-10A integra lectura territorial real configurable por entorno.
+- Base API documentada: `https://10.100.0.10/sistema-censo/api/v1`.
+- Rutas integradas:
+  - `/zonas`
+  - `/zonas/{id}/cuadrantes`
+  - `/cuadrantes/{id}/predios`
+  - `/predios/{id}`
+- JSON real confirmado:
+  - zonas: `id`, `nombre`
+  - cuadrantes: `id`, `nombre`, `img`
+  - predios: `id`, `calle`, `nro_puerta`, `padron`, `lote`, `manzana`, `obs`, `nombre_cuadrante`
+- Los mocks siguen disponibles para desarrollo sin red interna.
+- No hay fallback silencioso: si la API falla, la UI muestra error claro.
+- Desde terminal con proxy institucional puede requerirse `curl --noproxy "*"` para evitar bloqueo Fortinet sobre rutas internas.
+- Relevamientos, guardado servidor, borrador servidor y finalización real no están integrados todavía.
+- CORS, certificado o red interna quedan como posibles pendientes de infraestructura/backend.
+
+
 ## Estado actual de la Sección 1
 
 - La Sección 1 ya incluye selección territorial con mocks.

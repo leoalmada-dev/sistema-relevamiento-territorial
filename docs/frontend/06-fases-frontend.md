@@ -11,14 +11,14 @@
 - FE-7 completado: servicios y salud por hogar con estado temporal.
 - FE-8 completado: observaciones generales, coordenadas placeholder y revisión final simulada.
 - FE-9 completado: borrador local MVP con localStorage.
-- El flujo visual principal está completo de Sección 1 a Sección 4.
-- Existe un único borrador local activo con key `relevamientoTerritorial:draft:v1`.
-- El borrador local no es offline completo.
-- El borrador local no es guardado en servidor.
-- `localStorage` puede contener datos personales o sensibles y requiere tablets autorizadas/controladas.
-- No hay backend conectado.
+- FE-10A completado: integración territorial real configurable por entorno.
+- La lectura territorial puede usar API real o mocks locales según `VITE_TERRITORIO_DATA_SOURCE`.
+- Base API documentada: `https://10.100.0.10/sistema-censo/api/v1`.
+- Rutas territoriales integradas: `/zonas`, `/zonas/{id}/cuadrantes`, `/cuadrantes/{id}/predios`, `/predios/{id}`.
+- Desde terminal, si hay proxy institucional, puede requerirse `curl --noproxy "*"` para evitar bloqueo sobre rutas internas.
+- Relevamientos, guardado servidor, borrador servidor y finalización real siguen fuera de alcance.
+- Si aparecen errores de red, certificado o CORS en navegador, corresponden a backend/infraestructura o configuración de ambiente.
 - No hay geolocalización real, mapa real, pin real ni finalización real todavía.
-- Próximo paso recomendado: integración backend, guardado final real o endurecimiento del borrador, según se defina.
 
 ## FE-0 — Documentación mínima frontend
 
