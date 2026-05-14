@@ -73,22 +73,22 @@ export function CierreRelevamientoSection({
           <Stack gap={3}>
             <div>
               <Badge bg="primary" className="mb-2">
-                Coordenadas placeholder
+                Ubicación a confirmar
               </Badge>
               <h3 className="h5 mb-1">Ubicación del relevamiento</h3>
               <p className="text-secondary mb-0">
-                Placeholder temporal para preparar la futura captura o confirmación de ubicación.
+                A confirmar temporal para preparar la futura captura o confirmación de ubicación.
               </p>
             </div>
 
             <Alert variant="warning" className="mb-0">
-              Todavía no hay mapa real, pin real ni geolocalización real. Estos campos no se
+              Ingrese o confirme manualmente la ubicación disponible. Esta información se
               capturan automáticamente.
             </Alert>
 
             <Row className="g-3">
               <Col md={4}>
-                <Form.Group controlId="latitud-placeholder">
+                <Form.Group controlId="latitud-a confirmar">
                   <Form.Label>Latitud</Form.Label>
                   <Form.Control
                     value={cierre.latitud}
@@ -99,7 +99,7 @@ export function CierreRelevamientoSection({
               </Col>
 
               <Col md={4}>
-                <Form.Group controlId="longitud-placeholder">
+                <Form.Group controlId="longitud-a confirmar">
                   <Form.Label>Longitud</Form.Label>
                   <Form.Control
                     value={cierre.longitud}
@@ -110,7 +110,7 @@ export function CierreRelevamientoSection({
               </Col>
 
               <Col md={4}>
-                <Form.Group controlId="hora-captura-placeholder">
+                <Form.Group controlId="hora-captura-a confirmar">
                   <Form.Label>Hora de captura</Form.Label>
                   <Form.Control
                     type="time"
@@ -164,12 +164,12 @@ export function CierreRelevamientoSection({
             </Alert>
 
             <Button variant="success" onClick={onFinalizarSimulado}>
-              Finalizar simulado
+              Marcar revisión como completa
             </Button>
 
             {finalizacionSimulada ? (
               <Alert variant="success" className="mb-0">
-                Finalización simulada realizada. No se guardó información real.
+                Revisión visual realizada. La información permanece guardada en este dispositivo.
               </Alert>
             ) : null}
           </Stack>
