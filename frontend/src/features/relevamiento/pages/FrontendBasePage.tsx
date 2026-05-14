@@ -9,7 +9,7 @@ export function FrontendBasePage() {
             <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
               <div>
                 <Badge bg="primary" className="mb-3">
-                  FE-1 · Base técnica frontend
+                  Sistema de Relevamiento Territorial
                 </Badge>
                 <h1 className="h2 mb-2">Sistema de Relevamiento Territorial</h1>
                 <p className="text-secondary mb-0">
@@ -34,9 +34,9 @@ export function FrontendBasePage() {
               <Col md={6}>
                 <Card className="h-100">
                   <Card.Body>
-                    <Card.Title>Incluido en FE-1</Card.Title>
+                    <Card.Title>Base inicial</Card.Title>
                     <ListGroup variant="flush">
-                      <ListGroup.Item>React + Vite + TypeScript.</ListGroup.Item>
+                      <ListGroup.Item>Aplicación preparada para tablets.</ListGroup.Item>
                       <ListGroup.Item>Bootstrap + React-Bootstrap.</ListGroup.Item>
                       <ListGroup.Item>Estructura inicial en frontend/src.</ListGroup.Item>
                       <ListGroup.Item>Pantalla mínima institucional.</ListGroup.Item>
@@ -51,7 +51,7 @@ export function FrontendBasePage() {
                     <Card.Title>No incluido todavía</Card.Title>
                     <ListGroup variant="flush">
                       <ListGroup.Item>Formulario real.</ListGroup.Item>
-                      <ListGroup.Item>Mocks funcionales.</ListGroup.Item>
+                      <ListGroup.Item>Datos de prácticas funcionales.</ListGroup.Item>
                       <ListGroup.Item>Services o adapters reales.</ListGroup.Item>
                       <ListGroup.Item>Conexión con backend.</ListGroup.Item>
                     </ListGroup>

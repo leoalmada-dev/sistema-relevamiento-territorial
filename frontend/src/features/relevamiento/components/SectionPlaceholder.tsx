@@ -12,7 +12,7 @@ export function SectionPlaceholder({ section, children }: SectionPlaceholderProp
     <Card className="border-0 shadow-sm">
       <Card.Header className="bg-white border-0 pt-4 px-4">
         <Badge bg="secondary" className="mb-3">
-          Placeholder funcional
+          A confirmar funcional
         </Badge>
         <h2 className="h4 mb-2">
           Sección {section.order} — {section.title}
@@ -23,7 +23,7 @@ export function SectionPlaceholder({ section, children }: SectionPlaceholderProp
       <Card.Body className="p-4">
         <Stack gap={3}>
           <Alert variant="warning" className="mb-0">
-            FE-3 agrega selección territorial con mocks locales. No hay formulario real,
+            Esta sección se completará durante el avance del relevamiento.
             creación de relevamiento ni integración con backend.
           </Alert>
 

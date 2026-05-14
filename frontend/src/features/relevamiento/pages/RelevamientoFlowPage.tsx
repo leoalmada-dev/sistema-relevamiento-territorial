@@ -47,7 +47,7 @@ const sections: RelevamientoSection[] = [
     description:
       'Punto de entrada del relevamiento. Define si la entrevista continúa o si aplica corte temprano.',
     includes: [
-      'Selección de zona, cuadrante y predio con mocks locales.',
+      'Selección de zona, cuadrante y predio con datos de prácticas locales.',
       'Visualización de datos precargados del predio.',
       'Resultado de visita con corte temprano visual.',
       'Sin creación real de relevamiento todavía.',
@@ -84,12 +84,12 @@ const sections: RelevamientoSection[] = [
     order: 4,
     title: 'Observaciones, coordenadas y finalización',
     description:
-      'Cierre visual del relevamiento con observaciones generales, coordenadas placeholder y revisión final.',
+      'Cierre visual del relevamiento con observaciones generales, ubicación a confirmar y revisión final.',
     includes: [
       'Observaciones generales del relevamiento.',
-      'Coordenadas placeholder asociadas al relevamiento completo.',
+      'Ubicación a confirmar asociadas al relevamiento completo.',
       'Revisión final visual.',
-      'Finalización simulada sin guardado real.',
+      'Revisión visual sin guardado real.',
     ],
   },
 ];
@@ -257,6 +257,10 @@ export function RelevamientoFlowPage() {
   };
 
   const discardLocalDraft = () => {
+    if (!window.confirm('¿Descartar la información guardada en este dispositivo? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
     clearLocalDraft();
     setPendingLocalDraft(null);
     setLastSavedAt('');
@@ -398,7 +402,7 @@ export function RelevamientoFlowPage() {
           <Row className="align-items-center g-3">
             <Col lg={8}>
               <p className="text-uppercase text-secondary fw-semibold small mb-2">
-                FE-9 · Borrador local MVP
+                Guardado automático
               </p>
               <h1 className="h2 mb-2">Flujo visual del relevamiento</h1>
               <p className="text-secondary mb-0">
@@ -422,7 +426,7 @@ export function RelevamientoFlowPage() {
             <div className="d-flex flex-column flex-lg-row justify-content-between gap-3">
               <div>
                 <Badge bg="secondary" className="mb-2">
-                  Borrador local
+                  Guardado automático
                 </Badge>
                 <h2 className="h5 mb-1">{localDraftStatusLabel[draftStatus]}</h2>
                 <p className="text-secondary mb-0">
@@ -436,7 +440,7 @@ export function RelevamientoFlowPage() {
                   onClick={saveCurrentLocalDraft}
                   disabled={!hasStartedDraft}
                 >
-                  Guardar borrador local
+                  Guardar ahora
                 </Button>
                 <Button
                   variant="outline-danger"
@@ -449,7 +453,7 @@ export function RelevamientoFlowPage() {
             </div>
 
             <Alert variant="warning" className="mb-0">
-              El borrador usa almacenamiento local del navegador solo como solución MVP para no perder la carga.
+              La información se guarda automáticamente en este dispositivo para evitar pérdidas durante la carga.
               Puede contener datos personales o sensibles. No es guardado en servidor ni
               offline completo. Su uso real depende de tablets autorizadas y controladas.
             </Alert>

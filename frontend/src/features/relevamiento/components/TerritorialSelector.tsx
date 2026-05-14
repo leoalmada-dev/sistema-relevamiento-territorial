@@ -66,7 +66,7 @@ export function TerritorialSelector({
         setErrorMessage(
           error instanceof Error
             ? error.message
-            : 'No se pudieron cargar las zonas desde la fuente territorial.',
+            : 'No se pudieron cargar las zonas. Verifique la conexión e intente nuevamente.',
         );
       })
       .finally(() => {
@@ -101,7 +101,7 @@ export function TerritorialSelector({
         setErrorMessage(
           error instanceof Error
             ? error.message
-            : 'No se pudieron cargar los cuadrantes desde la fuente territorial.',
+            : 'No se pudieron cargar los cuadrantes. Verifique la conexión e intente nuevamente.',
         );
       })
       .finally(() => setLoading(false));
@@ -126,7 +126,7 @@ export function TerritorialSelector({
         setErrorMessage(
           error instanceof Error
             ? error.message
-            : 'No se pudieron cargar los predios desde la fuente territorial.',
+            : 'No se pudieron cargar los predios. Verifique la conexión e intente nuevamente.',
         );
       })
       .finally(() => setLoading(false));
@@ -152,7 +152,7 @@ export function TerritorialSelector({
         setErrorMessage(
           error instanceof Error
             ? error.message
-            : 'No se pudo cargar el detalle del predio desde la fuente territorial.',
+            : 'No se pudo cargar el detalle del predio. Verifique la conexión e intente nuevamente.',
         );
         onPredioSelected(predioId, null);
       })
@@ -166,26 +166,35 @@ export function TerritorialSelector({
           <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
             <div>
               <Badge bg="primary" className="mb-2">
-                Territorio
+                Predio
               </Badge>
-              <h3 className="h5 mb-1">Selección territorial</h3>
+              <h3 className="h5 mb-1">Seleccione el predio a relevar</h3>
               <p className="text-secondary mb-0">
-                Fuente actual: <strong>{sourceLabel}</strong>. La pantalla no consume datos
-                directamente; usa services y adapters.
+                Elija zona, cuadrante y predio para precargar los datos disponibles.
               </p>
             </div>
 
-            {loading ? (
-              <div className="text-secondary d-flex align-items-center gap-2">
-                <Spinner size="sm" />
-                Cargando
-              </div>
-            ) : null}
+            <div className="text-secondary small d-flex align-items-center gap-2">
+              {loading ? (
+                <>
+                  <Spinner size="sm" />
+                  Cargando datos
+                </>
+              ) : (
+                <>Origen: {sourceLabel}</>
+              )}
+            </div>
           </div>
 
           {errorMessage ? (
             <Alert variant="danger" className="mb-0">
-              {errorMessage} Si la fuente es API real, revisar red interna, certificado o CORS.
+              {errorMessage}
+            </Alert>
+          ) : null}
+
+          {!loading && !errorMessage && zonas.length === 0 ? (
+            <Alert variant="warning" className="mb-0">
+              No hay zonas disponibles para seleccionar.
             </Alert>
           ) : null}
 
@@ -222,6 +231,9 @@ export function TerritorialSelector({
                     </option>
                   ))}
                 </Form.Select>
+                {selectedZonaId && !loading && cuadrantes.length === 0 ? (
+                  <Form.Text>No hay cuadrantes disponibles para la zona seleccionada.</Form.Text>
+                ) : null}
               </Form.Group>
             </Col>
 
@@ -240,6 +252,9 @@ export function TerritorialSelector({
                     </option>
                   ))}
                 </Form.Select>
+                {selectedCuadranteId && !loading && predios.length === 0 ? (
+                  <Form.Text>No hay predios disponibles para el cuadrante seleccionado.</Form.Text>
+                ) : null}
               </Form.Group>
             </Col>
           </Row>
@@ -262,7 +277,7 @@ export function TerritorialSelector({
           {predioDetalle ? (
             <Card>
               <Card.Header className="bg-white">
-                <strong>Datos precargados del predio</strong>
+                <strong>Datos del predio</strong>
               </Card.Header>
               <Card.Body>
                 <Row className="g-3">
@@ -272,7 +287,7 @@ export function TerritorialSelector({
                   </Col>
 
                   <Col md={4}>
-                    <div className="text-secondary small">Número teórico</div>
+                    <div className="text-secondary small">Número de puerta</div>
                     <div className="fw-semibold">
                       {predioDetalle.numeroPuertaTeorico || 'Sin dato'}
                     </div>

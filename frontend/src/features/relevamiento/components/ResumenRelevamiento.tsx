@@ -152,7 +152,7 @@ export function ResumenRelevamiento({
 
       <Card>
         <Card.Header className="bg-white">
-          <strong>Observaciones generales y coordenadas placeholder</strong>
+          <strong>Observaciones generales y ubicación a confirmar</strong>
         </Card.Header>
         <ListGroup variant="flush">
           <ListGroup.Item>

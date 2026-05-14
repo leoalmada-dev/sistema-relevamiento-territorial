@@ -34,7 +34,7 @@ async function requestTerritorioJson(path: string): Promise<unknown> {
   const apiBaseUrl = getApiBaseUrl();
 
   if (!apiBaseUrl) {
-    throw new Error('Falta configurar VITE_API_BASE_URL para usar territorio desde API.');
+    throw new Error('No está configurada la conexión con la red territorial.');
   }
 
   const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -44,7 +44,7 @@ async function requestTerritorioJson(path: string): Promise<unknown> {
   });
 
   if (!response.ok) {
-    throw new Error(`Error HTTP ${response.status} al consultar territorio.`);
+    throw new Error(`No se pudo obtener la información territorial. Código ${response.status}.`);
   }
 
   return response.json();
@@ -67,7 +67,7 @@ function getPredioByIdMock(predioId: string): PredioDetalle | null {
 }
 
 export function getTerritorioSourceLabel() {
-  return getTerritorioDataSource() === 'api' ? 'API real' : 'mocks locales';
+  return getTerritorioDataSource() === 'api' ? 'Red interna' : 'Datos de práctica';
 }
 
 export async function getZonas(): Promise<ZonaOption[]> {
