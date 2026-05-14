@@ -4,7 +4,7 @@ Frontend web/PWA futura para tablets del Sistema de Relevamiento Territorial.
 
 ## Estado
 
-FE-9: borrador local MVP.
+FE-10A: integración territorial real.
 
 Incluye:
 
@@ -82,3 +82,28 @@ Mock actual o API futura
 La base visual usa Bootstrap y React-Bootstrap.
 
 Evitar CSS artesanal por componente salvo necesidad justificada.
+
+
+## Configuración de API territorial
+
+Crear un archivo `.env` local a partir de `.env.example` cuando se trabaje contra la red interna.
+
+Valores esperados:
+
+- VITE_API_BASE_URL=https://10.100.0.10/sistema-censo/api/v1
+- VITE_TERRITORIO_DATA_SOURCE=api
+
+Para trabajar sin red interna se puede usar:
+
+- VITE_TERRITORIO_DATA_SOURCE=mock
+
+La integración real actual cubre únicamente lectura territorial:
+
+- /zonas
+- /zonas/{id}/cuadrantes
+- /cuadrantes/{id}/predios
+- /predios/{id}
+
+Nota operativa: si se prueba la API desde terminal en un equipo con proxy, puede ser necesario usar curl con --noproxy "*" para evitar bloqueo Fortinet sobre rutas internas.
+
+Relevamientos, guardado servidor, borrador servidor y finalización real siguen fuera de alcance.
