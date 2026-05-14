@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Card, Col, Form, Row, Stack } from 'react-bootstrap';
 import { ContactoFormCard } from './ContactoFormCard';
 import { PersonaFormCard } from './PersonaFormCard';
+import { ServiciosSaludSection } from './ServiciosSaludSection';
 import {
   crearContactoInicial,
   crearPersonaInicial,
@@ -112,6 +113,20 @@ export function PersonasContactosSection({
     updateDatosHogar({
       ...datosHogar,
       contactos: datosHogar.contactos.filter((contacto) => contacto.id !== contactoId),
+    });
+  };
+
+  const updateServicios = (servicios: PersonasContactosHogarState['servicios']) => {
+    updateDatosHogar({
+      ...datosHogar,
+      servicios,
+    });
+  };
+
+  const updateSalud = (salud: PersonasContactosHogarState['salud']) => {
+    updateDatosHogar({
+      ...datosHogar,
+      salud,
     });
   };
 
@@ -266,6 +281,13 @@ export function PersonasContactosSection({
           </Stack>
         </Card.Body>
       </Card>
+
+      <ServiciosSaludSection
+        servicios={datosHogar.servicios}
+        salud={datosHogar.salud}
+        onServiciosChange={updateServicios}
+        onSaludChange={updateSalud}
+      />
     </Stack>
   );
 }

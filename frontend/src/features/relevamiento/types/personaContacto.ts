@@ -1,3 +1,10 @@
+import {
+  saludInicial,
+  serviciosInicial,
+  type SaludFormState,
+  type ServiciosFormState,
+} from './serviciosSalud';
+
 export type PersonaFormState = {
   id: string;
   nombre: string;
@@ -22,6 +29,8 @@ export type ContactoFormState = {
 export type PersonasContactosHogarState = {
   personas: PersonaFormState[];
   contactos: ContactoFormState[];
+  servicios: ServiciosFormState;
+  salud: SaludFormState;
 };
 
 export type PersonasContactosPorHogarState = Record<string, PersonasContactosHogarState>;
@@ -55,5 +64,7 @@ export function crearPersonasContactosHogarInicial(): PersonasContactosHogarStat
   return {
     personas: [],
     contactos: [],
+    servicios: { ...serviciosInicial },
+    salud: { ...saludInicial },
   };
 }
