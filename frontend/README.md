@@ -4,7 +4,7 @@ Frontend web/PWA futura para tablets del Sistema de Relevamiento Territorial.
 
 ## Estado
 
-FE-7: servicios y salud por hogar.
+FE-8: revisión final placeholder.
 
 Incluye:
 
@@ -21,7 +21,8 @@ Incluye:
 - resultado de visita visual con corte temprano;
 - vivienda y hogares con estado temporal en React;
 - personas y contactos asociados a cada hogar;
-- servicios y salud asociados a cada hogar.
+- servicios y salud asociados a cada hogar;
+- observaciones generales, coordenadas placeholder y revisión final simulada.
 
 No incluye todavía:
 
