@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Alert, Badge, Card, ListGroup, Stack } from 'react-bootstrap';
+import { Card, Stack } from 'react-bootstrap';
 import type { RelevamientoSection } from '../types/relevamientoFlow';
 
 type SectionPlaceholderProps = {
@@ -11,9 +11,6 @@ export function SectionPlaceholder({ section, children }: SectionPlaceholderProp
   return (
     <Card className="border-0 shadow-sm">
       <Card.Header className="bg-white border-0 pt-4 px-4">
-        <Badge bg="secondary" className="mb-3">
-          A confirmar funcional
-        </Badge>
         <h2 className="h4 mb-2">
           Sección {section.order} — {section.title}
         </h2>
@@ -21,20 +18,7 @@ export function SectionPlaceholder({ section, children }: SectionPlaceholderProp
       </Card.Header>
 
       <Card.Body className="p-4">
-        <Stack gap={3}>
-          <Alert variant="warning" className="mb-0">
-            Esta sección se completará durante el avance del relevamiento.
-            creación de relevamiento ni integración con backend.
-          </Alert>
-
-          {children}
-
-          <ListGroup>
-            {section.includes.map((item) => (
-              <ListGroup.Item key={item}>{item}</ListGroup.Item>
-            ))}
-          </ListGroup>
-        </Stack>
+        <Stack gap={3}>{children}</Stack>
       </Card.Body>
     </Card>
   );
