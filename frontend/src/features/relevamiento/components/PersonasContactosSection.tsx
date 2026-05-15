@@ -149,7 +149,7 @@ export function PersonasContactosSection({
               </Badge>
               <h3 className="h5 mb-1">Personas y contactos por hogar</h3>
               <p className="text-secondary mb-0">
-                Los datos se guardan solo en memoria React y quedan asociados al hogar elegido.
+                Seleccione el hogar para cargar sus integrantes, contactos, servicios y salud.
               </p>
             </div>
 
@@ -196,7 +196,7 @@ export function PersonasContactosSection({
                 </Badge>
                 <h3 className="h5 mb-1">Integrantes del hogar</h3>
                 <p className="text-secondary mb-0">
-                  Personas asociadas al hogar seleccionado. No son datos globales.
+                  Personas integrantes del hogar seleccionado.
                 </p>
               </div>
 

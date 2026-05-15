@@ -31,7 +31,7 @@ export function PersonaFormCard({
           <div>
             <strong>Persona {index + 1}</strong>
             <div className="text-secondary small">
-              Datos temporales asociados al hogar seleccionado.
+              Complete los datos de la persona integrante del hogar.
             </div>
           </div>
 

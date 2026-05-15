@@ -501,8 +501,7 @@ export function RelevamientoFlowPage() {
 
       {visitaTieneCorteTemprano ? (
         <Alert variant="warning" className="mb-0">
-          El resultado seleccionado genera corte temprano. El flujo queda detenido antes de
-          vivienda, hogares, personas, servicios y salud.
+          Con este resultado no corresponde continuar con vivienda, hogares, personas, servicios y salud.
         </Alert>
       ) : null}
 
@@ -514,7 +513,7 @@ export function RelevamientoFlowPage() {
             </Button>
 
             <div className="text-center text-secondary">
-              Próximo paso visual: <strong>{nextSectionTitle}</strong>
+              Siguiente paso: <strong>{nextSectionTitle}</strong>
             </div>
 
             <Button variant="primary" onClick={goForward} disabled={!canGoForward}>

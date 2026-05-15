@@ -14,7 +14,7 @@ export function TabletLayout({ children }: TabletLayoutProps) {
             Sistema de Relevamiento Territorial
           </Navbar.Brand>
           <Badge bg="info" text="dark">
-            Tablet · MVP
+            Tablet
           </Badge>
         </Container>
       </Navbar>
