@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Col, Row, Stack } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Row, Stack } from 'react-bootstrap';
 import { CierreRelevamientoSection } from '../components/CierreRelevamientoSection';
 import { PersonasContactosSection } from '../components/PersonasContactosSection';
 import { ResultadoVisitaSelector } from '../components/ResultadoVisitaSelector';
@@ -10,7 +10,6 @@ import { ViviendaHogaresSection } from '../components/ViviendaHogaresSection';
 import {
   clearLocalDraft,
   getLocalDraft,
-  hasLocalDraft,
   saveLocalDraft,
 } from '../services/draftStorageService';
 import {
@@ -178,24 +177,6 @@ export function RelevamientoFlowPage() {
 
   const markDraftPending = () => {
     setDraftStatus('CAMBIOS_PENDIENTES');
-  };
-
-  const saveCurrentLocalDraft = () => {
-    if (!hasStartedDraft) {
-      setDraftStatus(hasLocalDraft() ? 'GUARDADO_LOCAL' : 'SIN_BORRADOR');
-      return;
-    }
-
-    const draft = buildLocalDraft();
-    const saved = saveLocalDraft(draft);
-
-    if (saved) {
-      setLastSavedAt(draft.savedAt);
-      setDraftStatus('GUARDADO_LOCAL');
-      return;
-    }
-
-    setDraftStatus('ERROR_GUARDAR');
   };
 
   useEffect(() => {
@@ -412,87 +393,49 @@ export function RelevamientoFlowPage() {
 
             <Col lg={4}>
               <Alert variant={visitaTieneCorteTemprano ? 'warning' : 'info'} className="mb-0">
-                Sección actual: <strong>{currentSection.order}</strong>
+                <div className="d-flex flex-column gap-1">
+                  <span>
+                    Sección actual: <strong>{currentSection.order}</strong>
+                  </span>
+                  <span>
+                    Estado: <strong>{localDraftStatusLabel[draftStatus]}</strong>
+                  </span>
+                  {lastSavedAt ? (
+                    <span className="small">
+                      Último guardado: <strong>{formatSavedAt(lastSavedAt)}</strong>
+                    </span>
+                  ) : null}
+                </div>
               </Alert>
             </Col>
           </Row>
         </Card.Body>
       </Card>
 
-      <Card className="border-0 shadow-sm">
-        <Card.Body>
-          <Stack gap={3}>
-            <div className="d-flex flex-column flex-lg-row justify-content-between gap-3">
-              <div>
-                <Badge bg="secondary" className="mb-2">
-                  Guardado automáticamente
-                </Badge>
-                <h2 className="h5 mb-1">{localDraftStatusLabel[draftStatus]}</h2>
-                <p className="text-secondary mb-0">
-                  La información se guarda en este dispositivo durante la carga.
-                </p>
-              </div>
-
-              <div className="d-flex flex-column flex-md-row gap-2">
-                <Button
-                  variant="outline-primary"
-                  onClick={saveCurrentLocalDraft}
-                  disabled={!hasStartedDraft}
-                >
-                  Guardar ahora
-                </Button>
-                <Button
-                  variant="outline-danger"
-                  onClick={discardLocalDraft}
-                  disabled={!hasLocalDraft() && !pendingLocalDraft}
-                >
-                  Descartar información guardada
-                </Button>
-              </div>
+      {pendingLocalDraft ? (
+        <Alert variant="info" className="mb-0 shadow-sm">
+          <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+            <div>
+              Hay información guardada disponible del{' '}
+              <strong>{formatSavedAt(pendingLocalDraft.savedAt)}</strong>.
+              Podés continuar la carga o descartarla.
             </div>
 
-            <Alert variant="warning" className="mb-0">
-              La información se guarda automáticamente en este dispositivo durante la carga.
-              Puede contener datos personales o sensibles. Usar únicamente en tablets autorizadas.
-            </Alert>
-
-            {lastSavedAt ? (
-              <Alert variant="success" className="mb-0">
-                Último guardado: <strong>{formatSavedAt(lastSavedAt)}</strong>.
-              </Alert>
-            ) : (
-              <Alert variant="secondary" className="mb-0">
-                Todavía no hay hora de guardado registrada.
-              </Alert>
-            )}
-
-            {pendingLocalDraft ? (
-              <Alert variant="info" className="mb-0">
-                <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-                  <div>
-                    Hay información guardada disponible del{' '}
-                    <strong>{formatSavedAt(pendingLocalDraft.savedAt)}</strong>.
-                    Podés continuar la carga o descartar la información guardada.
-                  </div>
-
-                  <div className="d-flex flex-column flex-md-row gap-2">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => applyLocalDraft(pendingLocalDraft)}
-                    >
-                      Continuar carga
-                    </Button>
-                    <Button variant="outline-danger" size="sm" onClick={discardLocalDraft}>
-                      Descartar información guardada
-                    </Button>
-                  </div>
-                </div>
-              </Alert>
-            ) : null}
-          </Stack>
-        </Card.Body>
-      </Card>
+            <div className="d-flex flex-column flex-md-row gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => applyLocalDraft(pendingLocalDraft)}
+              >
+                Continuar carga
+              </Button>
+              <Button variant="outline-danger" size="sm" onClick={discardLocalDraft}>
+                Descartar información guardada
+              </Button>
+            </div>
+          </div>
+        </Alert>
+      ) : null}
 
       <SectionStepper
         sections={sections}
