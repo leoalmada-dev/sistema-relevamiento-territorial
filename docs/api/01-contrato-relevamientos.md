@@ -22,7 +22,7 @@ Motivos:
 ## Endpoint principal de borrador
 
 ~~~text
-PATCH /api/relevamientos/{id}/borrador
+PATCH /relevamientos/{id}/borrador
 ~~~
 
 ## Secciones válidas
@@ -113,25 +113,25 @@ Estados futuros pendientes:
 ## Crear relevamiento
 
 ~~~text
-POST /api/relevamientos
+POST /relevamientos
 ~~~
 
 ## Recuperar relevamiento
 
 ~~~text
-GET /api/relevamientos/{id}
+GET /relevamientos/{id}
 ~~~
 
 ## Guardar borrador
 
 ~~~text
-PATCH /api/relevamientos/{id}/borrador
+PATCH /relevamientos/{id}/borrador
 ~~~
 
 ## Finalizar relevamiento
 
 ~~~text
-POST /api/relevamientos/{id}/finalizar
+POST /relevamientos/{id}/finalizar
 ~~~
 
 No se cierra todavía el contrato definitivo de finalización.
