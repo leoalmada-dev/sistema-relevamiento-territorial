@@ -11,7 +11,6 @@ import {
   clearLocalDraft,
   getLocalDraft,
   hasLocalDraft,
-  LOCAL_DRAFT_STORAGE_KEY,
   saveLocalDraft,
 } from '../services/draftStorageService';
 import {
@@ -45,12 +44,12 @@ const sections: RelevamientoSection[] = [
     order: 1,
     title: 'Inicio, predio y resultado de visita',
     description:
-      'Punto de entrada del relevamiento. Define si la entrevista continúa o si aplica corte temprano.',
+      'Inicio del relevamiento. Define si la entrevista continúa o corresponde cerrar la visita.',
     includes: [
-      'Selección de zona, cuadrante y predio con datos de prácticas locales.',
+      'Selección de zona, cuadrante y predio.',
       'Visualización de datos precargados del predio.',
-      'Resultado de visita con corte temprano visual.',
-      'Sin creación real de relevamiento todavía.',
+      'Resultado de visita y continuidad del formulario.',
+      'Confirmación inicial antes de completar el resto del formulario.',
     ],
   },
   {
@@ -58,12 +57,12 @@ const sections: RelevamientoSection[] = [
     order: 2,
     title: 'Vivienda y hogares',
     description:
-      'Sección temporal para datos generales de vivienda y gestión de varios hogares dentro del predio.',
+      'Datos generales de vivienda y gestión de hogares dentro del predio.',
     includes: [
       'Cantidad de hogares declarada.',
       'Vínculo entre hogares.',
       'Observaciones de vivienda.',
-      'Agregar, editar, listar y eliminar hogares en memoria React.',
+      'Agregar, editar, listar y eliminar hogares durante la carga.',
     ],
   },
   {
@@ -71,12 +70,12 @@ const sections: RelevamientoSection[] = [
     order: 3,
     title: 'Personas, contactos, servicios y salud por hogar',
     description:
-      'Sección temporal para personas, contactos, servicios y salud por hogar.',
+      'Datos de integrantes, contactos, servicios y salud asociados a cada hogar.',
     includes: [
       'Seleccionar hogar cargado en Sección 2.',
       'Agregar, editar, listar y eliminar personas por hogar.',
       'Agregar, editar, listar y eliminar contactos por hogar.',
-      'Servicios y salud por hogar en memoria React.',
+      'Servicios y salud asociados a cada hogar.',
     ],
   },
   {
@@ -84,12 +83,12 @@ const sections: RelevamientoSection[] = [
     order: 4,
     title: 'Observaciones, coordenadas y finalización',
     description:
-      'Cierre visual del relevamiento con observaciones generales, ubicación a confirmar y revisión final.',
+      'Cierre del relevamiento con observaciones generales, ubicación a confirmar y revisión final.',
     includes: [
       'Observaciones generales del relevamiento.',
-      'Ubicación a confirmar asociadas al relevamiento completo.',
-      'Revisión final visual.',
-      'Revisión visual sin guardado real.',
+      'Ubicación a confirmar asociada al relevamiento completo.',
+      'Revisión final de la información cargada.',
+      'Confirmación de revisión antes del cierre.',
     ],
   },
 ];
@@ -402,12 +401,12 @@ export function RelevamientoFlowPage() {
           <Row className="align-items-center g-3">
             <Col lg={8}>
               <p className="text-uppercase text-secondary fw-semibold small mb-2">
-                Guardado automático
+                Guardado automáticamente
               </p>
-              <h1 className="h2 mb-2">Flujo visual del relevamiento</h1>
+              <h1 className="h2 mb-2">Formulario de relevamiento territorial</h1>
               <p className="text-secondary mb-0">
-                Flujo visual completo con borrador local único. No hay guardado en servidor,
-                sincronización ni finalización real.
+                Complete el relevamiento por secciones. La información se guarda automáticamente
+                en este dispositivo durante la carga.
               </p>
             </Col>
 
@@ -426,11 +425,11 @@ export function RelevamientoFlowPage() {
             <div className="d-flex flex-column flex-lg-row justify-content-between gap-3">
               <div>
                 <Badge bg="secondary" className="mb-2">
-                  Guardado automático
+                  Guardado automáticamente
                 </Badge>
                 <h2 className="h5 mb-1">{localDraftStatusLabel[draftStatus]}</h2>
                 <p className="text-secondary mb-0">
-                  Key local: <code>{LOCAL_DRAFT_STORAGE_KEY}</code>
+                  La información se guarda en este dispositivo durante la carga.
                 </p>
               </div>
 
@@ -447,24 +446,23 @@ export function RelevamientoFlowPage() {
                   onClick={discardLocalDraft}
                   disabled={!hasLocalDraft() && !pendingLocalDraft}
                 >
-                  Limpiar borrador
+                  Descartar información guardada
                 </Button>
               </div>
             </div>
 
             <Alert variant="warning" className="mb-0">
-              La información se guarda automáticamente en este dispositivo para evitar pérdidas durante la carga.
-              Puede contener datos personales o sensibles. No es guardado en servidor ni
-              offline completo. Su uso real depende de tablets autorizadas y controladas.
+              La información se guarda automáticamente en este dispositivo durante la carga.
+              Puede contener datos personales o sensibles. Usar únicamente en tablets autorizadas.
             </Alert>
 
             {lastSavedAt ? (
               <Alert variant="success" className="mb-0">
-                Último guardado local: <strong>{formatSavedAt(lastSavedAt)}</strong>.
+                Último guardado: <strong>{formatSavedAt(lastSavedAt)}</strong>.
               </Alert>
             ) : (
               <Alert variant="secondary" className="mb-0">
-                Todavía no hay hora de guardado local registrada.
+                Todavía no hay hora de guardado registrada.
               </Alert>
             )}
 
@@ -472,9 +470,9 @@ export function RelevamientoFlowPage() {
               <Alert variant="info" className="mb-0">
                 <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
                   <div>
-                    Hay un borrador local disponible del{' '}
+                    Hay información guardada disponible del{' '}
                     <strong>{formatSavedAt(pendingLocalDraft.savedAt)}</strong>.
-                    Podés continuarlo o descartarlo.
+                    Podés continuar la carga o descartar la información guardada.
                   </div>
 
                   <div className="d-flex flex-column flex-md-row gap-2">
@@ -483,10 +481,10 @@ export function RelevamientoFlowPage() {
                       size="sm"
                       onClick={() => applyLocalDraft(pendingLocalDraft)}
                     >
-                      Continuar borrador
+                      Continuar carga
                     </Button>
                     <Button variant="outline-danger" size="sm" onClick={discardLocalDraft}>
-                      Descartar borrador
+                      Descartar información guardada
                     </Button>
                   </div>
                 </div>

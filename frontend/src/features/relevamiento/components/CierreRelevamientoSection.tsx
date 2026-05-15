@@ -50,7 +50,7 @@ export function CierreRelevamientoSection({
               </Badge>
               <h3 className="h5 mb-1">Cierre del relevamiento</h3>
               <p className="text-secondary mb-0">
-                Datos temporales en memoria React. No hay guardado real ni backend conectado.
+                Complete las observaciones generales antes de revisar la información.
               </p>
             </div>
 
@@ -61,7 +61,7 @@ export function CierreRelevamientoSection({
                 rows={4}
                 value={cierre.observacionesGenerales}
                 onChange={(event) => updateField('observacionesGenerales', event.target.value)}
-                placeholder="Observaciones generales del relevamiento."
+                placeholder="Ingrese observaciones generales del relevamiento."
               />
             </Form.Group>
           </Stack>
@@ -77,13 +77,12 @@ export function CierreRelevamientoSection({
               </Badge>
               <h3 className="h5 mb-1">Ubicación del relevamiento</h3>
               <p className="text-secondary mb-0">
-                A confirmar temporal para preparar la futura captura o confirmación de ubicación.
+                Ingrese la ubicación disponible o déjela pendiente para confirmarla más adelante.
               </p>
             </div>
 
             <Alert variant="warning" className="mb-0">
-              Ingrese o confirme manualmente la ubicación disponible. Esta información se
-              capturan automáticamente.
+              Ingrese o confirme manualmente la ubicación disponible. Esta información podrá verificarse más adelante.
             </Alert>
 
             <Row className="g-3">
@@ -133,7 +132,7 @@ export function CierreRelevamientoSection({
               </Badge>
               <h3 className="h5 mb-1">Resumen previo a finalización</h3>
               <p className="text-secondary mb-0">
-                Resumen visual del estado temporal cargado en el frontend.
+                Resumen de la información cargada para revisión.
               </p>
             </div>
 
@@ -153,14 +152,14 @@ export function CierreRelevamientoSection({
         <Card.Body>
           <Stack gap={3}>
             <div>
-              <h3 className="h5 mb-1">Finalización visual/simulada</h3>
+              <h3 className="h5 mb-1">Revisión y cierre</h3>
               <p className="text-secondary mb-0">
-                Esta acción no guarda datos, no finaliza en backend y no genera registro real.
+                Revise la información antes de marcar la carga como revisada.
               </p>
             </div>
 
             <Alert variant="secondary" className="mb-0">
-              La finalización real queda pendiente para una fase posterior con contrato de guardado.
+              La información queda disponible en este dispositivo hasta que se defina el cierre operativo.
             </Alert>
 
             <Button variant="success" onClick={onFinalizarSimulado}>
@@ -169,7 +168,7 @@ export function CierreRelevamientoSection({
 
             {finalizacionSimulada ? (
               <Alert variant="success" className="mb-0">
-                Revisión visual realizada. La información permanece guardada en este dispositivo.
+                Revisión marcada como completa. La información permanece guardada en este dispositivo.
               </Alert>
             ) : null}
           </Stack>

@@ -27,9 +27,9 @@ export type LocalDraftStatus =
   | 'ERROR_GUARDAR';
 
 export const localDraftStatusLabel: Record<LocalDraftStatus, string> = {
-  SIN_BORRADOR: 'Sin borrador',
+  SIN_BORRADOR: 'Sin información guardada',
   CAMBIOS_PENDIENTES: 'Cambios pendientes',
-  GUARDADO_LOCAL: 'Guardado local',
-  BORRADOR_RECUPERADO: 'Borrador recuperado',
-  ERROR_GUARDAR: 'Error al guardar',
+  GUARDADO_LOCAL: 'Guardado automáticamente',
+  BORRADOR_RECUPERADO: 'Información recuperada',
+  ERROR_GUARDAR: 'Error al guardar la información',
 };
