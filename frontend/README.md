@@ -90,7 +90,7 @@ Crear un archivo `.env` local a partir de `.env.example` cuando se trabaje contr
 
 Valores esperados:
 
-- VITE_API_BASE_URL=https://10.100.0.10/sistema-censo/api/v1
+- VITE_API_BASE_URL=http://10.100.0.10/sistema-censo/api/v1
 - VITE_TERRITORIO_DATA_SOURCE=api
 
 Para trabajar sin red interna se puede usar:
