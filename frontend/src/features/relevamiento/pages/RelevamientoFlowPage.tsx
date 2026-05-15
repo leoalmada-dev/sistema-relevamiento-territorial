@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Card, Col, Row, Stack } from 'react-bootstrap';
 import { CierreRelevamientoSection } from '../components/CierreRelevamientoSection';
 import { PersonasContactosSection } from '../components/PersonasContactosSection';
@@ -122,6 +122,7 @@ export function RelevamientoFlowPage() {
   const [draftStatus, setDraftStatus] = useState<LocalDraftStatus>('SIN_BORRADOR');
   const [lastSavedAt, setLastSavedAt] = useState('');
   const [draftRecoveryChecked, setDraftRecoveryChecked] = useState(false);
+  const sectionStepperRef = useRef<HTMLDivElement | null>(null);
 
   const currentIndex = sections.findIndex((section) => section.id === currentSectionId);
   const currentSection = sections[currentIndex] ?? sections[0];
@@ -385,6 +386,15 @@ export function RelevamientoFlowPage() {
     markDraftPending();
   };
 
+  const scrollToSectionStepper = () => {
+    requestAnimationFrame(() => {
+      sectionStepperRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  };
+
   const goBack = () => {
     if (!canGoBack) {
       return;
@@ -401,6 +411,7 @@ export function RelevamientoFlowPage() {
 
     setCurrentSectionId(sections[currentIndex + 1].id);
     markDraftPending();
+    scrollToSectionStepper();
   };
 
   return (
@@ -465,12 +476,14 @@ export function RelevamientoFlowPage() {
         </Alert>
       ) : null}
 
-      <SectionStepper
-        sections={sections}
-        currentSectionId={currentSection.id}
-        onSelectSection={selectSection}
-        isSectionDisabled={isSectionDisabled}
-      />
+      <div ref={sectionStepperRef}>
+        <SectionStepper
+          sections={sections}
+          currentSectionId={currentSection.id}
+          onSelectSection={selectSection}
+          isSectionDisabled={isSectionDisabled}
+        />
+      </div>
 
       <SectionPlaceholder section={currentSection}>
         {currentSection.id === 'inicio-predio-visita' ? (
