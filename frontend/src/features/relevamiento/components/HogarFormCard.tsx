@@ -26,7 +26,7 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
           <div>
             <strong>Hogar {index + 1}</strong>
             <div className="text-secondary small">
-              Datos temporales en memoria React. Sin persistencia real.
+              Complete los datos básicos del hogar.
             </div>
           </div>
 
@@ -121,7 +121,7 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
                 <Form.Control
                   value={hogar.titularVivienda}
                   onChange={(event) => updateField('titularVivienda', event.target.value)}
-                  placeholder="Nombre o referencia interna temporal."
+                  placeholder="Nombre o referencia del titular si corresponde."
                 />
               </Form.Group>
             </Col>

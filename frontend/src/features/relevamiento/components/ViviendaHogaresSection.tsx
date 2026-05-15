@@ -45,7 +45,7 @@ export function ViviendaHogaresSection({
               </Badge>
               <h3 className="h5 mb-1">Datos generales de vivienda</h3>
               <p className="text-secondary mb-0">
-                Datos temporales en memoria React. No hay guardado local ni backend conectado.
+                Complete los datos generales de vivienda para ordenar la carga de hogares.
               </p>
             </div>
 
@@ -88,7 +88,7 @@ export function ViviendaHogaresSection({
                 onChange={(event) =>
                   updateViviendaField('observacionesVivienda', event.target.value)
                 }
-                placeholder="Registrar observaciones generales de vivienda si corresponde."
+                placeholder="Ingrese observaciones generales de vivienda si corresponde."
               />
             </Form.Group>
           </Stack>
@@ -105,7 +105,7 @@ export function ViviendaHogaresSection({
                 </Badge>
                 <h3 className="h5 mb-1">Hogares dentro del predio</h3>
                 <p className="text-secondary mb-0">
-                  Permite agregar, editar, listar y eliminar hogares en estado temporal.
+                  Permite agregar, editar, listar y eliminar hogares durante la carga.
                 </p>
               </div>
 
