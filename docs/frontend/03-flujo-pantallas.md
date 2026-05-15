@@ -3,7 +3,7 @@
 ## Estado actual de integración territorial
 
 - FE-10A integra lectura territorial real configurable por entorno.
-- Base API documentada: `https://10.100.0.10/sistema-censo/api/v1`.
+- Base API documentada: `http://10.100.0.10/sistema-censo/api/v1`.
 - Rutas integradas:
   - `/zonas`
   - `/zonas/{id}/cuadrantes`

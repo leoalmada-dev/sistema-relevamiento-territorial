@@ -15,18 +15,24 @@ Alinear frontend y backend sobre el flujo mínimo necesario para avanzar en para
 Endpoints borrador:
 
 ```text
-GET /api/zonas
-GET /api/zonas/{id}/cuadrantes
-GET /api/cuadrantes/{id}/predios
-GET /api/predios/{id}
+Base real:
+
+http://10.100.0.10/sistema-censo/api/v1
+
+Recursos relativos:
+
+GET /zonas
+GET /zonas/{id}/cuadrantes
+GET /cuadrantes/{id}/predios
+GET /predios/{id}
 ```
 
 Uso esperado:
 
-- `GET /api/zonas`: listar zonas.
-- `GET /api/zonas/{id}/cuadrantes`: listar cuadrantes de una zona.
-- `GET /api/cuadrantes/{id}/predios`: listar predios de un cuadrante.
-- `GET /api/predios/{id}`: devolver datos del predio para precargar calle, número de puerta, padrón y otros datos disponibles.
+- `GET /zonas`: listar zonas.
+- `GET /zonas/{id}/cuadrantes`: listar cuadrantes de una zona.
+- `GET /cuadrantes/{id}/predios`: listar predios de un cuadrante.
+- `GET /predios/{id}`: devolver datos del predio para precargar calle, número de puerta, padrón y otros datos disponibles.
 
 ## Relevamientos
 

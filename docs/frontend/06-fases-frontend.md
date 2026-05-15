@@ -13,7 +13,7 @@
 - FE-9 completado: borrador local MVP con localStorage.
 - FE-10A completado: integración territorial real configurable por entorno.
 - La lectura territorial puede usar API real o mocks locales según `VITE_TERRITORIO_DATA_SOURCE`.
-- Base API documentada: `https://10.100.0.10/sistema-censo/api/v1`.
+- Base API documentada: `http://10.100.0.10/sistema-censo/api/v1`.
 - Rutas territoriales integradas: `/zonas`, `/zonas/{id}/cuadrantes`, `/cuadrantes/{id}/predios`, `/predios/{id}`.
 - Desde terminal, si hay proxy institucional, puede requerirse `curl --noproxy "*"` para evitar bloqueo sobre rutas internas.
 - Relevamientos, guardado servidor, borrador servidor y finalización real siguen fuera de alcance.
