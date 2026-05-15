@@ -33,6 +33,8 @@ export function ViviendaHogaresSection({
   const tieneCantidadDeclarada = Number.isFinite(cantidadDeclarada) && cantidadDeclarada > 0;
   const cantidadCoincide =
     tieneCantidadDeclarada && cantidadDeclarada === hogares.length;
+  const hogaresPendientes = Math.max(cantidadDeclarada - hogares.length, 0);
+  const hogaresExcedidos = Math.max(hogares.length - cantidadDeclarada, 0);
 
   return (
     <Stack gap={3}>
@@ -116,17 +118,29 @@ export function ViviendaHogaresSection({
               </div>
             </div>
 
-            {tieneCantidadDeclarada ? (
-              <Alert
-                variant={cantidadCoincide ? 'success' : 'warning'}
-                className="mb-0"
-              >
-                Hogares declarados: <strong>{cantidadDeclarada}</strong>. Hogares cargados:{' '}
-                <strong>{hogares.length}</strong>.
-              </Alert>
-            ) : (
+            {!tieneCantidadDeclarada ? (
               <Alert variant="secondary" className="mb-0">
                 Indicá la cantidad declarada y agregá los hogares correspondientes.
+              </Alert>
+            ) : cantidadCoincide ? (
+              <Alert variant="success" className="mb-0">
+                La cantidad de hogares cargados coincide con la cantidad declarada:{' '}
+                <strong>{hogares.length}</strong>.
+              </Alert>
+            ) : cantidadDeclarada > hogares.length ? (
+              <Alert variant="warning" className="mb-0">
+                Faltan cargar <strong>{hogaresPendientes}</strong>{' '}
+                {hogaresPendientes === 1 ? 'hogar' : 'hogares'} para coincidir con la
+                cantidad declarada. Hogares declarados: <strong>{cantidadDeclarada}</strong>.
+                Hogares cargados: <strong>{hogares.length}</strong>.
+              </Alert>
+            ) : (
+              <Alert variant="warning" className="mb-0">
+                Hay <strong>{hogaresExcedidos}</strong>{' '}
+                {hogaresExcedidos === 1 ? 'hogar cargado de más' : 'hogares cargados de más'}.
+                Hogares declarados: <strong>{cantidadDeclarada}</strong>. Hogares cargados:{' '}
+                <strong>{hogares.length}</strong>. Revisá si corresponde ajustar la cantidad
+                declarada o los hogares cargados.
               </Alert>
             )}
 
