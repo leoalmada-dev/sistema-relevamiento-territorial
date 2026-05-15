@@ -39,25 +39,25 @@ Uso esperado:
 Endpoints borrador:
 
 ```text
-POST /api/relevamientos
-GET /api/relevamientos/{id}
-PATCH /api/relevamientos/{id}/borrador
-POST /api/relevamientos/{id}/finalizar
+POST /relevamientos
+GET /relevamientos/{id}
+PATCH /relevamientos/{id}/borrador
+POST /relevamientos/{id}/finalizar
 ```
 
 Uso esperado:
 
-- `POST /api/relevamientos`: crear un relevamiento.
-- `GET /api/relevamientos/{id}`: consultar o recuperar un relevamiento.
-- `PATCH /api/relevamientos/{id}/borrador`: preguardar avance parcial.
-- `POST /api/relevamientos/{id}/finalizar`: guardado final con coordenadas.
+- `POST /relevamientos`: crear un relevamiento.
+- `GET /relevamientos/{id}`: consultar o recuperar un relevamiento.
+- `PATCH /relevamientos/{id}/borrador`: preguardar avance parcial.
+- `POST /relevamientos/{id}/finalizar`: guardado final con coordenadas.
 
 ## Supervisión futura
 
 Endpoint borrador futuro:
 
 ```text
-GET /api/relevamientos?zona=&cuadrante=&grupo=&estado=
+GET /relevamientos?zona=&cuadrante=&grupo=&estado=
 ```
 
 No es prioritario para la primera implementación, pero debe quedar previsto.
@@ -92,7 +92,7 @@ Se define como contrato inicial que el frontend enviará al backend un snapshot 
 Endpoint principal propuesto:
 
 ~~~text
-PATCH /api/relevamientos/{id}/borrador
+PATCH /relevamientos/{id}/borrador
 ~~~
 
 Motivo de la decisión:
@@ -112,10 +112,10 @@ Secciones válidas:
 
 Endpoints candidatos documentados:
 
-- `POST /api/relevamientos`
-- `GET /api/relevamientos/{id}`
-- `PATCH /api/relevamientos/{id}/borrador`
-- `POST /api/relevamientos/{id}/finalizar`
+- `POST /relevamientos`
+- `GET /relevamientos/{id}`
+- `PATCH /relevamientos/{id}/borrador`
+- `POST /relevamientos/{id}/finalizar`
 
 Estados mínimos para MVP:
 

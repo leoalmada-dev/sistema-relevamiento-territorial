@@ -6,9 +6,9 @@ Registrar decisiones abiertas que no deben inventarse durante el desarrollo.
 
 ## Backend/API
 
-- Definir payload de `POST /api/relevamientos`.
-- Definir payload de `PATCH /api/relevamientos/{id}/borrador`.
-- Definir payload de `POST /api/relevamientos/{id}/finalizar`.
+- Definir payload de `POST /relevamientos`.
+- Definir payload de `PATCH /relevamientos/{id}/borrador`.
+- Definir payload de `POST /relevamientos/{id}/finalizar`.
 - Definir estructura de errores.
 - Definir estados finales del relevamiento.
 - Definir si el backend guarda borradores por sección o documento completo.
