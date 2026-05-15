@@ -5,6 +5,46 @@ import type { ResultadoVisitaFormState } from '../types/resultadoVisita';
 import type { PredioDetalle } from '../types/territorio';
 import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
 
+const resultadoVisitaLabels: Record<string, string> = {
+  ENTREVISTA_REALIZADA: 'Entrevista realizada',
+  SE_NIEGA: 'Se niega a brindar información',
+  NO_SE_ENCUENTRA: 'No se encuentra',
+};
+
+const siNoNoSabeLabels: Record<string, string> = {
+  SI: 'Sí',
+  NO: 'No',
+  NO_SABE: 'No sabe',
+};
+
+const formaAccesoLabels: Record<string, string> = {
+  COMPRA: 'Compra',
+  ALQUILER: 'Alquiler',
+  CESION: 'Cesión',
+  OCUPACION: 'Ocupación',
+  OTRO: 'Otro',
+};
+
+const atencionMedicaLabels: Record<string, string> = {
+  ASSE: 'ASSE',
+  PRIVADO: 'Privado',
+  AMBOS: 'Ambos',
+  NINGUNO: 'Ninguno',
+  NO_SABE: 'No sabe',
+};
+
+function formatLabel(
+  value: string | undefined,
+  labels: Record<string, string>,
+  fallback = 'Sin dato',
+) {
+  if (!value) {
+    return fallback;
+  }
+
+  return labels[value] ?? fallback;
+}
+
 type ResumenRelevamientoProps = {
   selectedPredio: PredioDetalle | null;
   resultadoVisita: ResultadoVisitaFormState;
@@ -46,7 +86,7 @@ export function ResumenRelevamiento({
           </ListGroup.Item>
           <ListGroup.Item>
             <strong>Resultado de visita:</strong>{' '}
-            {resultadoVisita.resultado || 'Sin resultado seleccionado'}
+            {formatLabel(resultadoVisita.resultado, resultadoVisitaLabels, 'Sin resultado seleccionado')}
           </ListGroup.Item>
         </ListGroup>
       </Card>
@@ -103,7 +143,7 @@ export function ResumenRelevamiento({
                           </p>
                           <p className="mb-0">
                             <strong>Forma de acceso:</strong>{' '}
-                            {hogar.formaAccesoVivienda || 'Sin dato'}
+                            {formatLabel(hogar.formaAccesoVivienda, formaAccesoLabels)}
                           </p>
                         </Col>
 
@@ -125,15 +165,15 @@ export function ResumenRelevamiento({
                         <Col md={4}>
                           <p className="mb-1">
                             <strong>Luz / agua:</strong>{' '}
-                            {servicios?.tieneLuzAgua || 'Sin dato'}
+                            {formatLabel(servicios?.tieneLuzAgua, siNoNoSabeLabels)}
                           </p>
                           <p className="mb-1">
                             <strong>Cable / internet:</strong>{' '}
-                            {servicios?.tieneCableInternet || 'Sin dato'}
+                            {formatLabel(servicios?.tieneCableInternet, siNoNoSabeLabels)}
                           </p>
                           <p className="mb-0">
                             <strong>Atención médica:</strong>{' '}
-                            {salud?.servicioAtencionMedica || 'Sin dato'}
+                            {formatLabel(salud?.servicioAtencionMedica, atencionMedicaLabels)}
                           </p>
                         </Col>
                       </Row>
