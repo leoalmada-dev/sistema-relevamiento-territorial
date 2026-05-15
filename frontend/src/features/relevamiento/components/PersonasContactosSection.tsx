@@ -84,6 +84,10 @@ export function PersonasContactosSection({
   };
 
   const removePersona = (personaId: string) => {
+    if (!window.confirm('¿Eliminar esta persona? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
     updateDatosHogar({
       ...datosHogar,
       personas: datosHogar.personas.filter((persona) => persona.id !== personaId),
@@ -110,6 +114,10 @@ export function PersonasContactosSection({
   };
 
   const removeContacto = (contactoId: string) => {
+    if (!window.confirm('¿Eliminar este contacto? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
     updateDatosHogar({
       ...datosHogar,
       contactos: datosHogar.contactos.filter((contacto) => contacto.id !== contactoId),
