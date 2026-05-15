@@ -3,6 +3,7 @@ import { Alert, Badge, Button, Card, Col, Form, Row, Stack } from 'react-bootstr
 import { ContactoFormCard } from './ContactoFormCard';
 import { PersonaFormCard } from './PersonaFormCard';
 import { ServiciosSaludSection } from './ServiciosSaludSection';
+import { ConfirmActionModal } from '../../../shared/components/ConfirmActionModal';
 import {
   crearContactoInicial,
   crearPersonaInicial,
@@ -20,12 +21,18 @@ type PersonasContactosSectionProps = {
   onChange: (nextState: PersonasContactosPorHogarState) => void;
 };
 
+type PersonasContactosConfirmAction =
+  | { type: 'remove-persona'; personaId: string }
+  | { type: 'remove-contacto'; contactoId: string };
+
 export function PersonasContactosSection({
   hogares,
   personasContactosPorHogar,
   onChange,
 }: PersonasContactosSectionProps) {
   const [selectedHogarId, setSelectedHogarId] = useState('');
+  const [pendingConfirmAction, setPendingConfirmAction] =
+    useState<PersonasContactosConfirmAction | null>(null);
 
   useEffect(() => {
     if (hogares.length === 0) {
@@ -83,11 +90,11 @@ export function PersonasContactosSection({
     });
   };
 
-  const removePersona = (personaId: string) => {
-    if (!window.confirm('¿Eliminar esta persona? Esta acción no se puede deshacer.')) {
-      return;
-    }
+  const requestRemovePersona = (personaId: string) => {
+    setPendingConfirmAction({ type: 'remove-persona', personaId });
+  };
 
+  const removePersona = (personaId: string) => {
     updateDatosHogar({
       ...datosHogar,
       personas: datosHogar.personas.filter((persona) => persona.id !== personaId),
@@ -113,15 +120,49 @@ export function PersonasContactosSection({
     });
   };
 
-  const removeContacto = (contactoId: string) => {
-    if (!window.confirm('¿Eliminar este contacto? Esta acción no se puede deshacer.')) {
-      return;
-    }
+  const requestRemoveContacto = (contactoId: string) => {
+    setPendingConfirmAction({ type: 'remove-contacto', contactoId });
+  };
 
+  const removeContacto = (contactoId: string) => {
     updateDatosHogar({
       ...datosHogar,
       contactos: datosHogar.contactos.filter((contacto) => contacto.id !== contactoId),
     });
+  };
+
+  const confirmActionContent =
+    pendingConfirmAction?.type === 'remove-persona'
+      ? {
+          title: 'Eliminar persona',
+          message: '¿Eliminar esta persona? Esta acción no se puede deshacer.',
+          confirmLabel: 'Eliminar persona',
+        }
+      : pendingConfirmAction?.type === 'remove-contacto'
+        ? {
+            title: 'Eliminar contacto',
+            message: '¿Eliminar este contacto? Esta acción no se puede deshacer.',
+            confirmLabel: 'Eliminar contacto',
+          }
+        : null;
+
+  const cancelConfirmAction = () => {
+    setPendingConfirmAction(null);
+  };
+
+  const confirmPendingAction = () => {
+    if (!pendingConfirmAction) {
+      return;
+    }
+
+    if (pendingConfirmAction.type === 'remove-persona') {
+      removePersona(pendingConfirmAction.personaId);
+      setPendingConfirmAction(null);
+      return;
+    }
+
+    removeContacto(pendingConfirmAction.contactoId);
+    setPendingConfirmAction(null);
   };
 
   const updateServicios = (servicios: PersonasContactosHogarState['servicios']) => {
@@ -223,7 +264,7 @@ export function PersonasContactosSection({
                     persona={persona}
                     index={index}
                     onChange={updatePersona}
-                    onRemove={removePersona}
+                    onRemove={requestRemovePersona}
                   />
                 ))}
               </Stack>
@@ -277,7 +318,7 @@ export function PersonasContactosSection({
                     contacto={contacto}
                     index={index}
                     onChange={updateContacto}
-                    onRemove={removeContacto}
+                    onRemove={requestRemoveContacto}
                   />
                 ))}
               </Stack>
@@ -295,6 +336,17 @@ export function PersonasContactosSection({
         salud={datosHogar.salud}
         onServiciosChange={updateServicios}
         onSaludChange={updateSalud}
+      />
+
+      <ConfirmActionModal
+        show={Boolean(confirmActionContent)}
+        title={confirmActionContent?.title ?? ''}
+        message={confirmActionContent?.message ?? ''}
+        confirmLabel={confirmActionContent?.confirmLabel}
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmPendingAction}
+        onCancel={cancelConfirmAction}
       />
     </Stack>
   );

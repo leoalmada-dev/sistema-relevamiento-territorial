@@ -7,6 +7,7 @@ import { SectionPlaceholder } from '../components/SectionPlaceholder';
 import { SectionStepper } from '../components/SectionStepper';
 import { TerritorialSelector } from '../components/TerritorialSelector';
 import { ViviendaHogaresSection } from '../components/ViviendaHogaresSection';
+import { ConfirmActionModal } from '../../../shared/components/ConfirmActionModal';
 import {
   clearLocalDraft,
   getLocalDraft,
@@ -103,6 +104,10 @@ function formatSavedAt(savedAt: string) {
   }
 }
 
+type FlowConfirmAction =
+  | { type: 'discard-local-draft' }
+  | { type: 'remove-hogar'; hogarId: string };
+
 export function RelevamientoFlowPage() {
   const [currentSectionId, setCurrentSectionId] =
     useState<RelevamientoSectionId>('inicio-predio-visita');
@@ -122,6 +127,8 @@ export function RelevamientoFlowPage() {
   const [draftStatus, setDraftStatus] = useState<LocalDraftStatus>('SIN_BORRADOR');
   const [lastSavedAt, setLastSavedAt] = useState('');
   const [draftRecoveryChecked, setDraftRecoveryChecked] = useState(false);
+  const [pendingConfirmAction, setPendingConfirmAction] =
+    useState<FlowConfirmAction | null>(null);
   const sectionStepperRef = useRef<HTMLDivElement | null>(null);
 
   const currentIndex = sections.findIndex((section) => section.id === currentSectionId);
@@ -253,11 +260,11 @@ export function RelevamientoFlowPage() {
     setDraftStatus('BORRADOR_RECUPERADO');
   };
 
-  const discardLocalDraft = () => {
-    if (!window.confirm('¿Descartar la información guardada en este dispositivo? Esta acción no se puede deshacer.')) {
-      return;
-    }
+  const requestDiscardLocalDraft = () => {
+    setPendingConfirmAction({ type: 'discard-local-draft' });
+  };
 
+  const discardLocalDraft = () => {
     clearLocalDraft();
     setPendingLocalDraft(null);
     setLastSavedAt('');
@@ -323,15 +330,11 @@ export function RelevamientoFlowPage() {
     markDraftPending();
   };
 
-  const removeHogar = (hogarId: string) => {
-    if (
-      !window.confirm(
-        '¿Eliminar este hogar? También se eliminarán las personas, contactos, servicios y datos de salud cargados para este hogar. Esta acción no se puede deshacer.',
-      )
-    ) {
-      return;
-    }
+  const requestRemoveHogar = (hogarId: string) => {
+    setPendingConfirmAction({ type: 'remove-hogar', hogarId });
+  };
 
+  const removeHogar = (hogarId: string) => {
     setHogares((currentHogares) =>
       currentHogares.filter((hogar) => hogar.id !== hogarId),
     );
@@ -344,6 +347,42 @@ export function RelevamientoFlowPage() {
 
     setFinalizacionSimulada(false);
     markDraftPending();
+  };
+
+  const confirmActionContent =
+    pendingConfirmAction?.type === 'discard-local-draft'
+      ? {
+          title: 'Descartar información guardada',
+          message:
+            '¿Descartar la información guardada en este dispositivo? Esta acción no se puede deshacer.',
+          confirmLabel: 'Descartar',
+        }
+      : pendingConfirmAction?.type === 'remove-hogar'
+        ? {
+            title: 'Eliminar hogar',
+            message:
+              '¿Eliminar este hogar? También se eliminarán las personas, contactos, servicios y datos de salud cargados para este hogar. Esta acción no se puede deshacer.',
+            confirmLabel: 'Eliminar hogar',
+          }
+        : null;
+
+  const cancelConfirmAction = () => {
+    setPendingConfirmAction(null);
+  };
+
+  const confirmPendingAction = () => {
+    if (!pendingConfirmAction) {
+      return;
+    }
+
+    if (pendingConfirmAction.type === 'discard-local-draft') {
+      discardLocalDraft();
+      setPendingConfirmAction(null);
+      return;
+    }
+
+    removeHogar(pendingConfirmAction.hogarId);
+    setPendingConfirmAction(null);
   };
 
   const handlePersonasContactosChange = (nextState: PersonasContactosPorHogarState) => {
@@ -468,7 +507,7 @@ export function RelevamientoFlowPage() {
               >
                 Continuar carga
               </Button>
-              <Button variant="outline-danger" size="sm" onClick={discardLocalDraft}>
+              <Button variant="outline-danger" size="sm" onClick={requestDiscardLocalDraft}>
                 Descartar información guardada
               </Button>
             </div>
@@ -513,7 +552,7 @@ export function RelevamientoFlowPage() {
             onViviendaChange={handleViviendaChange}
             onAddHogar={addHogar}
             onUpdateHogar={updateHogar}
-            onRemoveHogar={removeHogar}
+            onRemoveHogar={requestRemoveHogar}
           />
         ) : null}
 
@@ -569,6 +608,17 @@ export function RelevamientoFlowPage() {
           </div>
         </Card.Body>
       </Card>
+
+      <ConfirmActionModal
+        show={Boolean(confirmActionContent)}
+        title={confirmActionContent?.title ?? ''}
+        message={confirmActionContent?.message ?? ''}
+        confirmLabel={confirmActionContent?.confirmLabel}
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmPendingAction}
+        onCancel={cancelConfirmAction}
+      />
     </Stack>
   );
 }
