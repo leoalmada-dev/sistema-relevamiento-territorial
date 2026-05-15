@@ -44,7 +44,7 @@ export function ResultadoVisitaSelector({ value, onChange }: ResultadoVisitaSele
             </Badge>
             <h3 className="h5 mb-1">Definir continuidad del relevamiento</h3>
             <p className="text-secondary mb-0">
-              Selección temporal del frontend. No representa todavía contrato backend definitivo.
+              Indique el resultado de la visita para continuar o cerrar la carga del predio.
             </p>
           </div>
 
@@ -154,8 +154,7 @@ export function ResultadoVisitaSelector({ value, onChange }: ResultadoVisitaSele
 
           {esCorteTemprano(value.resultado) ? (
             <Alert variant="warning" className="mb-0">
-              Este resultado genera corte temprano. No se continúa con vivienda, hogares,
-              personas, servicios ni salud.
+              Con este resultado no corresponde continuar con vivienda, hogares, personas, servicios ni salud.
             </Alert>
           ) : null}
 

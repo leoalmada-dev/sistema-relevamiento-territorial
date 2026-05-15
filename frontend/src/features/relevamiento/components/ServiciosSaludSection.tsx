@@ -1,4 +1,4 @@
-import { Alert, Badge, Card, Col, Form, Row, Stack } from 'react-bootstrap';
+import { Badge, Card, Col, Form, Row, Stack } from 'react-bootstrap';
 import type { SaludFormState, ServiciosFormState } from '../types/serviciosSalud';
 
 type ServiciosSaludSectionProps = {
@@ -45,7 +45,7 @@ export function ServiciosSaludSection({
               </Badge>
               <h3 className="h5 mb-1">Servicios del hogar</h3>
               <p className="text-secondary mb-0">
-                Datos temporales asociados al hogar seleccionado. No son datos globales.
+                Complete los datos asociados al hogar seleccionado.
               </p>
             </div>
 
@@ -155,13 +155,9 @@ export function ServiciosSaludSection({
               </Badge>
               <h3 className="h5 mb-1">Salud del hogar</h3>
               <p className="text-secondary mb-0">
-                Datos temporales asociados al hogar seleccionado. No son datos globales.
+                Complete los datos asociados al hogar seleccionado.
               </p>
             </div>
-
-            <Alert variant="secondary" className="mb-0">
-              Los nombres de campos son internos del frontend y no representan contrato backend definitivo.
-            </Alert>
 
             <Row className="g-3">
               <Col md={4}>
