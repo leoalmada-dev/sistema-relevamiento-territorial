@@ -307,6 +307,14 @@ export function RelevamientoFlowPage() {
   };
 
   const removeHogar = (hogarId: string) => {
+    if (
+      !window.confirm(
+        '¿Eliminar este hogar? También se eliminarán las personas, contactos, servicios y datos de salud cargados para este hogar. Esta acción no se puede deshacer.',
+      )
+    ) {
+      return;
+    }
+
     setHogares((currentHogares) =>
       currentHogares.filter((hogar) => hogar.id !== hogarId),
     );
