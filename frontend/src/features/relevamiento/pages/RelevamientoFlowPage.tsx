@@ -129,6 +129,11 @@ export function RelevamientoFlowPage() {
   const visitaPermiteContinuar = permiteContinuarFormulario(resultadoVisita.resultado);
   const visitaTieneCorteTemprano = esCorteTemprano(resultadoVisita.resultado);
   const seccionInicialCompleta = Boolean(selectedPredio) && visitaPermiteContinuar;
+  const cantidadHogaresDeclarada = Number(vivienda.cantidadHogaresDeclarada);
+  const cantidadHogaresDeclaradaValida =
+    Number.isFinite(cantidadHogaresDeclarada) && cantidadHogaresDeclarada > 0;
+  const cantidadHogaresCoincide =
+    cantidadHogaresDeclaradaValida && cantidadHogaresDeclarada === hogares.length;
 
   const hasStartedDraft = Boolean(
     selectedPredioId ||
@@ -147,11 +152,16 @@ export function RelevamientoFlowPage() {
   const canGoBack = currentIndex > 0;
   const canGoForward =
     currentIndex < sections.length - 1 &&
-    (currentSection.id !== 'inicio-predio-visita' || seccionInicialCompleta);
+    (currentSection.id !== 'inicio-predio-visita' || seccionInicialCompleta) &&
+    (currentSection.id !== 'vivienda-hogares' || cantidadHogaresCoincide);
 
   const nextSectionTitle = useMemo(() => {
     if (currentSection.id === 'inicio-predio-visita' && visitaTieneCorteTemprano) {
       return 'Corte temprano';
+    }
+
+    if (currentSection.id === 'vivienda-hogares' && !cantidadHogaresCoincide) {
+      return 'Completar hogares declarados';
     }
 
     if (!canGoForward) {
@@ -159,7 +169,13 @@ export function RelevamientoFlowPage() {
     }
 
     return sections[currentIndex + 1]?.title ?? 'Siguiente sección';
-  }, [canGoForward, currentIndex, currentSection.id, visitaTieneCorteTemprano]);
+  }, [
+    canGoForward,
+    cantidadHogaresCoincide,
+    currentIndex,
+    currentSection.id,
+    visitaTieneCorteTemprano,
+  ]);
 
   const buildLocalDraft = (): RelevamientoLocalDraft => ({
     version: 1,
@@ -351,7 +367,11 @@ export function RelevamientoFlowPage() {
       return false;
     }
 
-    return !seccionInicialCompleta;
+    if (section.order === 2) {
+      return !seccionInicialCompleta;
+    }
+
+    return !seccionInicialCompleta || !cantidadHogaresCoincide;
   };
 
   const selectSection = (sectionId: RelevamientoSectionId) => {
@@ -510,6 +530,12 @@ export function RelevamientoFlowPage() {
       {visitaTieneCorteTemprano ? (
         <Alert variant="warning" className="mb-0">
           Con este resultado no corresponde continuar con vivienda, hogares, personas, servicios y salud.
+        </Alert>
+      ) : null}
+
+      {currentSection.id === 'vivienda-hogares' && !cantidadHogaresCoincide ? (
+        <Alert variant="warning" className="mb-0">
+          La cantidad de hogares cargados debe coincidir con la cantidad declarada para continuar.
         </Alert>
       ) : null}
 
