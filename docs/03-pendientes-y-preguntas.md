@@ -55,3 +55,21 @@ Registrar decisiones abiertas que no deben inventarse durante el desarrollo.
 - Gráficas.
 - Acceso externo de Intendencia.
 - Offline completo de varios días.
+
+## Pendientes API-1A — Borrador de relevamiento
+
+Quedan pendientes de definición antes de implementar relevamientos reales:
+
+- cómo se identifica `tablet_id`;
+- cómo se asocia `grupo_operativo_id`;
+- si backend infiere tablet/grupo operativo o si frontend debe enviarlo;
+- si habrá PIN simple y cómo afecta la creación del relevamiento;
+- si `PENDIENTE_REVISITA` entra en MVP;
+- si `ANULADO` entra en MVP;
+- si `SE_NIEGA` y `NO_SE_ENCUENTRA` finalizan el relevamiento o quedan en otro estado;
+- si las coordenadas son obligatorias para todos los casos;
+- qué validaciones son obligatorias al finalizar;
+- si backend normaliza hogares/personas/contactos/servicios/salud al finalizar o conserva inicialmente el JSON;
+- qué errores debe devolver backend ante borrador inválido, sección inválida o relevamiento inexistente.
+
+No cerrar estas decisiones dentro de API-1A sin nuevo contrato.

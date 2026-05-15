@@ -78,3 +78,53 @@ Antes de integrar frontend y backend, se deberá cerrar un contrato más preciso
 - estados;
 - validaciones;
 - reglas de recuperación de borradores.
+
+## API-1A — Contrato base de borrador por secciones
+
+Se define como contrato inicial que el frontend enviará al backend un snapshot completo del borrador actual al avanzar entre secciones.
+
+Endpoint principal propuesto:
+
+~~~text
+PATCH /api/relevamientos/{id}/borrador
+~~~
+
+Motivo de la decisión:
+
+- backend no necesita mergear fragmentos parciales;
+- se reduce riesgo de pérdida de datos;
+- se adapta al flujo actual del frontend;
+- permite recuperar el formulario completo;
+- permite guardar inicialmente en un campo JSON, por ejemplo `borrador_json`.
+
+Secciones válidas:
+
+- `inicio_predio_visita`
+- `vivienda_hogares`
+- `datos_por_hogar`
+- `cierre_finalizacion`
+
+Endpoints candidatos documentados:
+
+- `POST /api/relevamientos`
+- `GET /api/relevamientos/{id}`
+- `PATCH /api/relevamientos/{id}/borrador`
+- `POST /api/relevamientos/{id}/finalizar`
+
+Estados mínimos para MVP:
+
+- `BORRADOR`
+- `FINALIZADO`
+
+Estados futuros pendientes:
+
+- `PENDIENTE_REVISITA`
+- `ANULADO`
+
+Documento específico:
+
+~~~text
+docs/api/01-contrato-relevamientos.md
+~~~
+
+Este contrato no define modelo definitivo de base de datos ni implica que los endpoints ya estén implementados.
