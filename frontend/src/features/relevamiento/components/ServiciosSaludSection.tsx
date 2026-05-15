@@ -34,6 +34,14 @@ export function ServiciosSaludSection({
     });
   };
 
+  const convenioLuzAguaHabilitado = servicios.tieneConvenioLuzAgua === 'SI';
+  const cableInternetHabilitado = servicios.tieneCableInternet === 'SI';
+  const prestadorPrivadoHabilitado =
+    salud.servicioAtencionMedica === 'PRIVADO' || salud.servicioAtencionMedica === 'AMBOS';
+  const centroASSEHabilitado =
+    salud.servicioAtencionMedica === 'ASSE' || salud.servicioAtencionMedica === 'AMBOS';
+  const emergenciaMovilHabilitada = salud.tieneEmergenciaMovil === 'SI';
+
   return (
     <Stack gap={3}>
       <Card className="border-0 bg-light">
@@ -93,7 +101,11 @@ export function ServiciosSaludSection({
                       updateServiciosField('titularConvenioLuzAgua', event.target.value)
                     }
                     placeholder="Titular si corresponde."
+                    disabled={!convenioLuzAguaHabilitado}
                   />
+                  <Form.Text className="text-secondary">
+                    Se habilita cuando indica que tiene convenio.
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
@@ -125,7 +137,11 @@ export function ServiciosSaludSection({
                       updateServiciosField('titularCableInternet', event.target.value)
                     }
                     placeholder="Titular si corresponde."
+                    disabled={!cableInternetHabilitado}
                   />
+                  <Form.Text className="text-secondary">
+                    Se habilita cuando indica que tiene cable o internet.
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
@@ -188,7 +204,11 @@ export function ServiciosSaludSection({
                       updateSaludField('prestadorPrivado', event.target.value)
                     }
                     placeholder="Prestador privado si corresponde."
+                    disabled={!prestadorPrivadoHabilitado}
                   />
+                  <Form.Text className="text-secondary">
+                    Se habilita para atención privada o ambos.
+                  </Form.Text>
                 </Form.Group>
               </Col>
 
@@ -199,7 +219,11 @@ export function ServiciosSaludSection({
                     value={salud.centroASSE}
                     onChange={(event) => updateSaludField('centroASSE', event.target.value)}
                     placeholder="Centro ASSE si corresponde."
+                    disabled={!centroASSEHabilitado}
                   />
+                  <Form.Text className="text-secondary">
+                    Se habilita para ASSE o ambos.
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
@@ -229,7 +253,11 @@ export function ServiciosSaludSection({
                     value={salud.emergenciaMovil}
                     onChange={(event) => updateSaludField('emergenciaMovil', event.target.value)}
                     placeholder="Nombre de emergencia móvil si corresponde."
+                    disabled={!emergenciaMovilHabilitada}
                   />
+                  <Form.Text className="text-secondary">
+                    Se habilita cuando indica que tiene emergencia móvil.
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
