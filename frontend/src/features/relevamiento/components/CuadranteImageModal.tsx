@@ -76,18 +76,18 @@ export function CuadranteImageModal({
   }, [show, imageUrl]);
 
   return (
-    <Modal show={show} onHide={onHide} centered size="xl" fullscreen="md-down">
+    <Modal show={show} onHide={onHide} centered size="xl" fullscreen="xl-down">
       <Modal.Header closeButton>
         <Modal.Title className="h5">
           Imagen de referencia del {cuadranteLabel}
         </Modal.Title>
       </Modal.Header>
 
-      <Modal.Body className="p-2 p-md-3">
+      <Modal.Body className="p-2 p-lg-3">
         {imageUrl && !imageLoadFailed ? (
           <div
             className="bg-light border rounded overflow-hidden"
-            style={{ height: 'min(72vh, 760px)', touchAction: 'none' }}
+            style={{ height: 'min(86dvh, 900px)', touchAction: 'none' }}
           >
             <TransformWrapper initialScale={1} minScale={1} maxScale={5}>
               <TransformComponent
@@ -108,7 +108,7 @@ export function CuadranteImageModal({
                   alt={`Imagen de referencia del ${cuadranteLabel}`}
                   className="img-fluid rounded"
                   style={{
-                    maxHeight: '70vh',
+                    maxHeight: '84dvh',
                     maxWidth: '100%',
                     objectFit: 'contain',
                     userSelect: 'none',
