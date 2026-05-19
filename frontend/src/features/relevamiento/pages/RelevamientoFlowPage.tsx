@@ -675,12 +675,6 @@ export function RelevamientoFlowPage() {
         ) : null}
       </SectionPlaceholder>
 
-      {visitaTieneCorteTemprano ? (
-        <Alert variant="warning" className="mb-0">
-          Con este resultado no corresponde continuar con vivienda, hogares, personas, servicios y salud.
-        </Alert>
-      ) : null}
-
       {currentSection.id === 'vivienda-hogares' && !cantidadHogaresCoincide ? (
         <Alert variant="warning" className="mb-0">
           La cantidad de hogares cargados debe coincidir con la cantidad declarada para continuar.
