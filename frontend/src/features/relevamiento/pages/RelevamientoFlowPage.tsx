@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Card, Col, Row, Stack } from 'react-bootstrap';
 import { CierreRelevamientoSection } from '../components/CierreRelevamientoSection';
+import { CuadranteImageModal } from '../components/CuadranteImageModal';
 import { PersonasContactosSection } from '../components/PersonasContactosSection';
 import { ResultadoVisitaSelector } from '../components/ResultadoVisitaSelector';
 import { SectionPlaceholder } from '../components/SectionPlaceholder';
@@ -30,7 +31,7 @@ import {
   type ResultadoVisitaFormState,
 } from '../types/resultadoVisita';
 import type { RelevamientoSection, RelevamientoSectionId } from '../types/relevamientoFlow';
-import type { PredioDetalle } from '../types/territorio';
+import type { CuadranteOption, PredioDetalle } from '../types/territorio';
 import {
   crearHogarInicial,
   viviendaInicial,
@@ -115,6 +116,8 @@ export function RelevamientoFlowPage() {
     useState<RelevamientoSectionId>('inicio-predio-visita');
   const [selectedPredioId, setSelectedPredioId] = useState('');
   const [selectedPredio, setSelectedPredio] = useState<PredioDetalle | null>(null);
+  const [selectedCuadrante, setSelectedCuadrante] = useState<CuadranteOption | null>(null);
+  const [showCuadranteImageModal, setShowCuadranteImageModal] = useState(false);
   const [resultadoVisita, setResultadoVisita] =
     useState<ResultadoVisitaFormState>(resultadoVisitaInicial);
   const [vivienda, setVivienda] = useState<ViviendaFormState>(viviendaInicial);
@@ -274,6 +277,8 @@ export function RelevamientoFlowPage() {
     setCurrentSectionId(draft.currentSectionId);
     setSelectedPredioId(draft.selectedPredioId);
     setSelectedPredio(draft.selectedPredio);
+    setSelectedCuadrante(null);
+    setShowCuadranteImageModal(false);
     setResultadoVisita(draft.resultadoVisita);
     setVivienda(draft.vivienda);
     setHogares(draft.hogares);
@@ -310,6 +315,14 @@ export function RelevamientoFlowPage() {
     setVivienda(viviendaInicial);
     setHogares([]);
     resetPersonasContactos();
+  };
+
+  const handleCuadranteSelected = (cuadrante: CuadranteOption | null) => {
+    setSelectedCuadrante(cuadrante);
+
+    if (!cuadrante) {
+      setShowCuadranteImageModal(false);
+    }
   };
 
   const handlePredioSelected = (predioId: string, predioDetalle: PredioDetalle | null) => {
@@ -560,6 +573,16 @@ export function RelevamientoFlowPage() {
                   ) : null}
                 </div>
               </Alert>
+
+              <div className="d-grid mt-3">
+                <Button
+                  variant="outline-primary"
+                  onClick={() => setShowCuadranteImageModal(true)}
+                  disabled={!selectedCuadrante}
+                >
+                  Ver imagen del cuadrante
+                </Button>
+              </div>
             </Col>
           </Row>
         </Card.Body>
@@ -625,6 +648,7 @@ export function RelevamientoFlowPage() {
             <TerritorialSelector
               selectedPredioId={selectedPredioId}
               onPredioSelected={handlePredioSelected}
+              onCuadranteSelected={handleCuadranteSelected}
               onRequestTerritorialChange={requestTerritorialChange}
             />
 
@@ -698,6 +722,12 @@ export function RelevamientoFlowPage() {
           </div>
         </Card.Body>
       </Card>
+
+      <CuadranteImageModal
+        show={showCuadranteImageModal}
+        cuadrante={selectedCuadrante}
+        onHide={() => setShowCuadranteImageModal(false)}
+      />
 
       <ConfirmActionModal
         show={Boolean(confirmActionContent)}

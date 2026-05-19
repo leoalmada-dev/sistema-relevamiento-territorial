@@ -17,12 +17,14 @@ import type {
 type TerritorialSelectorProps = {
   selectedPredioId: string;
   onPredioSelected: (predioId: string, predioDetalle: PredioDetalle | null) => void;
+  onCuadranteSelected?: (cuadrante: CuadranteOption | null) => void;
   onRequestTerritorialChange?: (applyChange: () => void) => void;
 };
 
 export function TerritorialSelector({
   selectedPredioId,
   onPredioSelected,
+  onCuadranteSelected,
   onRequestTerritorialChange,
 }: TerritorialSelectorProps) {
   const [zonas, setZonas] = useState<ZonaOption[]>([]);
@@ -98,6 +100,7 @@ export function TerritorialSelector({
       setCuadrantes([]);
       setPredios([]);
       setPredioDetalle(null);
+      onCuadranteSelected?.(null);
       onPredioSelected('', null);
 
       if (!zonaId) {
@@ -122,9 +125,13 @@ export function TerritorialSelector({
 
   const handleCuadranteChange = (cuadranteId: string) => {
     runTerritorialChange(() => {
+      const nextCuadrante =
+        cuadrantes.find((cuadrante) => cuadrante.id === cuadranteId) ?? null;
+
       setSelectedCuadranteId(cuadranteId);
       setPredios([]);
       setPredioDetalle(null);
+      onCuadranteSelected?.(nextCuadrante);
       onPredioSelected('', null);
 
       if (!cuadranteId) {
