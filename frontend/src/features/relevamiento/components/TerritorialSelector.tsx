@@ -17,11 +17,13 @@ import type {
 type TerritorialSelectorProps = {
   selectedPredioId: string;
   onPredioSelected: (predioId: string, predioDetalle: PredioDetalle | null) => void;
+  onRequestTerritorialChange?: (applyChange: () => void) => void;
 };
 
 export function TerritorialSelector({
   selectedPredioId,
   onPredioSelected,
+  onRequestTerritorialChange,
 }: TerritorialSelectorProps) {
   const [zonas, setZonas] = useState<ZonaOption[]>([]);
   const [cuadrantes, setCuadrantes] = useState<CuadranteOption[]>([]);
@@ -80,83 +82,98 @@ export function TerritorialSelector({
     };
   }, []);
 
-  const handleZonaChange = (zonaId: string) => {
-    setSelectedZonaId(zonaId);
-    setSelectedCuadranteId('');
-    setCuadrantes([]);
-    setPredios([]);
-    setPredioDetalle(null);
-    onPredioSelected('', null);
-
-    if (!zonaId) {
+  const runTerritorialChange = (applyChange: () => void) => {
+    if (onRequestTerritorialChange) {
+      onRequestTerritorialChange(applyChange);
       return;
     }
 
-    setLoading(true);
-    setErrorMessage('');
+    applyChange();
+  };
 
-    getCuadrantesByZona(zonaId)
-      .then(setCuadrantes)
-      .catch((error: unknown) => {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : 'No se pudieron cargar los cuadrantes. Verifique la conexión e intente nuevamente.',
-        );
-      })
-      .finally(() => setLoading(false));
+  const handleZonaChange = (zonaId: string) => {
+    runTerritorialChange(() => {
+      setSelectedZonaId(zonaId);
+      setSelectedCuadranteId('');
+      setCuadrantes([]);
+      setPredios([]);
+      setPredioDetalle(null);
+      onPredioSelected('', null);
+
+      if (!zonaId) {
+        return;
+      }
+
+      setLoading(true);
+      setErrorMessage('');
+
+      getCuadrantesByZona(zonaId)
+        .then(setCuadrantes)
+        .catch((error: unknown) => {
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : 'No se pudieron cargar los cuadrantes. Verifique la conexión e intente nuevamente.',
+          );
+        })
+        .finally(() => setLoading(false));
+    });
   };
 
   const handleCuadranteChange = (cuadranteId: string) => {
-    setSelectedCuadranteId(cuadranteId);
-    setPredios([]);
-    setPredioDetalle(null);
-    onPredioSelected('', null);
+    runTerritorialChange(() => {
+      setSelectedCuadranteId(cuadranteId);
+      setPredios([]);
+      setPredioDetalle(null);
+      onPredioSelected('', null);
 
-    if (!cuadranteId) {
-      return;
-    }
+      if (!cuadranteId) {
+        return;
+      }
 
-    setLoading(true);
-    setErrorMessage('');
+      setLoading(true);
+      setErrorMessage('');
 
-    getPrediosByCuadrante(cuadranteId)
-      .then(setPredios)
-      .catch((error: unknown) => {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : 'No se pudieron cargar los predios. Verifique la conexión e intente nuevamente.',
-        );
-      })
-      .finally(() => setLoading(false));
+      getPrediosByCuadrante(cuadranteId)
+        .then(setPredios)
+        .catch((error: unknown) => {
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : 'No se pudieron cargar los predios. Verifique la conexión e intente nuevamente.',
+          );
+        })
+        .finally(() => setLoading(false));
+    });
   };
 
   const handlePredioChange = (predioId: string) => {
-    setPredioDetalle(null);
-    onPredioSelected(predioId, null);
+    runTerritorialChange(() => {
+      setPredioDetalle(null);
+      onPredioSelected(predioId, null);
 
-    if (!predioId) {
-      return;
-    }
+      if (!predioId) {
+        return;
+      }
 
-    setLoading(true);
-    setErrorMessage('');
+      setLoading(true);
+      setErrorMessage('');
 
-    getPredioById(predioId)
-      .then((nextPredioDetalle) => {
-        setPredioDetalle(nextPredioDetalle);
-        onPredioSelected(predioId, nextPredioDetalle);
-      })
-      .catch((error: unknown) => {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : 'No se pudo cargar el detalle del predio. Verifique la conexión e intente nuevamente.',
-        );
-        onPredioSelected(predioId, null);
-      })
-      .finally(() => setLoading(false));
+      getPredioById(predioId)
+        .then((nextPredioDetalle) => {
+          setPredioDetalle(nextPredioDetalle);
+          onPredioSelected(predioId, nextPredioDetalle);
+        })
+        .catch((error: unknown) => {
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : 'No se pudo cargar el detalle del predio. Verifique la conexión e intente nuevamente.',
+          );
+          onPredioSelected(predioId, null);
+        })
+        .finally(() => setLoading(false));
+    });
   };
 
   return (

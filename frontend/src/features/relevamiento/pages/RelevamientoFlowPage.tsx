@@ -106,7 +106,9 @@ function formatSavedAt(savedAt: string) {
 
 type FlowConfirmAction =
   | { type: 'discard-local-draft' }
-  | { type: 'remove-hogar'; hogarId: string };
+  | { type: 'remove-hogar'; hogarId: string }
+  | { type: 'change-territorial-selection'; applyChange: () => void }
+  | { type: 'change-resultado-corte-temprano'; nextResultado: ResultadoVisitaFormState };
 
 export function RelevamientoFlowPage() {
   const [currentSectionId, setCurrentSectionId] =
@@ -155,6 +157,29 @@ export function RelevamientoFlowPage() {
       cierre.latitud ||
       cierre.longitud ||
       cierre.horaCaptura,
+  );
+
+  const hasPostVisitData = Boolean(
+    vivienda.cantidadHogaresDeclarada ||
+      vivienda.vinculoEntreHogares ||
+      vivienda.observacionesVivienda ||
+      hogares.length > 0 ||
+      Object.keys(personasContactosPorHogar).length > 0 ||
+      cierre.observacionesGenerales ||
+      cierre.latitud ||
+      cierre.longitud ||
+      cierre.horaCaptura ||
+      finalizacionSimulada,
+  );
+
+  const hasInitialChangeRiskData = Boolean(
+    resultadoVisita.resultado ||
+      resultadoVisita.motivoNegativa ||
+      resultadoVisita.referencia ||
+      resultadoVisita.contacto ||
+      resultadoVisita.horario ||
+      resultadoVisita.observacion ||
+      hasPostVisitData,
   );
 
   const canGoBack = currentIndex > 0;
@@ -296,7 +321,16 @@ export function RelevamientoFlowPage() {
     markDraftPending();
   };
 
-  const handleResultadoVisitaChange = (nextResultado: ResultadoVisitaFormState) => {
+  const requestTerritorialChange = (applyChange: () => void) => {
+    if (!hasInitialChangeRiskData) {
+      applyChange();
+      return;
+    }
+
+    setPendingConfirmAction({ type: 'change-territorial-selection', applyChange });
+  };
+
+  const applyResultadoVisitaChange = (nextResultado: ResultadoVisitaFormState) => {
     setResultadoVisita(nextResultado);
     markDraftPending();
 
@@ -304,6 +338,21 @@ export function RelevamientoFlowPage() {
       resetViviendaHogares();
       setCurrentSectionId('inicio-predio-visita');
     }
+  };
+
+  const handleResultadoVisitaChange = (nextResultado: ResultadoVisitaFormState) => {
+    const requiresCutoffConfirmation =
+      !permiteContinuarFormulario(nextResultado.resultado) && hasPostVisitData;
+
+    if (requiresCutoffConfirmation) {
+      setPendingConfirmAction({
+        type: 'change-resultado-corte-temprano',
+        nextResultado,
+      });
+      return;
+    }
+
+    applyResultadoVisitaChange(nextResultado);
   };
 
   const handleViviendaChange = (nextVivienda: ViviendaFormState) => {
@@ -364,7 +413,21 @@ export function RelevamientoFlowPage() {
               '¿Eliminar este hogar? También se eliminarán las personas, contactos, servicios y datos de salud cargados para este hogar. Esta acción no se puede deshacer.',
             confirmLabel: 'Eliminar hogar',
           }
-        : null;
+        : pendingConfirmAction?.type === 'change-territorial-selection'
+          ? {
+              title: 'Cambiar selección territorial',
+              message:
+                'Cambiar la selección territorial reiniciará los datos cargados del relevamiento actual. Esta acción no se puede deshacer.',
+              confirmLabel: 'Cambiar selección',
+            }
+          : pendingConfirmAction?.type === 'change-resultado-corte-temprano'
+            ? {
+                title: 'Cerrar carga por resultado de visita',
+                message:
+                  'Este resultado cerrará la carga del formulario y eliminará vivienda, hogares, personas, contactos, servicios, salud y datos de cierre cargados. Esta acción no se puede deshacer.',
+                confirmLabel: 'Aplicar resultado',
+              }
+            : null;
 
   const cancelConfirmAction = () => {
     setPendingConfirmAction(null);
@@ -381,7 +444,19 @@ export function RelevamientoFlowPage() {
       return;
     }
 
-    removeHogar(pendingConfirmAction.hogarId);
+    if (pendingConfirmAction.type === 'remove-hogar') {
+      removeHogar(pendingConfirmAction.hogarId);
+      setPendingConfirmAction(null);
+      return;
+    }
+
+    if (pendingConfirmAction.type === 'change-territorial-selection') {
+      pendingConfirmAction.applyChange();
+      setPendingConfirmAction(null);
+      return;
+    }
+
+    applyResultadoVisitaChange(pendingConfirmAction.nextResultado);
     setPendingConfirmAction(null);
   };
 
@@ -550,6 +625,7 @@ export function RelevamientoFlowPage() {
             <TerritorialSelector
               selectedPredioId={selectedPredioId}
               onPredioSelected={handlePredioSelected}
+              onRequestTerritorialChange={requestTerritorialChange}
             />
 
             {selectedPredio ? (
