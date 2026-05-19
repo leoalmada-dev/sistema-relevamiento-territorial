@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { Alert, Button, Modal } from 'react-bootstrap';
 import type { CuadranteOption } from '../types/territorio';
@@ -76,7 +76,14 @@ export function CuadranteImageModal({
   }, [show, imageUrl]);
 
   return (
-    <Modal show={show} onHide={onHide} centered size="xl" fullscreen="xl-down">
+    <Modal
+      show={show}
+      onHide={onHide}
+      centered
+      size="xl"
+      fullscreen="sm-down"
+      style={{ '--bs-modal-width': 'min(96vw, 1180px)' } as CSSProperties}
+    >
       <Modal.Header closeButton>
         <Modal.Title className="h5">
           Imagen de referencia del {cuadranteLabel}
@@ -87,7 +94,7 @@ export function CuadranteImageModal({
         {imageUrl && !imageLoadFailed ? (
           <div
             className="bg-light border rounded overflow-hidden"
-            style={{ height: 'min(86dvh, 900px)', touchAction: 'none' }}
+            style={{ height: 'min(78dvh, 820px)', touchAction: 'none' }}
           >
             <TransformWrapper initialScale={1} minScale={1} maxScale={5}>
               <TransformComponent
@@ -108,7 +115,7 @@ export function CuadranteImageModal({
                   alt={`Imagen de referencia del ${cuadranteLabel}`}
                   className="img-fluid rounded"
                   style={{
-                    maxHeight: '84dvh',
+                    maxHeight: '76dvh',
                     maxWidth: '100%',
                     objectFit: 'contain',
                     userSelect: 'none',
