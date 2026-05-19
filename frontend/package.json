@@ -12,7 +12,8 @@
     "bootstrap": "latest",
     "react": "latest",
     "react-bootstrap": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "react-zoom-pan-pinch": "^4.0.3"
   },
   "devDependencies": {
     "@types/react": "latest",

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import { Alert, Button, Modal } from 'react-bootstrap';
 import type { CuadranteOption } from '../types/territorio';
 
@@ -75,21 +76,50 @@ export function CuadranteImageModal({
   }, [show, imageUrl]);
 
   return (
-    <Modal show={show} onHide={onHide} centered size="lg">
+    <Modal show={show} onHide={onHide} centered size="xl" fullscreen="md-down">
       <Modal.Header closeButton>
         <Modal.Title className="h5">
           Imagen de referencia del {cuadranteLabel}
         </Modal.Title>
       </Modal.Header>
 
-      <Modal.Body>
+      <Modal.Body className="p-2 p-md-3">
         {imageUrl && !imageLoadFailed ? (
-          <img
-            src={imageUrl}
-            alt={`Imagen de referencia del ${cuadranteLabel}`}
-            className="img-fluid rounded border"
-            onError={() => setImageLoadFailed(true)}
-          />
+          <div
+            className="bg-light border rounded overflow-hidden"
+            style={{ height: 'min(72vh, 760px)', touchAction: 'none' }}
+          >
+            <TransformWrapper initialScale={1} minScale={1} maxScale={5}>
+              <TransformComponent
+                wrapperStyle={{
+                  width: '100%',
+                  height: '100%',
+                }}
+                contentStyle={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <img
+                  src={imageUrl}
+                  alt={`Imagen de referencia del ${cuadranteLabel}`}
+                  className="img-fluid rounded"
+                  style={{
+                    maxHeight: '70vh',
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    userSelect: 'none',
+                    touchAction: 'none',
+                  }}
+                  draggable={false}
+                  onError={() => setImageLoadFailed(true)}
+                />
+              </TransformComponent>
+            </TransformWrapper>
+          </div>
         ) : (
           <Alert variant="secondary" className="mb-0">
             {NO_IMAGE_MESSAGE}
