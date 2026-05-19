@@ -527,6 +527,26 @@ export function RelevamientoFlowPage() {
       <SectionPlaceholder section={currentSection}>
         {currentSection.id === 'inicio-predio-visita' ? (
           <Stack gap={3}>
+            <Card className="border-0 bg-light">
+              <Card.Body>
+                <p className="text-uppercase text-secondary fw-semibold small mb-2">
+                  Información institucional del operativo
+                </p>
+                <h3 className="h5 mb-2">
+                  Propuesta de relevamiento Boix y Merino – 2026 (revisado Convivencia y DDSS)
+                </h3>
+                <p className="text-secondary mb-0">
+                  Desde la última asignación de viviendas por realojos y por regularizaciones
+                  (2012), pasó un tiempo considerable, por lo que es clave conocer cómo ha
+                  evolucionado la integración familiar de las casas del barrio, para esto tener
+                  una foto de las familias y las casas es vital. Para actualizar la información
+                  es necesario conocer la situación actual a través del presente cuestionario. La
+                  IM está trabajando en la re-activación del proceso de regularización del
+                  barrio, con el objetivo de avanzar en el proceso de regularización.
+                </p>
+              </Card.Body>
+            </Card>
+
             <TerritorialSelector
               selectedPredioId={selectedPredioId}
               onPredioSelected={handlePredioSelected}
