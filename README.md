@@ -19,3 +19,21 @@ backend/
 ## Regla de trabajo
 
 Después del primer commit inicial en `main`, todo cambio deberá hacerse en una rama nueva y mediante Pull Request hacia `main`.
+
+## Publicación frontend en GitHub Pages
+
+El frontend puede publicarse como sitio estático en GitHub Pages mediante GitHub Actions.
+
+La publicación pública debe usar datos mock y no debe depender de backend real, API interna, credenciales, PIN real, tablet/grupo operativo real ni datos reales.
+
+Configuración manual posterior al merge:
+
+~~~text
+Settings → Pages → Build and deployment → Source: GitHub Actions
+~~~
+
+URL esperada:
+
+~~~text
+https://leoalmada-dev.github.io/sistema-relevamiento-territorial/
+~~~
