@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Button, Card, Col, Row, Stack } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Modal, Row, Stack } from 'react-bootstrap';
 import { CierreRelevamientoSection } from '../components/CierreRelevamientoSection';
 import { CuadranteImageModal } from '../components/CuadranteImageModal';
 import { PersonasContactosSection } from '../components/PersonasContactosSection';
@@ -109,7 +109,8 @@ type FlowConfirmAction =
   | { type: 'discard-local-draft' }
   | { type: 'remove-hogar'; hogarId: string }
   | { type: 'change-territorial-selection'; applyChange: () => void }
-  | { type: 'change-resultado-corte-temprano'; nextResultado: ResultadoVisitaFormState };
+  | { type: 'change-resultado-corte-temprano'; nextResultado: ResultadoVisitaFormState }
+  | { type: 'finalize-relevamiento' };
 
 export function RelevamientoFlowPage() {
   const [currentSectionId, setCurrentSectionId] =
@@ -172,8 +173,7 @@ export function RelevamientoFlowPage() {
       cierre.observacionesGenerales ||
       cierre.latitud ||
       cierre.longitud ||
-      cierre.horaCaptura ||
-      finalizacionCompletada,
+      cierre.horaCaptura,
   );
 
   const hasInitialChangeRiskData = Boolean(
@@ -442,7 +442,14 @@ export function RelevamientoFlowPage() {
                   'Este resultado cerrará la carga del formulario y eliminará vivienda, hogares, personas, contactos, servicios, salud y datos de cierre cargados. Esta acción no se puede deshacer.',
                 confirmLabel: 'Aplicar resultado',
               }
-            : null;
+            : pendingConfirmAction?.type === 'finalize-relevamiento'
+              ? {
+                  title: 'Finalizar relevamiento',
+                  message:
+                    'Se guardará la información cargada y se iniciará un nuevo formulario. Esta acción no se puede deshacer.',
+                  confirmLabel: 'Finalizar relevamiento',
+                }
+              : null;
 
   const cancelConfirmAction = () => {
     setPendingConfirmAction(null);
@@ -467,6 +474,12 @@ export function RelevamientoFlowPage() {
 
     if (pendingConfirmAction.type === 'change-territorial-selection') {
       pendingConfirmAction.applyChange();
+      setPendingConfirmAction(null);
+      return;
+    }
+
+    if (pendingConfirmAction.type === 'finalize-relevamiento') {
+      finalizarRelevamiento();
       setPendingConfirmAction(null);
       return;
     }
@@ -506,9 +519,13 @@ export function RelevamientoFlowPage() {
     setTerritorialSelectorKey((currentKey) => currentKey + 1);
   };
 
-  const handleFinalizarRelevamiento = () => {
+  const finalizarRelevamiento = () => {
     resetRelevamiento();
     setFinalizacionCompletada(true);
+  };
+
+  const handleFinalizarRelevamiento = () => {
+    setPendingConfirmAction({ type: 'finalize-relevamiento' });
   };
 
   const isSectionDisabled = (section: RelevamientoSection) => {
@@ -750,6 +767,26 @@ export function RelevamientoFlowPage() {
         cuadrante={selectedCuadrante}
         onHide={() => setShowCuadranteImageModal(false)}
       />
+
+      <Modal
+        show={finalizacionCompletada}
+        onHide={() => setFinalizacionCompletada(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="h5">Relevamiento finalizado</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          El relevamiento fue guardado correctamente.
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button variant="primary" onClick={() => setFinalizacionCompletada(false)}>
+            Aceptar
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <ConfirmActionModal
         show={Boolean(confirmActionContent)}
