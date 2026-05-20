@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Button, Card, Col, Row, Stack } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Modal, Row, Stack } from 'react-bootstrap';
 import { CierreRelevamientoSection } from '../components/CierreRelevamientoSection';
 import { CuadranteImageModal } from '../components/CuadranteImageModal';
 import { PersonasContactosSection } from '../components/PersonasContactosSection';
@@ -109,7 +109,8 @@ type FlowConfirmAction =
   | { type: 'discard-local-draft' }
   | { type: 'remove-hogar'; hogarId: string }
   | { type: 'change-territorial-selection'; applyChange: () => void }
-  | { type: 'change-resultado-corte-temprano'; nextResultado: ResultadoVisitaFormState };
+  | { type: 'change-resultado-corte-temprano'; nextResultado: ResultadoVisitaFormState }
+  | { type: 'finalize-relevamiento' };
 
 export function RelevamientoFlowPage() {
   const [currentSectionId, setCurrentSectionId] =
@@ -126,7 +127,8 @@ export function RelevamientoFlowPage() {
     useState<PersonasContactosPorHogarState>({});
   const [cierre, setCierre] =
     useState<CierreRelevamientoFormState>(cierreRelevamientoInicial);
-  const [finalizacionSimulada, setFinalizacionSimulada] = useState(false);
+  const [finalizacionCompletada, setFinalizacionCompletada] = useState(false);
+  const [territorialSelectorKey, setTerritorialSelectorKey] = useState(0);
   const [pendingLocalDraft, setPendingLocalDraft] =
     useState<RelevamientoLocalDraft | null>(null);
   const [draftStatus, setDraftStatus] = useState<LocalDraftStatus>('SIN_BORRADOR');
@@ -171,8 +173,7 @@ export function RelevamientoFlowPage() {
       cierre.observacionesGenerales ||
       cierre.latitud ||
       cierre.longitud ||
-      cierre.horaCaptura ||
-      finalizacionSimulada,
+      cierre.horaCaptura,
   );
 
   const hasInitialChangeRiskData = Boolean(
@@ -224,10 +225,11 @@ export function RelevamientoFlowPage() {
     hogares,
     personasContactosPorHogar,
     cierre,
-    finalizacionSimulada,
+    finalizacionSimulada: finalizacionCompletada,
   });
 
   const markDraftPending = () => {
+    setFinalizacionCompletada(false);
     setDraftStatus('CAMBIOS_PENDIENTES');
   };
 
@@ -262,7 +264,7 @@ export function RelevamientoFlowPage() {
     cierre,
     currentSectionId,
     draftRecoveryChecked,
-    finalizacionSimulada,
+    finalizacionCompletada,
     hasStartedDraft,
     hogares,
     pendingLocalDraft,
@@ -284,7 +286,7 @@ export function RelevamientoFlowPage() {
     setHogares(draft.hogares);
     setPersonasContactosPorHogar(draft.personasContactosPorHogar);
     setCierre(draft.cierre);
-    setFinalizacionSimulada(draft.finalizacionSimulada);
+    setFinalizacionCompletada(draft.finalizacionSimulada);
     setLastSavedAt(draft.savedAt);
     setPendingLocalDraft(null);
     setDraftStatus('BORRADOR_RECUPERADO');
@@ -303,7 +305,7 @@ export function RelevamientoFlowPage() {
 
   const resetCierre = () => {
     setCierre(cierreRelevamientoInicial);
-    setFinalizacionSimulada(false);
+    setFinalizacionCompletada(false);
   };
 
   const resetPersonasContactos = () => {
@@ -378,7 +380,7 @@ export function RelevamientoFlowPage() {
       ...currentHogares,
       crearHogarInicial(currentHogares.length + 1),
     ]);
-    setFinalizacionSimulada(false);
+    setFinalizacionCompletada(false);
     markDraftPending();
   };
 
@@ -388,7 +390,7 @@ export function RelevamientoFlowPage() {
         hogar.id === updatedHogar.id ? updatedHogar : hogar,
       ),
     );
-    setFinalizacionSimulada(false);
+    setFinalizacionCompletada(false);
     markDraftPending();
   };
 
@@ -407,7 +409,7 @@ export function RelevamientoFlowPage() {
       return nextState;
     });
 
-    setFinalizacionSimulada(false);
+    setFinalizacionCompletada(false);
     markDraftPending();
   };
 
@@ -440,7 +442,14 @@ export function RelevamientoFlowPage() {
                   'Este resultado cerrará la carga del formulario y eliminará vivienda, hogares, personas, contactos, servicios, salud y datos de cierre cargados. Esta acción no se puede deshacer.',
                 confirmLabel: 'Aplicar resultado',
               }
-            : null;
+            : pendingConfirmAction?.type === 'finalize-relevamiento'
+              ? {
+                  title: 'Finalizar relevamiento',
+                  message:
+                    'Se guardará la información cargada y se iniciará un nuevo formulario. Esta acción no se puede deshacer.',
+                  confirmLabel: 'Finalizar relevamiento',
+                }
+              : null;
 
   const cancelConfirmAction = () => {
     setPendingConfirmAction(null);
@@ -469,25 +478,54 @@ export function RelevamientoFlowPage() {
       return;
     }
 
+    if (pendingConfirmAction.type === 'finalize-relevamiento') {
+      finalizarRelevamiento();
+      setPendingConfirmAction(null);
+      return;
+    }
+
     applyResultadoVisitaChange(pendingConfirmAction.nextResultado);
     setPendingConfirmAction(null);
   };
 
   const handlePersonasContactosChange = (nextState: PersonasContactosPorHogarState) => {
     setPersonasContactosPorHogar(nextState);
-    setFinalizacionSimulada(false);
+    setFinalizacionCompletada(false);
     markDraftPending();
   };
 
   const handleCierreChange = (nextCierre: CierreRelevamientoFormState) => {
     setCierre(nextCierre);
-    setFinalizacionSimulada(false);
+    setFinalizacionCompletada(false);
     markDraftPending();
   };
 
-  const handleFinalizarSimulado = () => {
-    setFinalizacionSimulada(true);
-    markDraftPending();
+  const resetRelevamiento = () => {
+    clearLocalDraft();
+    setCurrentSectionId('inicio-predio-visita');
+    setSelectedPredioId('');
+    setSelectedPredio(null);
+    setSelectedCuadrante(null);
+    setShowCuadranteImageModal(false);
+    setResultadoVisita(resultadoVisitaInicial);
+    setVivienda(viviendaInicial);
+    setHogares([]);
+    setPersonasContactosPorHogar({});
+    setCierre(cierreRelevamientoInicial);
+    setPendingLocalDraft(null);
+    setLastSavedAt('');
+    setDraftStatus('SIN_BORRADOR');
+    setPendingConfirmAction(null);
+    setTerritorialSelectorKey((currentKey) => currentKey + 1);
+  };
+
+  const finalizarRelevamiento = () => {
+    resetRelevamiento();
+    setFinalizacionCompletada(true);
+  };
+
+  const handleFinalizarRelevamiento = () => {
+    setPendingConfirmAction({ type: 'finalize-relevamiento' });
   };
 
   const isSectionDisabled = (section: RelevamientoSection) => {
@@ -646,6 +684,7 @@ export function RelevamientoFlowPage() {
             </Card>
 
             <TerritorialSelector
+              key={territorialSelectorKey}
               selectedPredioId={selectedPredioId}
               onPredioSelected={handlePredioSelected}
               onCuadranteSelected={handleCuadranteSelected}
@@ -692,9 +731,9 @@ export function RelevamientoFlowPage() {
             vivienda={vivienda}
             hogares={hogares}
             personasContactosPorHogar={personasContactosPorHogar}
-            finalizacionSimulada={finalizacionSimulada}
+            finalizacionCompletada={finalizacionCompletada}
             onCierreChange={handleCierreChange}
-            onFinalizarSimulado={handleFinalizarSimulado}
+            onFinalizarRelevamiento={handleFinalizarRelevamiento}
           />
         ) : null}
       </SectionPlaceholder>
@@ -728,6 +767,26 @@ export function RelevamientoFlowPage() {
         cuadrante={selectedCuadrante}
         onHide={() => setShowCuadranteImageModal(false)}
       />
+
+      <Modal
+        show={finalizacionCompletada}
+        onHide={() => setFinalizacionCompletada(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="h5">Relevamiento finalizado</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          El relevamiento fue guardado correctamente.
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button variant="primary" onClick={() => setFinalizacionCompletada(false)}>
+            Aceptar
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <ConfirmActionModal
         show={Boolean(confirmActionContent)}
