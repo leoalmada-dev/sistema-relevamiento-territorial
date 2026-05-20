@@ -112,3 +112,25 @@ La integración real actual cubre únicamente lectura territorial:
 Nota operativa: si se prueba la API desde terminal en un equipo con proxy, puede ser necesario usar curl con --noproxy "*" para evitar bloqueo Fortinet sobre rutas internas.
 
 Relevamientos, guardado servidor, borrador servidor y finalización real siguen fuera de alcance.
+
+## Publicación en GitHub Pages
+
+El frontend puede publicarse como sitio estático usando GitHub Pages.
+
+Para la publicación pública se debe construir en modo `github-pages`, usando datos mock y sin depender de la red interna.
+
+Valores esperados para el build público:
+
+~~~text
+VITE_TERRITORIO_DATA_SOURCE=mock
+VITE_API_BASE_URL=
+VITE_CUADRANTE_IMAGE_BASE_URL=
+~~~
+
+La base pública esperada para Vite es:
+
+~~~text
+/sistema-relevamiento-territorial/
+~~~
+
+El build público no debe consumir la API interna 10.100.x.x ni imágenes internas. Si no se configura base de imágenes, el visualizador de cuadrante muestra el mensaje de imagen no disponible.
