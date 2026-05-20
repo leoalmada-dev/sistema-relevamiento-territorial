@@ -13,9 +13,9 @@ type CierreRelevamientoSectionProps = {
   vivienda: ViviendaFormState;
   hogares: HogarFormState[];
   personasContactosPorHogar: PersonasContactosPorHogarState;
-  finalizacionSimulada: boolean;
+  finalizacionCompletada: boolean;
   onCierreChange: (cierre: CierreRelevamientoFormState) => void;
-  onFinalizarSimulado: () => void;
+  onFinalizarRelevamiento: () => void;
 };
 
 export function CierreRelevamientoSection({
@@ -25,9 +25,9 @@ export function CierreRelevamientoSection({
   vivienda,
   hogares,
   personasContactosPorHogar,
-  finalizacionSimulada,
+  finalizacionCompletada,
   onCierreChange,
-  onFinalizarSimulado,
+  onFinalizarRelevamiento,
 }: CierreRelevamientoSectionProps) {
   const updateField = <Field extends keyof CierreRelevamientoFormState>(
     field: Field,
@@ -159,16 +159,16 @@ export function CierreRelevamientoSection({
             </div>
 
             <Alert variant="secondary" className="mb-0">
-              La información queda disponible en este dispositivo hasta que se defina el cierre operativo.
+              Revise la información antes de finalizar el relevamiento.
             </Alert>
 
-            <Button variant="success" onClick={onFinalizarSimulado}>
-              Marcar revisión como completa
+            <Button variant="success" onClick={onFinalizarRelevamiento}>
+              Finalizar relevamiento
             </Button>
 
-            {finalizacionSimulada ? (
+            {finalizacionCompletada ? (
               <Alert variant="success" className="mb-0">
-                Revisión marcada como completa. La información permanece guardada en este dispositivo.
+                Información guardada correctamente.
               </Alert>
             ) : null}
           </Stack>
