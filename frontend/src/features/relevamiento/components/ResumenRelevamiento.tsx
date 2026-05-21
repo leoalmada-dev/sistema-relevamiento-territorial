@@ -76,12 +76,6 @@ export function ResumenRelevamiento({
               : 'Sin predio seleccionado'}
           </ListGroup.Item>
           <ListGroup.Item>
-          </ListGroup.Item>
-          <ListGroup.Item>
-          </ListGroup.Item>
-          <ListGroup.Item>
-          </ListGroup.Item>
-          <ListGroup.Item>
             <strong>Resultado de visita:</strong>{' '}
             {formatLabel(resultadoVisita.resultado, resultadoVisitaLabels, 'Sin resultado seleccionado')}
           </ListGroup.Item>
