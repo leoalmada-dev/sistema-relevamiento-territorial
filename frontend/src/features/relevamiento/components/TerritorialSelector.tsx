@@ -21,6 +21,16 @@ type TerritorialSelectorProps = {
   onRequestTerritorialChange?: (applyChange: () => void) => void;
 };
 
+const MANUAL_PREDIO_OPTION_VALUE = '__PREDIO_MANUAL__';
+
+function buildManualPredioId(cuadranteId: string) {
+  return `predio-manual-${cuadranteId}`;
+}
+
+function isManualPredioId(predioId: string) {
+  return predioId.startsWith('predio-manual-');
+}
+
 export function TerritorialSelector({
   selectedPredioId,
   onPredioSelected,
@@ -33,6 +43,9 @@ export function TerritorialSelector({
   const [selectedZonaId, setSelectedZonaId] = useState('');
   const [selectedCuadranteId, setSelectedCuadranteId] = useState('');
   const [predioDetalle, setPredioDetalle] = useState<PredioDetalle | null>(null);
+  const [manualPredioCalle, setManualPredioCalle] = useState('');
+  const [manualPredioNumero, setManualPredioNumero] = useState('');
+  const [manualPredioReferencia, setManualPredioReferencia] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -47,6 +60,12 @@ export function TerritorialSelector({
     () => cuadrantes.find((cuadrante) => cuadrante.id === selectedCuadranteId) ?? null,
     [cuadrantes, selectedCuadranteId],
   );
+
+  const selectedPredioOptionValue = isManualPredioId(selectedPredioId)
+    ? MANUAL_PREDIO_OPTION_VALUE
+    : selectedPredioId;
+
+  const isManualPredioSelected = selectedPredioOptionValue === MANUAL_PREDIO_OPTION_VALUE;
 
   useEffect(() => {
     let active = true;
@@ -93,6 +112,54 @@ export function TerritorialSelector({
     applyChange();
   };
 
+  const resetManualPredio = () => {
+    setManualPredioCalle('');
+    setManualPredioNumero('');
+    setManualPredioReferencia('');
+  };
+
+  const buildManualPredioDetalle = (
+    calle: string,
+    numeroPuertaTeorico: string,
+    referencia: string,
+  ): PredioDetalle | null => {
+    const calleNormalizada = calle.trim();
+    const numeroNormalizado = numeroPuertaTeorico.trim();
+
+    if (!selectedCuadrante || !selectedCuadranteId || !calleNormalizada || !numeroNormalizado) {
+      return null;
+    }
+
+    return {
+      id: buildManualPredioId(selectedCuadranteId),
+      cuadranteId: selectedCuadranteId,
+      calle: calleNormalizada,
+      numeroPuertaTeorico: numeroNormalizado,
+      padron: '',
+      manzana: '',
+      lote: '',
+      referencia: referencia.trim() || 'Predio ingresado manualmente',
+      nombreCuadrante: selectedCuadrante.nombre,
+      origen: 'manual',
+    };
+  };
+
+  const updateManualPredio = (
+    calle: string,
+    numeroPuertaTeorico: string,
+    referencia: string,
+  ) => {
+    const manualPredioId = buildManualPredioId(selectedCuadranteId);
+    const nextPredioDetalle = buildManualPredioDetalle(
+      calle,
+      numeroPuertaTeorico,
+      referencia,
+    );
+
+    setPredioDetalle(nextPredioDetalle);
+    onPredioSelected(manualPredioId, nextPredioDetalle);
+  };
+
   const handleZonaChange = (zonaId: string) => {
     runTerritorialChange(() => {
       setSelectedZonaId(zonaId);
@@ -100,6 +167,7 @@ export function TerritorialSelector({
       setCuadrantes([]);
       setPredios([]);
       setPredioDetalle(null);
+      resetManualPredio();
       onCuadranteSelected?.(null);
       onPredioSelected('', null);
 
@@ -131,6 +199,7 @@ export function TerritorialSelector({
       setSelectedCuadranteId(cuadranteId);
       setPredios([]);
       setPredioDetalle(null);
+      resetManualPredio();
       onCuadranteSelected?.(nextCuadrante);
       onPredioSelected('', null);
 
@@ -157,11 +226,28 @@ export function TerritorialSelector({
   const handlePredioChange = (predioId: string) => {
     runTerritorialChange(() => {
       setPredioDetalle(null);
-      onPredioSelected(predioId, null);
 
       if (!predioId) {
+        resetManualPredio();
+        onPredioSelected('', null);
         return;
       }
+
+      if (predioId === MANUAL_PREDIO_OPTION_VALUE) {
+        const manualPredioId = buildManualPredioId(selectedCuadranteId);
+        const nextPredioDetalle = buildManualPredioDetalle(
+          manualPredioCalle,
+          manualPredioNumero,
+          manualPredioReferencia,
+        );
+
+        setPredioDetalle(nextPredioDetalle);
+        onPredioSelected(manualPredioId, nextPredioDetalle);
+        return;
+      }
+
+      resetManualPredio();
+      onPredioSelected(predioId, null);
 
       setLoading(true);
       setErrorMessage('');
@@ -181,6 +267,21 @@ export function TerritorialSelector({
         })
         .finally(() => setLoading(false));
     });
+  };
+
+  const handleManualPredioCalleChange = (calle: string) => {
+    setManualPredioCalle(calle);
+    updateManualPredio(calle, manualPredioNumero, manualPredioReferencia);
+  };
+
+  const handleManualPredioNumeroChange = (numeroPuertaTeorico: string) => {
+    setManualPredioNumero(numeroPuertaTeorico);
+    updateManualPredio(manualPredioCalle, numeroPuertaTeorico, manualPredioReferencia);
+  };
+
+  const handleManualPredioReferenciaChange = (referencia: string) => {
+    setManualPredioReferencia(referencia);
+    updateManualPredio(manualPredioCalle, manualPredioNumero, referencia);
   };
 
   return (
@@ -265,7 +366,7 @@ export function TerritorialSelector({
               <Form.Group controlId="predio">
                 <Form.Label>Predio</Form.Label>
                 <Form.Select
-                  value={selectedPredioId}
+                  value={selectedPredioOptionValue}
                   onChange={(event) => handlePredioChange(event.target.value)}
                   disabled={!selectedCuadranteId}
                 >
@@ -275,13 +376,74 @@ export function TerritorialSelector({
                       {predio.calle} {predio.numeroPuertaTeorico}
                     </option>
                   ))}
+                  {selectedCuadranteId ? (
+                    <option value={MANUAL_PREDIO_OPTION_VALUE}>
+                      Agregar predio manualmente
+                    </option>
+                  ) : null}
                 </Form.Select>
                 {selectedCuadranteId && !loading && predios.length === 0 ? (
-                  <Form.Text>No hay predios disponibles para el cuadrante seleccionado.</Form.Text>
+                  <Form.Text>
+                    No hay predios disponibles para el cuadrante seleccionado.
+                  </Form.Text>
                 ) : null}
               </Form.Group>
             </Col>
           </Row>
+
+          {isManualPredioSelected ? (
+            <Card className="border">
+              <Card.Header className="bg-white">
+                <strong>Predio ingresado manualmente</strong>
+              </Card.Header>
+              <Card.Body>
+                <Stack gap={3}>
+                  <Alert variant="warning" className="mb-0">
+                    Complete calle y número para habilitar el resultado de visita. Este predio
+                    queda registrado temporalmente en el formulario y no crea un alta en el
+                    sistema central.
+                  </Alert>
+
+                  <Row className="g-3">
+                    <Col md={5}>
+                      <Form.Group controlId="predio-manual-calle">
+                        <Form.Label>Calle</Form.Label>
+                        <Form.Control
+                          value={manualPredioCalle}
+                          onChange={(event) => handleManualPredioCalleChange(event.target.value)}
+                          placeholder="Ingrese calle"
+                        />
+                      </Form.Group>
+                    </Col>
+
+                    <Col md={3}>
+                      <Form.Group controlId="predio-manual-numero">
+                        <Form.Label>Número</Form.Label>
+                        <Form.Control
+                          value={manualPredioNumero}
+                          onChange={(event) => handleManualPredioNumeroChange(event.target.value)}
+                          placeholder="Ingrese número"
+                        />
+                      </Form.Group>
+                    </Col>
+
+                    <Col md={4}>
+                      <Form.Group controlId="predio-manual-referencia">
+                        <Form.Label>Referencia</Form.Label>
+                        <Form.Control
+                          value={manualPredioReferencia}
+                          onChange={(event) =>
+                            handleManualPredioReferenciaChange(event.target.value)
+                          }
+                          placeholder="Opcional"
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </Stack>
+              </Card.Body>
+            </Card>
+          ) : null}
 
           {selectedZona || selectedCuadrante ? (
             <Alert variant="secondary" className="mb-0">
