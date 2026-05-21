@@ -328,8 +328,16 @@ export function RelevamientoFlowPage() {
   };
 
   const handlePredioSelected = (predioId: string, predioDetalle: PredioDetalle | null) => {
+    const isSamePredio = predioId === selectedPredioId;
+
     setSelectedPredioId(predioId);
     setSelectedPredio(predioDetalle);
+
+    if (isSamePredio) {
+      markDraftPending();
+      return;
+    }
+
     setResultadoVisita(resultadoVisitaInicial);
     resetViviendaHogares();
     setCurrentSectionId('inicio-predio-visita');

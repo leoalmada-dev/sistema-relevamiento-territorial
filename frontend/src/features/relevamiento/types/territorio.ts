@@ -31,4 +31,5 @@ export type PredioDetalle = {
   lote: string;
   referencia?: string;
   nombreCuadrante?: string;
+  origen?: 'manual';
 };

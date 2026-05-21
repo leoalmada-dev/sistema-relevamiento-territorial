@@ -78,10 +78,17 @@ export function ResumenRelevamiento({
         </Card.Header>
         <ListGroup variant="flush">
           <ListGroup.Item>
-            <strong>Predio:</strong>{' '}
-            {selectedPredio
-              ? `${selectedPredio.calle} ${selectedPredio.numeroPuertaTeorico}`
-              : 'Sin predio seleccionado'}
+            <div className="d-flex flex-column gap-1">
+              <div>
+                <strong>Predio:</strong>{' '}
+                {selectedPredio
+                  ? `${selectedPredio.calle} ${selectedPredio.numeroPuertaTeorico}`
+                  : 'Sin predio seleccionado'}
+              </div>
+              {selectedPredio?.origen === 'manual' ? (
+                <span className="text-secondary small">Predio ingresado manualmente</span>
+              ) : null}
+            </div>
           </ListGroup.Item>
           <ListGroup.Item>
             <strong>Resultado de visita:</strong>{' '}
