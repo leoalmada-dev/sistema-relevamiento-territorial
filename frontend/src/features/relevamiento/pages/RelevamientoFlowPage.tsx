@@ -692,10 +692,27 @@ export function RelevamientoFlowPage() {
             />
 
             {selectedPredio ? (
-              <ResultadoVisitaSelector
-                value={resultadoVisita}
-                onChange={handleResultadoVisitaChange}
-              />
+              <>
+                <ResultadoVisitaSelector
+                  value={resultadoVisita}
+                  onChange={handleResultadoVisitaChange}
+                />
+
+                {visitaTieneCorteTemprano ? (
+                  <CierreRelevamientoSection
+                    modo="corte-temprano"
+                    cierre={cierre}
+                    selectedPredio={selectedPredio}
+                    resultadoVisita={resultadoVisita}
+                    vivienda={vivienda}
+                    hogares={hogares}
+                    personasContactosPorHogar={personasContactosPorHogar}
+                    finalizacionCompletada={finalizacionCompletada}
+                    onCierreChange={handleCierreChange}
+                    onFinalizarRelevamiento={handleFinalizarRelevamiento}
+                  />
+                ) : null}
+              </>
             ) : (
               <Alert variant="secondary" className="mb-0">
                 Seleccioná un predio para habilitar el resultado de visita.

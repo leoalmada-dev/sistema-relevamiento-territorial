@@ -6,6 +6,8 @@ import type { ResultadoVisitaFormState } from '../types/resultadoVisita';
 import type { PredioDetalle } from '../types/territorio';
 import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
 
+type CierreRelevamientoModo = 'completo' | 'corte-temprano';
+
 type CierreRelevamientoSectionProps = {
   cierre: CierreRelevamientoFormState;
   selectedPredio: PredioDetalle | null;
@@ -14,6 +16,7 @@ type CierreRelevamientoSectionProps = {
   hogares: HogarFormState[];
   personasContactosPorHogar: PersonasContactosPorHogarState;
   finalizacionCompletada: boolean;
+  modo?: CierreRelevamientoModo;
   onCierreChange: (cierre: CierreRelevamientoFormState) => void;
   onFinalizarRelevamiento: () => void;
 };
@@ -26,9 +29,12 @@ export function CierreRelevamientoSection({
   hogares,
   personasContactosPorHogar,
   finalizacionCompletada,
+  modo = 'completo',
   onCierreChange,
   onFinalizarRelevamiento,
 }: CierreRelevamientoSectionProps) {
+  const esCorteTemprano = modo === 'corte-temprano';
+
   const updateField = <Field extends keyof CierreRelevamientoFormState>(
     field: Field,
     value: CierreRelevamientoFormState[Field],
@@ -50,7 +56,9 @@ export function CierreRelevamientoSection({
               </Badge>
               <h3 className="h5 mb-1">Cierre del relevamiento</h3>
               <p className="text-secondary mb-0">
-                Complete las observaciones generales antes de revisar la información.
+                {esCorteTemprano
+                  ? 'Complete las observaciones disponibles para cerrar la visita.'
+                  : 'Complete las observaciones generales antes de revisar la información.'}
               </p>
             </div>
 
@@ -123,30 +131,32 @@ export function CierreRelevamientoSection({
         </Card.Body>
       </Card>
 
-      <Card className="border-0 bg-light">
-        <Card.Body>
-          <Stack gap={3}>
-            <div>
-              <Badge bg="primary" className="mb-2">
-                Revisión final
-              </Badge>
-              <h3 className="h5 mb-1">Resumen previo a finalización</h3>
-              <p className="text-secondary mb-0">
-                Resumen de la información cargada para revisión.
-              </p>
-            </div>
+      {!esCorteTemprano ? (
+        <Card className="border-0 bg-light">
+          <Card.Body>
+            <Stack gap={3}>
+              <div>
+                <Badge bg="primary" className="mb-2">
+                  Revisión final
+                </Badge>
+                <h3 className="h5 mb-1">Resumen previo a finalización</h3>
+                <p className="text-secondary mb-0">
+                  Resumen de la información cargada para revisión.
+                </p>
+              </div>
 
-            <ResumenRelevamiento
-              selectedPredio={selectedPredio}
-              resultadoVisita={resultadoVisita}
-              vivienda={vivienda}
-              hogares={hogares}
-              personasContactosPorHogar={personasContactosPorHogar}
-              cierre={cierre}
-            />
-          </Stack>
-        </Card.Body>
-      </Card>
+              <ResumenRelevamiento
+                selectedPredio={selectedPredio}
+                resultadoVisita={resultadoVisita}
+                vivienda={vivienda}
+                hogares={hogares}
+                personasContactosPorHogar={personasContactosPorHogar}
+                cierre={cierre}
+              />
+            </Stack>
+          </Card.Body>
+        </Card>
+      ) : null}
 
       <Card className="border-0 shadow-sm">
         <Card.Body>
@@ -154,12 +164,16 @@ export function CierreRelevamientoSection({
             <div>
               <h3 className="h5 mb-1">Revisión y cierre</h3>
               <p className="text-secondary mb-0">
-                Revise la información antes de marcar la carga como revisada.
+                {esCorteTemprano
+                  ? 'Finalice el relevamiento cuando haya registrado la ubicación disponible.'
+                  : 'Revise la información antes de marcar la carga como revisada.'}
               </p>
             </div>
 
             <Alert variant="secondary" className="mb-0">
-              Revise la información antes de finalizar el relevamiento.
+              {esCorteTemprano
+                ? 'Este cierre no habilita vivienda, hogares, personas, servicios ni salud.'
+                : 'Revise la información antes de finalizar el relevamiento.'}
             </Alert>
 
             <Button variant="success" onClick={onFinalizarRelevamiento}>
