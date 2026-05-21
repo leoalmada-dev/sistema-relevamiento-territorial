@@ -15,6 +15,7 @@ export type PersonaFormState = {
   ocupacion: string;
   esReferente: boolean;
   parentescoConReferente: string;
+  vinculoBarrioFamilia: string;
   observaciones: string;
 };
 
@@ -46,6 +47,7 @@ export function crearPersonaInicial(numeroPersona: number): PersonaFormState {
     ocupacion: '',
     esReferente: false,
     parentescoConReferente: '',
+    vinculoBarrioFamilia: '',
     observaciones: '',
   };
 }

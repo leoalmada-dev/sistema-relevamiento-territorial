@@ -17,11 +17,19 @@ const siNoNoSabeLabels: Record<string, string> = {
   NO_SABE: 'No sabe',
 };
 
+const vinculoEntreHogaresLabels: Record<string, string> = {
+  FAMILIARES: 'Familiares',
+  UNIDADES_INDEPENDIENTES: 'Unidades independientes',
+  OTROS: 'Otros',
+};
+
 const formaAccesoLabels: Record<string, string> = {
-  COMPRA: 'Compra',
+  VIVIA_ASENTAMIENTO: 'Vivía cuando era asentamiento',
+  COMPRA_INFORMAL: 'Compra informal',
   ALQUILER: 'Alquiler',
-  CESION: 'Cesión',
-  OCUPACION: 'Ocupación',
+  PRESTAMO_TEMPORAL: 'Préstamo temporal',
+  ME_LO_DIERON: 'Me lo dieron',
+  REALOJO_CANDELARIA: 'Realojo Candelaria',
   OTRO: 'Otro',
 };
 
@@ -93,7 +101,7 @@ export function ResumenRelevamiento({
           </ListGroup.Item>
           <ListGroup.Item>
             <strong>Vínculo entre hogares:</strong>{' '}
-            {vivienda.vinculoEntreHogares || 'Sin dato'}
+            {formatLabel(vivienda.vinculoEntreHogares, vinculoEntreHogaresLabels)}
           </ListGroup.Item>
           <ListGroup.Item>
             <strong>Observaciones de vivienda:</strong>{' '}
@@ -115,6 +123,9 @@ export function ResumenRelevamiento({
                 const contactos = datosHogar?.contactos ?? [];
                 const servicios = datosHogar?.servicios;
                 const salud = datosHogar?.salud;
+                const personasConVinculoBarrio = personas.filter(
+                  (persona) => persona.vinculoBarrioFamilia,
+                );
 
                 return (
                   <Card key={hogar.id} className="border">
@@ -168,6 +179,21 @@ export function ResumenRelevamiento({
                           </p>
                         </Col>
                       </Row>
+
+                      {personasConVinculoBarrio.length > 0 ? (
+                        <div className="border-top pt-3 mt-3">
+                          <strong>Vínculo con el barrio / familia en la zona:</strong>
+                          <ul className="mb-0 mt-2">
+                            {personasConVinculoBarrio.map((persona) => (
+                              <li key={persona.id}>
+                                {[persona.nombre, persona.apellido].filter(Boolean).join(' ') ||
+                                  'Persona sin nombre'}
+                                : {persona.vinculoBarrioFamilia}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
                     </Card.Body>
                   </Card>
                 );

@@ -98,16 +98,18 @@ export function PersonaFormCard({
 
             <Col md={3}>
               <Form.Group controlId={`sexo-persona-${persona.id}`}>
-                <Form.Label>Sexo</Form.Label>
+                <Form.Label>Género</Form.Label>
                 <Form.Select
                   value={persona.sexo}
                   onChange={(event) => updateField('sexo', event.target.value)}
                 >
                   <option value="">Seleccionar</option>
-                  <option value="FEMENINO">Femenino</option>
-                  <option value="MASCULINO">Masculino</option>
-                  <option value="OTRO">Otro</option>
-                  <option value="NO_DECLARA">No declara</option>
+                  <option value="MUJER">Mujer</option>
+                  <option value="MUJER_TRANS">Mujer trans</option>
+                  <option value="VARON">Varón</option>
+                  <option value="VARON_TRANS">Varón trans</option>
+                  <option value="OTRA">Otra</option>
+                  <option value="NO_SABE_NO_RESPONDE">No sabe / No responde</option>
                 </Form.Select>
               </Form.Group>
             </Col>
@@ -115,11 +117,17 @@ export function PersonaFormCard({
             <Col md={3}>
               <Form.Group controlId={`ocupacion-persona-${persona.id}`}>
                 <Form.Label>Ocupación</Form.Label>
-                <Form.Control
+                <Form.Select
                   value={persona.ocupacion}
                   onChange={(event) => updateField('ocupacion', event.target.value)}
-                  placeholder="Ocupación"
-                />
+                >
+                  <option value="">Seleccionar</option>
+                  <option value="EMPLEADO">Empleado</option>
+                  <option value="TRABAJADOR_INDEPENDIENTE">Trabajador independiente</option>
+                  <option value="DESOCUPADO">Desocupado</option>
+                  <option value="ESTUDIANTE">Estudiante</option>
+                  <option value="OTRO">Otro</option>
+                </Form.Select>
               </Form.Group>
             </Col>
           </Row>
@@ -140,14 +148,19 @@ export function PersonaFormCard({
             <Col md={8}>
               <Form.Group controlId={`parentesco-persona-${persona.id}`}>
                 <Form.Label>Parentesco con referente</Form.Label>
-                <Form.Control
+                <Form.Select
                   value={persona.parentescoConReferente}
                   onChange={(event) =>
                     updateField('parentescoConReferente', event.target.value)
                   }
-                  placeholder="Ej: referente, cónyuge, hijo/a, familiar, otro."
                   disabled={persona.esReferente}
-                />
+                >
+                  <option value="">Seleccionar</option>
+                  <option value="CONYUGE">Cónyuge</option>
+                  <option value="HIJO_A">Hijo/a</option>
+                  <option value="FAMILIAR">Familiar</option>
+                  <option value="OTRO">Otro</option>
+                </Form.Select>
                 {persona.esReferente ? (
                   <Form.Text>
                     Si esta persona es referente, el parentesco puede quedar vacío.
@@ -156,6 +169,22 @@ export function PersonaFormCard({
               </Form.Group>
             </Col>
           </Row>
+
+          <Form.Group controlId={`vinculo-barrio-familia-persona-${persona.id}`}>
+            <Form.Label>
+              ¿Cómo es su vínculo con el barrio? ¿Tiene más familia en la zona?
+            </Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              value={persona.vinculoBarrioFamilia ?? ''}
+              onChange={(event) => updateField('vinculoBarrioFamilia', event.target.value)}
+              placeholder="Ingrese la respuesta si corresponde."
+            />
+            <Form.Text className="text-secondary">
+              Por barrio se entiende la zona donde se está realizando el relevamiento.
+            </Form.Text>
+          </Form.Group>
 
           <Form.Group controlId={`observaciones-persona-${persona.id}`}>
             <Form.Label>Observaciones</Form.Label>
