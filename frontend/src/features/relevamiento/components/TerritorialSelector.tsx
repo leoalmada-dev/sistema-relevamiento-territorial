@@ -318,21 +318,6 @@ export function TerritorialSelector({
                   </Col>
 
                   <Col md={4}>
-                    <div className="text-secondary small">Padrón</div>
-                    <div className="fw-semibold">{predioDetalle.padron || 'Sin dato'}</div>
-                  </Col>
-
-                  <Col md={4}>
-                    <div className="text-secondary small">Manzana</div>
-                    <div className="fw-semibold">{predioDetalle.manzana || 'Sin dato'}</div>
-                  </Col>
-
-                  <Col md={4}>
-                    <div className="text-secondary small">Lote</div>
-                    <div className="fw-semibold">{predioDetalle.lote || 'Sin dato'}</div>
-                  </Col>
-
-                  <Col md={4}>
                     <div className="text-secondary small">Referencia</div>
                     <div className="fw-semibold">
                       {predioDetalle.referencia || 'Sin referencia'}

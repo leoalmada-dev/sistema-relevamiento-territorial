@@ -271,6 +271,11 @@ export function ServiciosSaludSection({
                 onChange={(event) => updateSaludField('observacionesSalud', event.target.value)}
                 placeholder="Observaciones sobre salud del hogar."
               />
+              <Form.Text className="text-secondary">
+                Utilice este campo para aclarar situaciones particulares de atención médica, por
+                ejemplo cuando en el hogar predomina un tipo de cobertura pero alguna persona se
+                atiende en otro servicio.
+              </Form.Text>
             </Form.Group>
           </Stack>
         </Card.Body>
