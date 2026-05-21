@@ -588,7 +588,7 @@ export function RelevamientoFlowPage() {
               <p className="text-uppercase text-secondary fw-semibold small mb-2">
                 Guardado automáticamente
               </p>
-              <h1 className="h2 mb-2">Formulario de relevamiento territorial</h1>
+              <h1 className="h2 mb-2">Formulario de relevamiento</h1>
               <p className="text-secondary mb-0">
                 Complete el relevamiento por secciones. La información se guarda automáticamente
                 en este dispositivo durante la carga.

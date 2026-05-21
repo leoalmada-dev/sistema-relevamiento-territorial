@@ -92,6 +92,11 @@ export function ViviendaHogaresSection({
                 }
                 placeholder="Ingrese observaciones generales de vivienda si corresponde."
               />
+              <Form.Text className="text-secondary">
+                Utilice este campo para aclarar situaciones de la vivienda o de la composición
+                del predio que no queden reflejadas en las respuestas anteriores, especialmente
+                cuando existan dudas sobre la cantidad de hogares o la forma de convivencia.
+              </Form.Text>
             </Form.Group>
           </Stack>
         </Card.Body>

@@ -76,15 +76,6 @@ export function ResumenRelevamiento({
               : 'Sin predio seleccionado'}
           </ListGroup.Item>
           <ListGroup.Item>
-            <strong>Padrón:</strong> {selectedPredio?.padron || 'Sin dato'}
-          </ListGroup.Item>
-          <ListGroup.Item>
-            <strong>Manzana:</strong> {selectedPredio?.manzana || 'Sin dato'}
-          </ListGroup.Item>
-          <ListGroup.Item>
-            <strong>Lote:</strong> {selectedPredio?.lote || 'Sin dato'}
-          </ListGroup.Item>
-          <ListGroup.Item>
             <strong>Resultado de visita:</strong>{' '}
             {formatLabel(resultadoVisita.resultado, resultadoVisitaLabels, 'Sin resultado seleccionado')}
           </ListGroup.Item>
