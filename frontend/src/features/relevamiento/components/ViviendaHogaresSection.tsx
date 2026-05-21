@@ -70,13 +70,17 @@ export function ViviendaHogaresSection({
               <Col md={8}>
                 <Form.Group controlId="vinculo-entre-hogares">
                   <Form.Label>Vínculo entre hogares</Form.Label>
-                  <Form.Control
+                  <Form.Select
                     value={vivienda.vinculoEntreHogares}
                     onChange={(event) =>
                       updateViviendaField('vinculoEntreHogares', event.target.value)
                     }
-                    placeholder="Ej: familiares, vecinos, unidades independientes."
-                  />
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="FAMILIARES">Familiares</option>
+                    <option value="UNIDADES_INDEPENDIENTES">Unidades independientes</option>
+                    <option value="OTROS">Otros</option>
+                  </Form.Select>
                 </Form.Group>
               </Col>
             </Row>

@@ -92,10 +92,12 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
                   onChange={(event) => updateField('formaAccesoVivienda', event.target.value)}
                 >
                   <option value="">Seleccionar</option>
-                  <option value="COMPRA">Compra</option>
+                  <option value="VIVIA_ASENTAMIENTO">Vivía cuando era asentamiento</option>
+                  <option value="COMPRA_INFORMAL">Compra informal</option>
                   <option value="ALQUILER">Alquiler</option>
-                  <option value="CESION">Cesión</option>
-                  <option value="OCUPACION">Ocupación</option>
+                  <option value="PRESTAMO_TEMPORAL">Préstamo temporal</option>
+                  <option value="ME_LO_DIERON">Me lo dieron</option>
+                  <option value="REALOJO_CANDELARIA">Realojo Candelaria</option>
                   <option value="OTRO">Otro</option>
                 </Form.Select>
               </Form.Group>
@@ -128,18 +130,19 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
 
             <Col md={6}>
               <Form.Group controlId={`conforme-caracteristicas-${hogar.id}`}>
-                <Form.Label>Conforme con características</Form.Label>
-                <Form.Select
+                <Form.Label>
+                  ¿Está conforme con las características del hogar? Indique sí, no,
+                  parcialmente y detalle el motivo si corresponde.
+                </Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={2}
                   value={hogar.conformeCaracteristicas}
                   onChange={(event) =>
                     updateField('conformeCaracteristicas', event.target.value)
                   }
-                >
-                  <option value="">Seleccionar</option>
-                  <option value="SI">Sí</option>
-                  <option value="NO">No</option>
-                  <option value="PARCIAL">Parcialmente</option>
-                </Form.Select>
+                  placeholder="Ingrese la respuesta y el motivo si corresponde."
+                />
               </Form.Group>
             </Col>
           </Row>
