@@ -19,7 +19,11 @@ export function TabletLayout({ children }: TabletLayoutProps) {
         </Container>
       </Navbar>
 
-      <Container fluid="lg" className="py-4">
+      <Container
+        fluid="lg"
+        className="pt-4"
+        style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+      >
         {children}
       </Container>
     </main>
