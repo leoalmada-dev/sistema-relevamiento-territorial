@@ -166,11 +166,6 @@ const prediosBaseSinIdMock: PredioMockSinId[] = [
       '1956',
       '1950',
       '1946',
-      '1944',
-      '1942',
-      '1938',
-      '1934',
-      '1928',
     ],
   }),
 
@@ -178,20 +173,33 @@ const prediosBaseSinIdMock: PredioMockSinId[] = [
     cuadranteId: 'cuadrante-abis',
     nombreCuadrante: 'Cuadrante Abis',
     calle: 'Espronceda',
-    numeros: ['1924', '1920', '1916', '1908'],
-  }),
-  ...crearPredios({
-    cuadranteId: 'cuadrante-abis',
-    nombreCuadrante: 'Cuadrante Abis',
-    calle: 'Psje Bañado',
-    numeros: ['2273', '2265'],
+    numeros: [
+      '1944',
+      '1942',
+      '1938',
+      '1934',
+      '1928',
+      '1924',
+      '1920',
+      '1916',
+      '1908',
+    ],
   }),
 
   ...crearPredios({
     cuadranteId: 'cuadrante-b',
     nombreCuadrante: 'Cuadrante B',
     calle: 'Psje Bañado',
-    numeros: ['2274', '2270', '2266', '2262', '2258', '2254'],
+    numeros: [
+      '2274',
+      '2273',
+      '2270',
+      '2266',
+      '2265',
+      '2262',
+      '2258',
+      '2254',
+    ],
   }),
 
   ...crearPredios({
@@ -240,7 +248,7 @@ const prediosBaseSinIdMock: PredioMockSinId[] = [
     cuadranteId: 'cuadrante-d',
     nombreCuadrante: 'Cuadrante D',
     calle: 'Psje B',
-    numeros: ['1906'],
+    numeros: ['1938', '1906'],
   }),
 
   ...crearPredios({
@@ -280,45 +288,54 @@ const prediosBaseSinIdMock: PredioMockSinId[] = [
     calle: 'Menorca',
     numeros: ['1888', '1880'],
   }),
+
+  ...crearPredios({
+    cuadranteId: 'cuadrante-t',
+    nombreCuadrante: 'Cuadrante T',
+    calle: 'Calle 4',
+    numeros: ['2218', '2230'],
+  }),
+  ...crearPredios({
+    cuadranteId: 'cuadrante-t',
+    nombreCuadrante: 'Cuadrante T',
+    calle: 'Psje C',
+    numeros: ['3881', '3883'],
+  }),
+  ...crearPredios({
+    cuadranteId: 'cuadrante-t',
+    nombreCuadrante: 'Cuadrante T',
+    calle: 'Psje H',
+    numeros: ['2217', '2219'],
+  }),
+
+  ...crearPredios({
+    cuadranteId: 'cuadrante-u',
+    nombreCuadrante: 'Cuadrante U',
+    calle: 'Espronceda',
+    numeros: ['1861', '1857'],
+  }),
+  ...crearPredios({
+    cuadranteId: 'cuadrante-u',
+    nombreCuadrante: 'Cuadrante U',
+    calle: 'Psje H',
+    numeros: ['2216', '2212'],
+  }),
+  ...crearPredios({
+    cuadranteId: 'cuadrante-u',
+    nombreCuadrante: 'Cuadrante U',
+    calle: 'Psje C',
+    numeros: ['2891', '2893'],
+  }),
+
+  ...crearPredios({
+    cuadranteId: 'cuadrante-v',
+    nombreCuadrante: 'Cuadrante V',
+    calle: 'Calle 6',
+    numeros: ['3214', '2192'],
+  }),
 ];
 
-export const prediosIndefinidosMock: PredioIndefinidoMock[] = [
-  {
-    calle: 'Psje B',
-    numeroPuertaTeorico: '1938',
-    cuadrantesPosibles: ['cuadrante-cbis', 'cuadrante-d'],
-    motivo:
-      'Aparece en zona de lectura compartida entre Cbis y D. Falta confirmar si corresponde cargarlo en Cbis o D.',
-  },
-  {
-    calle: 'Psje B',
-    numeroPuertaTeorico: '1933',
-    cuadrantesPosibles: ['cuadrante-cbis', 'cuadrante-e'],
-    motivo:
-      'Aparece asociado a E en la nueva captura, pero estaba previamente en Cbis. Se cargó en E y queda registrado para revisión.',
-  },
-  {
-    calle: 'Calle 2',
-    numeroPuertaTeorico: '2244',
-    cuadrantesPosibles: ['cuadrante-e', 'cuadrante-f'],
-    motivo:
-      'Aparece en borde entre E y F. Se cargó en F por referencia del archivo, pero conviene revisar si corresponde a E.',
-  },
-  {
-    calle: 'Calle 2',
-    numeroPuertaTeorico: '2240',
-    cuadrantesPosibles: ['cuadrante-e', 'cuadrante-f'],
-    motivo:
-      'Aparece en borde entre E y F. Se cargó en F por referencia del archivo, pero conviene revisar si corresponde a E.',
-  },
-  {
-    calle: 'Calle 2',
-    numeroPuertaTeorico: '2236',
-    cuadrantesPosibles: ['cuadrante-e', 'cuadrante-f'],
-    motivo:
-      'Aparece en borde entre E y F. Se cargó en F por referencia del archivo, pero conviene revisar si corresponde a E.',
-  },
-];
+export const prediosIndefinidosMock: PredioIndefinidoMock[] = [];
 
 const prediosBaseMock: PredioMockBase[] = prediosBaseSinIdMock.map(
   (predio, index) => ({
