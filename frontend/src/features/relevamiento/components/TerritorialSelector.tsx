@@ -61,6 +61,18 @@ export function TerritorialSelector({
     [cuadrantes, selectedCuadranteId],
   );
 
+  const callesDisponiblesPredioManual = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          predios
+            .map((predio) => predio.calle.trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b, 'es')),
+    [predios],
+  );
+
   const selectedPredioOptionValue = isManualPredioId(selectedPredioId)
     ? MANUAL_PREDIO_OPTION_VALUE
     : selectedPredioId;
@@ -408,11 +420,23 @@ export function TerritorialSelector({
                     <Col md={5}>
                       <Form.Group controlId="predio-manual-calle">
                         <Form.Label>Calle</Form.Label>
-                        <Form.Control
+                        <Form.Select
                           value={manualPredioCalle}
                           onChange={(event) => handleManualPredioCalleChange(event.target.value)}
-                          placeholder="Ingrese calle"
-                        />
+                          disabled={callesDisponiblesPredioManual.length === 0}
+                        >
+                          <option value="">Seleccionar calle</option>
+                          {callesDisponiblesPredioManual.map((calle) => (
+                            <option key={calle} value={calle}>
+                              {calle}
+                            </option>
+                          ))}
+                        </Form.Select>
+                        {callesDisponiblesPredioManual.length === 0 ? (
+                          <Form.Text>
+                            No hay calles disponibles para el cuadrante seleccionado.
+                          </Form.Text>
+                        ) : null}
                       </Form.Group>
                     </Col>
 
