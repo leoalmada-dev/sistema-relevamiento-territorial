@@ -1,13 +1,17 @@
 import {
   buildBackendBorradorCreatePayload,
+  buildBackendBorradorSyncPayload,
   buildBackendRelevamientoCreatePayload,
   type RelevamientoBackendSnapshot,
 } from '../adapters/relevamientoBackendAdapter';
 import type {
   BackendApiResponse,
   BackendBorradorCreateResponseData,
+  BackendBorradorGetResponseData,
   BackendFinalizationMode,
   FinalizarRelevamientoBackendResult,
+  GuardarBorradorServidorParams,
+  GuardarBorradorServidorResult,
 } from '../types/relevamientoBackend';
 
 const DEFAULT_FINALIZATION_MODE: BackendFinalizationMode = 'local';
@@ -23,7 +27,7 @@ export function getRelevamientoFinalizationMode(): BackendFinalizationMode {
 }
 
 function getBackendErrorMessage(payload: unknown, fallback: string) {
-  if (typeof payload !== 'object' || payload === null) {
+  if (!payload || typeof payload !== 'object') {
     return fallback;
   }
 
@@ -39,7 +43,7 @@ function getBackendErrorMessage(payload: unknown, fallback: string) {
 
 async function requestBackendJson<T>(
   path: string,
-  options: RequestInit,
+  options: RequestInit = {},
 ): Promise<BackendApiResponse<T>> {
   const apiBaseUrl = getApiBaseUrl();
 
@@ -51,29 +55,26 @@ async function requestBackendJson<T>(
     ...options,
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers ?? {}),
     },
   });
 
-  let payload: unknown = null;
-
-  try {
-    payload = await response.json();
-  } catch {
-    payload = null;
-  }
+  const contentType = response.headers.get('content-type') ?? '';
+  const payload = contentType.includes('application/json')
+    ? ((await response.json()) as BackendApiResponse<T>)
+    : ({ message: await response.text() } as BackendApiResponse<T>);
 
   if (!response.ok) {
     throw new Error(
       getBackendErrorMessage(
         payload,
-        `No se pudo guardar la información. Código ${response.status}.`,
+        'No se pudo guardar la información. Verifique la conexión e intente nuevamente.',
       ),
     );
   }
 
-  return payload as BackendApiResponse<T>;
+  return payload;
 }
 
 async function postBackendJson<T>(path: string, body: unknown) {
@@ -81,6 +82,10 @@ async function postBackendJson<T>(path: string, body: unknown) {
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+async function getBackendJson<T>(path: string) {
+  return requestBackendJson<T>(path);
 }
 
 function extractBorradorId(response: BackendApiResponse<BackendBorradorCreateResponseData>) {
@@ -93,8 +98,95 @@ function extractBorradorId(response: BackendApiResponse<BackendBorradorCreateRes
   return borradorId;
 }
 
+function extractDraftVersion(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  return null;
+}
+
+async function obtenerVersionBorradorServidor(serverDraftId: number) {
+  const response = await getBackendJson<BackendBorradorGetResponseData>(
+    `/borrador/get/${serverDraftId}`,
+  );
+
+  return extractDraftVersion(response.datos?.draft_version);
+}
+
+export async function crearBorradorServidor(
+  snapshot: RelevamientoBackendSnapshot,
+): Promise<GuardarBorradorServidorResult> {
+  const payload = buildBackendBorradorCreatePayload(snapshot);
+  const response = await postBackendJson<BackendBorradorCreateResponseData>(
+    '/borrador/create',
+    payload,
+  );
+
+  const borradorId = extractBorradorId(response);
+  const draftVersion = extractDraftVersion(response.datos?.draft_version) ?? payload.draft_version;
+
+  return {
+    mode: 'backend',
+    borradorId,
+    draftVersion,
+    message: response.message || 'Borrador servidor creado correctamente.',
+  };
+}
+
+export async function sincronizarBorradorServidor(
+  snapshot: RelevamientoBackendSnapshot,
+  serverDraftId: number,
+  serverDraftVersion: number | null,
+): Promise<GuardarBorradorServidorResult> {
+  const draftVersionToSend = (serverDraftVersion ?? 1) + 1;
+  const payload = buildBackendBorradorSyncPayload(
+    snapshot,
+    serverDraftId,
+    draftVersionToSend,
+  );
+
+  const response = await postBackendJson<unknown>('/borrador/sincronizar', payload);
+  const confirmedDraftVersion =
+    extractDraftVersion((response.datos as { draft_version?: unknown } | undefined)?.draft_version) ??
+    (await obtenerVersionBorradorServidor(serverDraftId)) ??
+    draftVersionToSend;
+
+  return {
+    mode: 'backend',
+    borradorId: serverDraftId,
+    draftVersion: confirmedDraftVersion,
+    message: response.message || 'Borrador servidor sincronizado correctamente.',
+  };
+}
+
+export async function guardarBorradorServidor({
+  snapshot,
+  serverDraftId,
+  serverDraftVersion,
+}: GuardarBorradorServidorParams): Promise<GuardarBorradorServidorResult> {
+  const finalizationMode = getRelevamientoFinalizationMode();
+
+  if (finalizationMode === 'local') {
+    return {
+      mode: 'local',
+      borradorId: serverDraftId,
+      draftVersion: serverDraftVersion,
+      message: 'Modo local sin sincronización con backend.',
+    };
+  }
+
+  if (!serverDraftId) {
+    return crearBorradorServidor(snapshot);
+  }
+
+  return sincronizarBorradorServidor(snapshot, serverDraftId, serverDraftVersion);
+}
+
 export async function finalizarRelevamientoBackend(
   snapshot: RelevamientoBackendSnapshot,
+  serverDraftId: number | null = null,
+  serverDraftVersion: number | null = null,
 ): Promise<FinalizarRelevamientoBackendResult> {
   const finalizationMode = getRelevamientoFinalizationMode();
 
@@ -105,16 +197,22 @@ export async function finalizarRelevamientoBackend(
     };
   }
 
-  const borradorPayload = buildBackendBorradorCreatePayload(snapshot);
-  const borradorResponse = await postBackendJson<BackendBorradorCreateResponseData>(
-    '/borrador/create',
-    borradorPayload,
-  );
-  const borradorId = extractBorradorId(borradorResponse);
+  const borradorResult = await guardarBorradorServidor({
+    snapshot,
+    serverDraftId,
+    serverDraftVersion,
+  });
+
+  if (!borradorResult.borradorId) {
+    throw new Error('No se pudo obtener un identificador de borrador servidor.');
+  }
+
   const relevamientoPayload = buildBackendRelevamientoCreatePayload(
-    borradorId,
-    borradorPayload,
+    borradorResult.borradorId,
+    snapshot,
+    borradorResult.draftVersion ?? 1,
   );
+
   const relevamientoResponse = await postBackendJson<unknown>(
     '/relevamiento/create',
     relevamientoPayload,
@@ -122,7 +220,8 @@ export async function finalizarRelevamientoBackend(
 
   return {
     mode: 'backend',
-    borradorId,
+    borradorId: borradorResult.borradorId,
+    draftVersion: borradorResult.draftVersion,
     message: relevamientoResponse.message || 'Información guardada correctamente.',
   };
 }

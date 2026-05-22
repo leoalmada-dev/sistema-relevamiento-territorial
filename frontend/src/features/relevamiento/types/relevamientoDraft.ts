@@ -5,6 +5,21 @@ import type { RelevamientoSectionId } from './relevamientoFlow';
 import type { PredioDetalle } from './territorio';
 import type { HogarFormState, ViviendaFormState } from './viviendaHogar';
 
+export type ServerDraftSyncStatus =
+  | 'SIN_BORRADOR_SERVIDOR'
+  | 'SINCRONIZANDO'
+  | 'SINCRONIZADO'
+  | 'PENDIENTE_SINCRONIZACION'
+  | 'ERROR_SINCRONIZACION';
+
+export const serverDraftSyncStatusLabel: Record<ServerDraftSyncStatus, string> = {
+  SIN_BORRADOR_SERVIDOR: 'Sin borrador servidor',
+  SINCRONIZANDO: 'Sincronizando',
+  SINCRONIZADO: 'Sincronizado',
+  PENDIENTE_SINCRONIZACION: 'Pendiente de sincronización',
+  ERROR_SINCRONIZACION: 'Error al sincronizar',
+};
+
 export type RelevamientoLocalDraft = {
   version: 1;
   savedAt: string;
@@ -17,6 +32,11 @@ export type RelevamientoLocalDraft = {
   personasContactosPorHogar: PersonasContactosPorHogarState;
   cierre: CierreRelevamientoFormState;
   finalizacionSimulada: boolean;
+  serverDraftId?: number | null;
+  serverDraftVersion?: number | null;
+  serverDraftLastSyncedAt?: string;
+  serverDraftSyncStatus?: ServerDraftSyncStatus;
+  serverDraftSyncError?: string;
 };
 
 export type LocalDraftStatus =

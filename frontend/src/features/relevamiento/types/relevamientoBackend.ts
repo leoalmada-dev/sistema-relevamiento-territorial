@@ -17,23 +17,44 @@ export type BackendBorradorCreateResponseData = {
   draft?: unknown;
 };
 
+export type BackendBorradorGetResponseData = {
+  current_section?: string;
+  draft_version?: number;
+  saved_at_client?: string | null;
+  completed?: boolean;
+  draft?: unknown;
+};
+
 export type BackendBorradorCreatePayload = {
-  draft_version: 1;
+  draft_version: number;
   current_section: string;
-  finalized_at_client: string;
+  saved_at_client: string | null;
+  finalized_at_client: string | null;
   draft: BackendRelevamientoDraftPayload;
 };
 
+export type BackendBorradorSyncPayload = {
+  id: number;
+  draft_version: number;
+  current_section: string;
+  saved_at_client: string | null;
+  finalized_at_client: string | null;
+  draft: BackendRelevamientoDraftPayload & {
+    id: number;
+  };
+};
+
 export type BackendRelevamientoCreatePayload = {
-  draft_version: 1;
+  draft_version: number;
   current_section: string;
   finalized_at_client: string;
-  draft: {
+  draft: BackendRelevamientoDraftPayload & {
     id: number;
   };
 };
 
 export type BackendRelevamientoDraftPayload = {
+  id?: number;
   territorio: BackendTerritorioPayload;
   visita: BackendVisitaPayload;
   vivienda: BackendViviendaPayload | null;
@@ -145,8 +166,22 @@ export type BackendCoordenadasPayload = {
   hora_captura: string;
 };
 
+export type GuardarBorradorServidorParams = {
+  snapshot: import('../adapters/relevamientoBackendAdapter').RelevamientoBackendSnapshot;
+  serverDraftId: number | null;
+  serverDraftVersion: number | null;
+};
+
+export type GuardarBorradorServidorResult = {
+  mode: BackendFinalizationMode;
+  borradorId: number | null;
+  draftVersion: number | null;
+  message: string;
+};
+
 export type FinalizarRelevamientoBackendResult = {
   mode: BackendFinalizationMode;
   borradorId?: number;
+  draftVersion?: number | null;
   message: string;
 };
