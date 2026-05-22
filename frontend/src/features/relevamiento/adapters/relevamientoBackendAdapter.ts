@@ -93,7 +93,7 @@ function toBackendSexo(value: string) {
 
 function buildBackendTerritorio(snapshot: RelevamientoBackendSnapshot): BackendTerritorioPayload {
   const predio = snapshot.selectedPredio;
-  const cuadranteId = parseNumericId(predio?.cuadranteId ?? snapshot.selectedCuadrante?.id);
+  const cuadranteId = parseNumericId(predio?.cuadranteId || snapshot.selectedCuadrante?.id);
   const zonaId = parseNumericId(snapshot.selectedCuadrante?.zonaId);
   const predioId = parseNumericId(predio?.id ?? snapshot.selectedPredioId);
 

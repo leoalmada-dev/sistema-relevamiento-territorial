@@ -1,7 +1,7 @@
 import type { CierreRelevamientoFormState } from '../types/cierreRelevamiento';
 import type { PersonasContactosPorHogarState } from '../types/personaContacto';
 import type { ResultadoVisitaFormState } from '../types/resultadoVisita';
-import type { PredioDetalle } from '../types/territorio';
+import type { CuadranteOption, PredioDetalle } from '../types/territorio';
 import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
 
 export type FinalizacionValidationError = {
@@ -16,6 +16,7 @@ export type FinalizacionValidationResult = {
 
 export type FinalizacionValidationInput = {
   selectedPredio: PredioDetalle | null;
+  selectedCuadrante: CuadranteOption | null;
   resultadoVisita: ResultadoVisitaFormState;
   vivienda: ViviendaFormState;
   hogares: HogarFormState[];
@@ -71,6 +72,17 @@ function validatePredioResultadoYCierre(
 ) {
   if (!input.selectedPredio) {
     addError(errors, 'predio', 'Seleccione un predio.');
+  } else {
+    const cuadranteId = input.selectedPredio.cuadranteId || input.selectedCuadrante?.id || '';
+    const zonaId = input.selectedCuadrante?.zonaId || '';
+
+    if (isBlank(cuadranteId) || isBlank(zonaId)) {
+      addError(
+        errors,
+        'territorio.cuadrante',
+        'Territorio: no se pudo identificar el cuadrante del predio. Vuelva a seleccionar zona, cuadrante y predio.',
+      );
+    }
   }
 
   if (!input.resultadoVisita.resultado) {
@@ -150,6 +162,14 @@ function validateEntrevistaRealizada(
         errors,
         `hogares.${hogarIndex}.tiempoViveBarrio`,
         `${hogarLabel}: complete el tiempo que vive en el barrio con un número válido.`,
+      );
+    }
+
+    if (isBlank(hogar.beneficiarioRegularizacion)) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.beneficiarioRegularizacion`,
+        `${hogarLabel}: seleccione si es beneficiario de regularización PIAI.`,
       );
     }
 
