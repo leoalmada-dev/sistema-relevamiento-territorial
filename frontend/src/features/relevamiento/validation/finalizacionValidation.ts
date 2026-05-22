@@ -146,6 +146,14 @@ function validateEntrevistaRealizada(
     }
   }
 
+  if (isBlank(input.vivienda.vinculoEntreHogares)) {
+    addError(
+      errors,
+      'vivienda.vinculoEntreHogares',
+      'Vivienda: seleccione el vínculo entre hogares.',
+    );
+  }
+
   const documentos = new Map<string, number>();
 
   input.hogares.forEach((hogar, hogarIndex) => {
