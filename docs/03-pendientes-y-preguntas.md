@@ -94,3 +94,31 @@ Hallazgo probado:
 POST /borrador/create → devuelve datos.id.
 POST /relevamiento/create → requiere draft.id = datos.id.
 ~~~
+
+<!-- API-3B-CONFIG-AMBIENTES:START -->
+## Pendientes API-3B — Ambientes frontend/backend
+
+Quedan pendientes de confirmar con backend, infraestructura y app antes del despliegue final:
+
+- Definir URL final del frontend.
+- Definir URL final de la API vista desde el navegador.
+- Confirmar si frontend y Laravel se servirán desde el mismo origen.
+- Confirmar si la API final quedará bajo `/sistema-censo/api/v1` o `/api/v1`.
+- Confirmar si habrá Nginx/Apache sirviendo frontend y proxyando API.
+- Confirmar si el servidor final usará HTTP o HTTPS.
+- Definir si CORS se configurará en Laravel o se evitará sirviendo frontend y API bajo el mismo origen.
+- Confirmar si la app Android embebida abrirá una URL HTTP/HTTPS del servidor o assets locales.
+- Confirmar cuál será el origen del WebView en Android.
+- Confirmar si la WebView necesitará URL absoluta de API o podrá usar URL relativa.
+- Documentar valores finales de `VITE_API_BASE_URL`.
+- Documentar valores finales de `VITE_CUADRANTE_IMAGE_BASE_URL`.
+
+Decisiones ya tomadas para la configuración frontend:
+
+- `VITE_RELEVAMIENTO_FINALIZATION_MODE=local` significa finalización sin backend.
+- `local` no significa `localhost`.
+- `VITE_RELEVAMIENTO_FINALIZATION_MODE=backend` activa finalización real contra API.
+- En modo `backend`, `VITE_API_BASE_URL` debe estar configurado.
+- No debe existir fallback silencioso a `local` cuando el modo elegido es `backend`.
+- GitHub Pages/demo pública debe usar mock y finalización local.
+<!-- API-3B-CONFIG-AMBIENTES:END -->
