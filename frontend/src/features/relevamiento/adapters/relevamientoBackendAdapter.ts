@@ -32,7 +32,13 @@ function asString(value: unknown, fallback = DEFAULT_EMPTY_TEXT) {
     return fallback;
   }
 
-  return String(value);
+  const stringValue = String(value).trim();
+
+  if (!stringValue) {
+    return fallback;
+  }
+
+  return stringValue;
 }
 
 function parseNumberOrNull(value: string) {
