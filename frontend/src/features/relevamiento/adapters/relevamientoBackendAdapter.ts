@@ -206,7 +206,7 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
           personasContactos?.servicios.titularConvenioLuzAgua ?? '',
         tiene_cable_internet: personasContactos?.servicios.tieneCableInternet ?? '',
         titular_cable_internet: personasContactos?.servicios.titularCableInternet ?? '',
-        observaciones: personasContactos?.servicios.observacionesServicios ?? '',
+        observaciones: asString(personasContactos?.servicios.observacionesServicios, 'Sin observaciones'),
       },
       salud: {
         servicio_atencion_medica: personasContactos?.salud.servicioAtencionMedica ?? '',
@@ -216,7 +216,7 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
         emergencia_movil: personasContactos?.salud.emergenciaMovil ?? '',
         observaciones: personasContactos?.salud.observacionesSalud ?? '',
       },
-      observaciones: '',
+      observaciones: 'Sin observaciones',
     };
   });
 }

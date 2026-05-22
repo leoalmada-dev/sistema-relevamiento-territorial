@@ -189,6 +189,22 @@ function validateEntrevistaRealizada(
       );
     }
 
+    if (isBlank(hogar.titularVivienda)) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.titularVivienda`,
+        `${hogarLabel}: complete titular de la vivienda.`,
+      );
+    }
+
+    if (isBlank(hogar.conformeCaracteristicas)) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.conformeCaracteristicas`,
+        `${hogarLabel}: complete si está conforme con las características del hogar.`,
+      );
+    }
+
     const datosHogar = input.personasContactosPorHogar[hogar.id];
     const personas = datosHogar?.personas ?? [];
 
@@ -197,6 +213,14 @@ function validateEntrevistaRealizada(
         errors,
         `hogares.${hogarIndex}.salud.servicioAtencionMedica`,
         `${hogarLabel}: seleccione servicio de atención médica.`,
+      );
+    }
+
+    if (isBlank(datosHogar?.salud.tieneEmergenciaMovil ?? '')) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.salud.tieneEmergenciaMovil`,
+        `${hogarLabel}: seleccione si tiene emergencia móvil.`,
       );
     }
 
