@@ -134,3 +134,83 @@ La base pública esperada para Vite es:
 ~~~
 
 El build público no debe consumir la API interna 10.100.x.x ni imágenes internas. Si no se configura base de imágenes, el visualizador de cuadrante muestra el mensaje de imagen no disponible.
+
+<!-- API-3B-CONFIG-AMBIENTES:START -->
+## Configuración de ambientes frontend/backend
+
+Después de API-3A, la finalización del relevamiento queda controlada por entorno.
+
+~~~text
+VITE_RELEVAMIENTO_FINALIZATION_MODE=local
+VITE_RELEVAMIENTO_FINALIZATION_MODE=backend
+~~~
+
+Importante:
+
+- `local` no significa `localhost`.
+- `local` significa finalización sin backend.
+- `backend` significa finalización real contra API.
+- En modo `backend`, `VITE_API_BASE_URL` es obligatorio.
+- En modo `backend`, si el backend falla, el formulario y el borrador local no se limpian.
+- Desde una PC local contra un servidor de prueba puede haber errores de CORS aunque la API responda desde navegador o servidor.
+
+### GitHub Pages / demo pública
+
+La demo pública debe usar datos mock y finalización local:
+
+~~~env
+VITE_TERRITORIO_DATA_SOURCE=mock
+VITE_RELEVAMIENTO_FINALIZATION_MODE=local
+VITE_API_BASE_URL=
+VITE_CUADRANTE_IMAGE_BASE_URL=
+~~~
+
+El workflow actual de GitHub Pages no define explícitamente `VITE_RELEVAMIENTO_FINALIZATION_MODE`, pero el frontend usa `local` como valor por defecto. Por eso la demo pública no debería llamar backend.
+
+### Desarrollo local visual sin backend
+
+Para trabajar solo la interfaz:
+
+~~~env
+VITE_TERRITORIO_DATA_SOURCE=mock
+VITE_RELEVAMIENTO_FINALIZATION_MODE=local
+VITE_API_BASE_URL=
+VITE_CUADRANTE_IMAGE_BASE_URL=
+~~~
+
+### Desarrollo local contra backend de prueba
+
+Para probar integración real:
+
+~~~env
+VITE_TERRITORIO_DATA_SOURCE=api
+VITE_RELEVAMIENTO_FINALIZATION_MODE=backend
+VITE_API_BASE_URL=http://10.100.66.32:8000/api/v1
+~~~
+
+Advertencia: desde `http://localhost:5173` el navegador puede bloquear la comunicación por CORS si Laravel/infraestructura no permite ese origen.
+
+### Servidor final interno
+
+Pendiente de confirmar por infraestructura. Si frontend y API quedan bajo el mismo origen, podrían usarse URLs relativas:
+
+~~~env
+VITE_TERRITORIO_DATA_SOURCE=api
+VITE_RELEVAMIENTO_FINALIZATION_MODE=backend
+VITE_API_BASE_URL=/api/v1
+~~~
+
+o:
+
+~~~env
+VITE_API_BASE_URL=/sistema-censo/api/v1
+~~~
+
+según el path final definido.
+
+### App Android embebida
+
+Pendiente de confirmar si la app abre una URL HTTP/HTTPS del servidor o si carga assets locales.
+
+Si abre una URL del servidor, debería usar la misma configuración del servidor final interno. Si carga assets locales, puede requerir URL absoluta de API y configuración CORS específica para WebView.
+<!-- API-3B-CONFIG-AMBIENTES:END -->

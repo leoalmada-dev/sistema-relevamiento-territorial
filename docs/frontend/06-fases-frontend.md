@@ -127,3 +127,43 @@ Fuera de alcance: rediseñar todo el flujo sin justificación.
 Resultado esperado: frontend conectado al backend.
 
 Dependencias: contrato backend final.
+
+<!-- API-3B-CONFIG-AMBIENTES:START -->
+## Estado post API-3A — Finalización real mínima por entorno
+
+Después de API-3A, el frontend ya cuenta con una integración mínima de finalización real contra backend, pero solo se activa por configuración de entorno.
+
+Estado vigente:
+
+- La finalización local sigue siendo el modo seguro por defecto.
+- `local` significa finalización sin backend, no `localhost`.
+- `backend` activa el flujo real contra API.
+- El flujo real probado es `POST /borrador/create` → `datos.id` → `POST /relevamiento/create` con `draft.id`.
+- El borrador local con `localStorage` sigue vigente y separado del borrador servidor.
+- El formulario no debe limpiar datos ni borrar el borrador local si falla la finalización backend.
+- El guardado servidor al avanzar de sección sigue pendiente.
+- `/borrador/sincronizar` sigue fuera de uso para la primera integración online.
+- `/relevamiento/create/offline` sigue fuera de alcance para nuestro frontend actual.
+- React Hook Form, Zod, geolocalización real, mapa y pin siguen fuera de este bloque.
+
+Configuración recomendada para demo/desarrollo visual:
+
+~~~env
+VITE_TERRITORIO_DATA_SOURCE=mock
+VITE_RELEVAMIENTO_FINALIZATION_MODE=local
+VITE_API_BASE_URL=
+VITE_CUADRANTE_IMAGE_BASE_URL=
+~~~
+
+Configuración para backend de prueba:
+
+~~~env
+VITE_TERRITORIO_DATA_SOURCE=api
+VITE_RELEVAMIENTO_FINALIZATION_MODE=backend
+VITE_API_BASE_URL=http://10.100.66.32:8000/api/v1
+~~~
+
+Riesgo operativo:
+
+Desde desarrollo local puede haber bloqueo por CORS si backend/infraestructura no habilita el origen del navegador.
+<!-- API-3B-CONFIG-AMBIENTES:END -->
