@@ -14,6 +14,7 @@ import {
   getLocalDraft,
   saveLocalDraft,
 } from '../services/draftStorageService';
+import { finalizarRelevamientoBackend } from '../services/relevamientoBackendService';
 import {
   cierreRelevamientoInicial,
   type CierreRelevamientoFormState,
@@ -128,6 +129,8 @@ export function RelevamientoFlowPage() {
   const [cierre, setCierre] =
     useState<CierreRelevamientoFormState>(cierreRelevamientoInicial);
   const [finalizacionCompletada, setFinalizacionCompletada] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [finalizationError, setFinalizationError] = useState('');
   const [territorialSelectorKey, setTerritorialSelectorKey] = useState(0);
   const [pendingLocalDraft, setPendingLocalDraft] =
     useState<RelevamientoLocalDraft | null>(null);
@@ -230,6 +233,7 @@ export function RelevamientoFlowPage() {
 
   const markDraftPending = () => {
     setFinalizacionCompletada(false);
+    setFinalizationError('');
     setDraftStatus('CAMBIOS_PENDIENTES');
   };
 
@@ -523,16 +527,47 @@ export function RelevamientoFlowPage() {
     setPendingLocalDraft(null);
     setLastSavedAt('');
     setDraftStatus('SIN_BORRADOR');
+    setFinalizationError('');
     setPendingConfirmAction(null);
     setTerritorialSelectorKey((currentKey) => currentKey + 1);
   };
 
-  const finalizarRelevamiento = () => {
-    resetRelevamiento();
-    setFinalizacionCompletada(true);
+  const finalizarRelevamiento = async () => {
+    setIsFinalizing(true);
+    setFinalizationError('');
+
+    try {
+      await finalizarRelevamientoBackend({
+        currentSectionId,
+        selectedCuadrante,
+        selectedPredioId,
+        selectedPredio,
+        resultadoVisita,
+        vivienda,
+        hogares,
+        personasContactosPorHogar,
+        cierre,
+        finalizedAtClient: new Date().toISOString(),
+      });
+
+      resetRelevamiento();
+      setFinalizacionCompletada(true);
+    } catch (error) {
+      setFinalizationError(
+        error instanceof Error && error.message
+          ? error.message
+          : 'No se pudo guardar la información. Verifique la conexión e intente nuevamente.',
+      );
+    } finally {
+      setIsFinalizing(false);
+    }
   };
 
   const handleFinalizarRelevamiento = () => {
+    if (isFinalizing) {
+      return;
+    }
+
     setPendingConfirmAction({ type: 'finalize-relevamiento' });
   };
 
@@ -763,6 +798,18 @@ export function RelevamientoFlowPage() {
         ) : null}
       </SectionPlaceholder>
 
+      {isFinalizing ? (
+        <Alert variant="info" className="mb-0">
+          Guardando información...
+        </Alert>
+      ) : null}
+
+      {finalizationError ? (
+        <Alert variant="danger" className="mb-0">
+          No se pudo guardar la información. Verifique la conexión e intente nuevamente.
+        </Alert>
+      ) : null}
+
       {currentSection.id === 'vivienda-hogares' && !cantidadHogaresCoincide ? (
         <Alert variant="warning" className="mb-0">
           La cantidad de hogares cargados debe coincidir con la cantidad declarada para continuar.
@@ -803,7 +850,7 @@ export function RelevamientoFlowPage() {
         </Modal.Header>
 
         <Modal.Body>
-          El relevamiento fue guardado correctamente.
+          Información guardada correctamente.
         </Modal.Body>
 
         <Modal.Footer>
