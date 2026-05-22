@@ -252,6 +252,14 @@ function validateEntrevistaRealizada(
         );
       }
 
+      if (isBlank(persona.ocupacion)) {
+        addError(
+          errors,
+          `hogares.${hogarIndex}.personas.${personaIndex}.ocupacion`,
+          `${personaLabel}: seleccione ocupación.`,
+        );
+      }
+
       if (!persona.esReferente && isBlank(persona.parentescoConReferente)) {
         addError(
           errors,
