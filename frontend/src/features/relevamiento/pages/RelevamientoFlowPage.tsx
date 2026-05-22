@@ -20,6 +20,10 @@ import {
   guardarBorradorServidor,
 } from '../services/relevamientoBackendService';
 import {
+  validateFinalizacionRelevamiento,
+  type FinalizacionValidationError,
+} from '../validation/finalizacionValidation';
+import {
   cierreRelevamientoInicial,
   type CierreRelevamientoFormState,
 } from '../types/cierreRelevamiento';
@@ -137,6 +141,8 @@ export function RelevamientoFlowPage() {
   const [finalizacionCompletada, setFinalizacionCompletada] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [finalizationError, setFinalizationError] = useState('');
+  const [finalizationValidationErrors, setFinalizationValidationErrors] =
+    useState<FinalizacionValidationError[]>([]);
   const [serverDraftId, setServerDraftId] = useState<number | null>(null);
   const [serverDraftVersion, setServerDraftVersion] = useState<number | null>(null);
   const [serverDraftLastSyncedAt, setServerDraftLastSyncedAt] = useState('');
@@ -252,6 +258,7 @@ export function RelevamientoFlowPage() {
   const markDraftPending = () => {
     setFinalizacionCompletada(false);
     setFinalizationError('');
+    setFinalizationValidationErrors([]);
     setDraftStatus('CAMBIOS_PENDIENTES');
   };
 
@@ -637,6 +644,17 @@ export function RelevamientoFlowPage() {
 
   const finalizarRelevamiento = async () => {
     setFinalizationError('');
+
+    const validation = validateFinalizacionRelevamiento(
+      buildBackendSnapshot('cierre-finalizacion'),
+    );
+
+    if (!validation.valid) {
+      setFinalizationValidationErrors(validation.errors);
+      return;
+    }
+
+    setFinalizationValidationErrors([]);
     persistLocalDraft();
 
     try {
@@ -680,6 +698,17 @@ export function RelevamientoFlowPage() {
       return;
     }
 
+    const validation = validateFinalizacionRelevamiento(
+      buildBackendSnapshot('cierre-finalizacion'),
+    );
+
+    if (!validation.valid) {
+      setFinalizationValidationErrors(validation.errors);
+      setFinalizationError('');
+      return;
+    }
+
+    setFinalizationValidationErrors([]);
     setPendingConfirmAction({ type: 'finalize-relevamiento' });
   };
 
@@ -921,6 +950,19 @@ export function RelevamientoFlowPage() {
       {isFinalizing ? (
         <Alert variant="info" className="mb-0">
           Guardando información...
+        </Alert>
+      ) : null}
+
+      {finalizationValidationErrors.length > 0 ? (
+        <Alert variant="warning" className="mb-0">
+          <div className="fw-semibold mb-2">
+            Antes de finalizar, revise los siguientes datos:
+          </div>
+          <ul className="mb-0">
+            {finalizationValidationErrors.map((error) => (
+              <li key={`${error.campo}-${error.mensaje}`}>{error.mensaje}</li>
+            ))}
+          </ul>
         </Alert>
       ) : null}
 
