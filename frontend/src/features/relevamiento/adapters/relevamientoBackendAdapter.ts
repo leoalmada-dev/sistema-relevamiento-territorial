@@ -7,29 +7,25 @@ import type { CuadranteOption, PredioDetalle } from '../types/territorio';
 import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
 import type {
   BackendBorradorCreatePayload,
-  BackendContactoPayload,
-  BackendHogarPayload,
+  BackendBorradorSyncPayload,
   BackendRelevamientoCreatePayload,
   BackendRelevamientoDraftPayload,
   BackendTerritorioPayload,
 } from '../types/relevamientoBackend';
 
+const DEFAULT_EMPTY_TEXT = '';
+
 export type RelevamientoBackendSnapshot = {
   currentSectionId: RelevamientoSectionId;
-  selectedCuadrante: CuadranteOption | null;
   selectedPredioId: string;
   selectedPredio: PredioDetalle | null;
+  selectedCuadrante: CuadranteOption | null;
   resultadoVisita: ResultadoVisitaFormState;
   vivienda: ViviendaFormState;
   hogares: HogarFormState[];
   personasContactosPorHogar: PersonasContactosPorHogarState;
   cierre: CierreRelevamientoFormState;
-  finalizedAtClient: string;
 };
-
-const DEFAULT_EMPTY_TEXT = '';
-const DEFAULT_BACKEND_RELATION = 'OTRO';
-const DEFAULT_BACKEND_VINCULO_BARRIO = 'Sin información declarada';
 
 function asString(value: unknown, fallback = DEFAULT_EMPTY_TEXT) {
   if (value === null || value === undefined) {
@@ -47,7 +43,6 @@ function parseNumberOrNull(value: string) {
   }
 
   const parsedValue = Number(normalizedValue);
-
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
 
@@ -56,36 +51,20 @@ function parseIntegerOrZero(value: string | number) {
     return Number.isFinite(value) ? Math.trunc(value) : 0;
   }
 
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return 0;
-  }
-
-  const directValue = Number.parseInt(trimmedValue, 10);
-
-  if (Number.isFinite(directValue)) {
-    return directValue;
-  }
-
-  const firstNumericValue = trimmedValue.match(/\d+/)?.[0];
-
-  if (!firstNumericValue) {
-    return 0;
-  }
-
-  const parsedValue = Number.parseInt(firstNumericValue, 10);
-
+  const parsedValue = Number.parseInt(value.trim(), 10);
   return Number.isFinite(parsedValue) ? parsedValue : 0;
 }
 
 function parseNumericId(value: string | number | undefined | null) {
-  if (value === null || value === undefined || value === '') {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (!value) {
     return null;
   }
 
-  const parsedValue = Number(value);
-
+  const parsedValue = Number.parseInt(String(value), 10);
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
 
@@ -96,7 +75,7 @@ function toBackendSectionId(sectionId: RelevamientoSectionId) {
 function toBackendSexo(value: string) {
   const normalizedValue = value.trim();
 
-  const values: Record<string, string> = {
+  const map: Record<string, string> = {
     VARON: 'VARÓN',
     VARÓN: 'VARÓN',
     MUJER: 'MUJER',
@@ -109,43 +88,45 @@ function toBackendSexo(value: string) {
     'NO SABE / NO RESPONDE': 'NO SABE / NO RESPONDE',
   };
 
-  return values[normalizedValue] ?? normalizedValue;
+  return map[normalizedValue] ?? normalizedValue;
 }
 
 function buildBackendTerritorio(snapshot: RelevamientoBackendSnapshot): BackendTerritorioPayload {
-  const { selectedCuadrante, selectedPredio, selectedPredioId } = snapshot;
-  const isManualPredio = selectedPredio?.origen === 'manual';
-
-  const cuadranteId = parseNumericId(selectedCuadrante?.id ?? selectedPredio?.cuadranteId);
-  const zonaId = parseNumericId(selectedCuadrante?.zonaId);
-  const predioId = isManualPredio ? null : parseNumericId(selectedPredioId || selectedPredio?.id);
+  const predio = snapshot.selectedPredio;
+  const cuadranteId = parseNumericId(predio?.cuadranteId ?? snapshot.selectedCuadrante?.id);
+  const zonaId = parseNumericId(snapshot.selectedCuadrante?.zonaId);
+  const predioId = parseNumericId(predio?.id ?? snapshot.selectedPredioId);
 
   const territorio: BackendTerritorioPayload = {
     zona_id: zonaId,
     cuadrante_id: cuadranteId,
-    predio_id: predioId,
+    predio_id: predio?.origen === 'manual' ? null : predioId,
   };
 
-  if (selectedPredio) {
-    territorio.predio = {
-      id: predioId ?? selectedPredio.id,
-      calle: selectedPredio.calle,
-      numero_teorico_puerta: selectedPredio.numeroPuertaTeorico,
-      padron: selectedPredio.padron,
-      manzana: selectedPredio.manzana,
-      lote: selectedPredio.lote,
-    };
+  if (!predio) {
+    return territorio;
   }
 
-  if (isManualPredio && selectedPredio) {
+  if (predio.origen === 'manual') {
     territorio.predio_manual = {
       origen: 'manual',
       cuadrante_id: cuadranteId,
-      calle: selectedPredio.calle,
-      numero_puerta_teorico: selectedPredio.numeroPuertaTeorico,
-      referencia: selectedPredio.referencia ?? '',
+      calle: predio.calle,
+      numero_puerta_teorico: predio.numeroPuertaTeorico,
+      referencia: predio.referencia ?? '',
     };
+
+    return territorio;
   }
+
+  territorio.predio = {
+    id: predio.id,
+    calle: predio.calle,
+    numero_teorico_puerta: predio.numeroPuertaTeorico,
+    padron: predio.padron,
+    manzana: predio.manzana,
+    lote: predio.lote,
+  };
 
   return territorio;
 }
@@ -162,7 +143,7 @@ function buildBackendVisita(resultadoVisita: ResultadoVisitaFormState) {
 }
 
 function buildBackendContactos(contactos: PersonasContactosPorHogarState[string]['contactos']) {
-  return contactos.map<BackendContactoPayload>((contacto) => ({
+  return contactos.map((contacto) => ({
     temp_id: contacto.id,
     orden: parseIntegerOrZero(contacto.orden),
     telefono: contacto.telefono,
@@ -172,12 +153,14 @@ function buildBackendContactos(contactos: PersonasContactosPorHogarState[string]
 }
 
 function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
-  return snapshot.hogares.map<BackendHogarPayload>((hogar) => {
-    const hogarDetalle = snapshot.personasContactosPorHogar[hogar.id];
-    const personas = hogarDetalle?.personas ?? [];
-    const contactos = hogarDetalle?.contactos ?? [];
-    const servicios = hogarDetalle?.servicios;
-    const salud = hogarDetalle?.salud;
+  if (esCorteTemprano(snapshot.resultadoVisita.resultado)) {
+    return [];
+  }
+
+  return snapshot.hogares.map((hogar) => {
+    const personasContactos = snapshot.personasContactosPorHogar[hogar.id];
+    const personas = personasContactos?.personas ?? [];
+    const contactos = personasContactos?.contactos ?? [];
 
     return {
       temp_id: hogar.id,
@@ -189,8 +172,10 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
       titular_vivienda: hogar.titularVivienda,
       conforme_caracteristicas: hogar.conformeCaracteristicas,
       personas: personas.map((persona) => {
-        const vinculoBarrio =
-          persona.vinculoBarrioFamilia.trim() || DEFAULT_BACKEND_VINCULO_BARRIO;
+        const vinculoBarrio = asString(
+          persona.vinculoBarrioFamilia,
+          'Sin información declarada',
+        );
 
         return {
           temp_id: persona.id,
@@ -201,8 +186,7 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
           sexo: toBackendSexo(persona.sexo),
           ocupacion: persona.ocupacion,
           es_referente: persona.esReferente,
-          parentesco_con_referente:
-            persona.parentescoConReferente.trim() || DEFAULT_BACKEND_RELATION,
+          parentesco_con_referente: asString(persona.parentescoConReferente, 'OTRO'),
           vinculo_barrio: vinculoBarrio,
           vinculo_barrio_familia: persona.vinculoBarrioFamilia,
           observaciones: persona.observaciones,
@@ -210,20 +194,21 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
       }),
       contactos: buildBackendContactos(contactos),
       servicios: {
-        tiene_luz_agua: servicios?.tieneLuzAgua ?? '',
-        tiene_convenio_luz_agua: servicios?.tieneConvenioLuzAgua ?? '',
-        titular_convenio_luz_agua: servicios?.titularConvenioLuzAgua ?? '',
-        tiene_cable_internet: servicios?.tieneCableInternet ?? '',
-        titular_cable_internet: servicios?.titularCableInternet ?? '',
-        observaciones: servicios?.observacionesServicios ?? '',
+        tiene_luz_agua: personasContactos?.servicios.tieneLuzAgua ?? '',
+        tiene_convenio_luz_agua: personasContactos?.servicios.tieneConvenioLuzAgua ?? '',
+        titular_convenio_luz_agua:
+          personasContactos?.servicios.titularConvenioLuzAgua ?? '',
+        tiene_cable_internet: personasContactos?.servicios.tieneCableInternet ?? '',
+        titular_cable_internet: personasContactos?.servicios.titularCableInternet ?? '',
+        observaciones: personasContactos?.servicios.observacionesServicios ?? '',
       },
       salud: {
-        servicio_atencion_medica: salud?.servicioAtencionMedica ?? '',
-        prestador_privado: salud?.prestadorPrivado ?? '',
-        centro_asse: salud?.centroASSE ?? '',
-        tiene_emergencia_movil: salud?.tieneEmergenciaMovil ?? '',
-        emergencia_movil: salud?.emergenciaMovil ?? '',
-        observaciones: salud?.observacionesSalud ?? '',
+        servicio_atencion_medica: personasContactos?.salud.servicioAtencionMedica ?? '',
+        prestador_privado: personasContactos?.salud.prestadorPrivado ?? '',
+        centro_asse: personasContactos?.salud.centroASSE ?? '',
+        tiene_emergencia_movil: personasContactos?.salud.tieneEmergenciaMovil ?? '',
+        emergencia_movil: personasContactos?.salud.emergenciaMovil ?? '',
+        observaciones: personasContactos?.salud.observacionesSalud ?? '',
       },
       observaciones: '',
     };
@@ -233,21 +218,21 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
 export function buildBackendRelevamientoDraft(
   snapshot: RelevamientoBackendSnapshot,
 ): BackendRelevamientoDraftPayload {
-  const isCorteTemprano = esCorteTemprano(snapshot.resultadoVisita.resultado);
+  const vivienda = esCorteTemprano(snapshot.resultadoVisita.resultado)
+    ? null
+    : {
+        cantidad_hogares_declarada: parseIntegerOrZero(
+          snapshot.vivienda.cantidadHogaresDeclarada,
+        ),
+        vinculo_entre_hogares: snapshot.vivienda.vinculoEntreHogares,
+        observaciones: snapshot.vivienda.observacionesVivienda,
+      };
 
   return {
     territorio: buildBackendTerritorio(snapshot),
     visita: buildBackendVisita(snapshot.resultadoVisita),
-    vivienda: isCorteTemprano
-      ? null
-      : {
-          cantidad_hogares_declarada: parseIntegerOrZero(
-            snapshot.vivienda.cantidadHogaresDeclarada,
-          ),
-          vinculo_entre_hogares: snapshot.vivienda.vinculoEntreHogares,
-          observaciones: snapshot.vivienda.observacionesVivienda,
-        },
-    hogares: isCorteTemprano ? [] : buildBackendHogares(snapshot),
+    vivienda,
+    hogares: buildBackendHogares(snapshot),
     observaciones_generales: snapshot.cierre.observacionesGenerales,
     coordenadas: {
       latitud: parseNumberOrNull(snapshot.cierre.latitud),
@@ -263,21 +248,42 @@ export function buildBackendBorradorCreatePayload(
   return {
     draft_version: 1,
     current_section: toBackendSectionId(snapshot.currentSectionId),
-    finalized_at_client: snapshot.finalizedAtClient,
+    saved_at_client: new Date().toISOString(),
+    finalized_at_client: null,
     draft: buildBackendRelevamientoDraft(snapshot),
   };
 }
 
+export function buildBackendBorradorSyncPayload(
+  snapshot: RelevamientoBackendSnapshot,
+  serverDraftId: number,
+  draftVersion: number,
+): BackendBorradorSyncPayload {
+  return {
+    id: serverDraftId,
+    draft_version: draftVersion,
+    current_section: toBackendSectionId(snapshot.currentSectionId),
+    saved_at_client: new Date().toISOString(),
+    finalized_at_client: null,
+    draft: {
+      ...buildBackendRelevamientoDraft(snapshot),
+      id: serverDraftId,
+    },
+  };
+}
+
 export function buildBackendRelevamientoCreatePayload(
-  borradorId: number,
-  borradorPayload: BackendBorradorCreatePayload,
+  serverDraftId: number,
+  snapshot: RelevamientoBackendSnapshot,
+  draftVersion: number,
 ): BackendRelevamientoCreatePayload {
   return {
-    draft_version: borradorPayload.draft_version,
-    current_section: borradorPayload.current_section,
-    finalized_at_client: borradorPayload.finalized_at_client,
+    draft_version: draftVersion,
+    current_section: toBackendSectionId(snapshot.currentSectionId),
+    finalized_at_client: new Date().toISOString(),
     draft: {
-      id: borradorId,
+      ...buildBackendRelevamientoDraft(snapshot),
+      id: serverDraftId,
     },
   };
 }

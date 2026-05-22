@@ -14,7 +14,11 @@ import {
   getLocalDraft,
   saveLocalDraft,
 } from '../services/draftStorageService';
-import { finalizarRelevamientoBackend } from '../services/relevamientoBackendService';
+import {
+  finalizarRelevamientoBackend,
+  getRelevamientoFinalizationMode,
+  guardarBorradorServidor,
+} from '../services/relevamientoBackendService';
 import {
   cierreRelevamientoInicial,
   type CierreRelevamientoFormState,
@@ -22,8 +26,10 @@ import {
 import type { PersonasContactosPorHogarState } from '../types/personaContacto';
 import {
   localDraftStatusLabel,
+  serverDraftSyncStatusLabel,
   type LocalDraftStatus,
   type RelevamientoLocalDraft,
+  type ServerDraftSyncStatus,
 } from '../types/relevamientoDraft';
 import {
   esCorteTemprano,
@@ -131,6 +137,12 @@ export function RelevamientoFlowPage() {
   const [finalizacionCompletada, setFinalizacionCompletada] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [finalizationError, setFinalizationError] = useState('');
+  const [serverDraftId, setServerDraftId] = useState<number | null>(null);
+  const [serverDraftVersion, setServerDraftVersion] = useState<number | null>(null);
+  const [serverDraftLastSyncedAt, setServerDraftLastSyncedAt] = useState('');
+  const [serverDraftSyncStatus, setServerDraftSyncStatus] =
+    useState<ServerDraftSyncStatus>('SIN_BORRADOR_SERVIDOR');
+  const [serverDraftSyncError, setServerDraftSyncError] = useState('');
   const [territorialSelectorKey, setTerritorialSelectorKey] = useState(0);
   const [pendingLocalDraft, setPendingLocalDraft] =
     useState<RelevamientoLocalDraft | null>(null);
@@ -217,7 +229,7 @@ export function RelevamientoFlowPage() {
     visitaTieneCorteTemprano,
   ]);
 
-  const buildLocalDraft = (): RelevamientoLocalDraft => ({
+  const buildLocalDraft = (overrides: Partial<RelevamientoLocalDraft> = {}): RelevamientoLocalDraft => ({
     version: 1,
     savedAt: new Date().toISOString(),
     currentSectionId,
@@ -229,6 +241,12 @@ export function RelevamientoFlowPage() {
     personasContactosPorHogar,
     cierre,
     finalizacionSimulada: finalizacionCompletada,
+    serverDraftId,
+    serverDraftVersion,
+    serverDraftLastSyncedAt,
+    serverDraftSyncStatus,
+    serverDraftSyncError,
+    ...overrides,
   });
 
   const markDraftPending = () => {
@@ -305,6 +323,11 @@ export function RelevamientoFlowPage() {
     setPendingLocalDraft(null);
     setLastSavedAt('');
     setDraftStatus('SIN_BORRADOR');
+    setServerDraftId(null);
+    setServerDraftVersion(null);
+    setServerDraftLastSyncedAt('');
+    setServerDraftSyncStatus('SIN_BORRADOR_SERVIDOR');
+    setServerDraftSyncError('');
   };
 
   const resetCierre = () => {
@@ -532,34 +555,123 @@ export function RelevamientoFlowPage() {
     setTerritorialSelectorKey((currentKey) => currentKey + 1);
   };
 
-  const finalizarRelevamiento = async () => {
-    setIsFinalizing(true);
-    setFinalizationError('');
+  const buildBackendSnapshot = (sectionId: RelevamientoSectionId = currentSectionId) => ({
+    currentSectionId: sectionId,
+    selectedPredioId,
+    selectedPredio,
+    selectedCuadrante,
+    resultadoVisita,
+    vivienda,
+    hogares,
+    personasContactosPorHogar,
+    cierre,
+  });
+
+  const persistLocalDraft = (overrides: Partial<RelevamientoLocalDraft> = {}) => {
+    const draft = buildLocalDraft(overrides);
+    const saved = saveLocalDraft(draft);
+
+    if (saved) {
+      setLastSavedAt(draft.savedAt);
+      setDraftStatus('GUARDADO_LOCAL');
+      return draft;
+    }
+
+    setDraftStatus('ERROR_GUARDAR');
+    return draft;
+  };
+
+  const persistServerMetadataLocally = (metadata: Partial<RelevamientoLocalDraft>) => {
+    saveLocalDraft(buildLocalDraft(metadata));
+  };
+
+  const syncServerDraftNoBloqueante = async (
+    snapshot: ReturnType<typeof buildBackendSnapshot>,
+  ) => {
+    if (getRelevamientoFinalizationMode() !== 'backend') {
+      return;
+    }
+
+    setServerDraftSyncStatus('SINCRONIZANDO');
+    setServerDraftSyncError('');
 
     try {
-      await finalizarRelevamientoBackend({
-        currentSectionId,
-        selectedCuadrante,
-        selectedPredioId,
-        selectedPredio,
-        resultadoVisita,
-        vivienda,
-        hogares,
-        personasContactosPorHogar,
-        cierre,
-        finalizedAtClient: new Date().toISOString(),
+      const result = await guardarBorradorServidor({
+        snapshot,
+        serverDraftId,
+        serverDraftVersion,
       });
+
+      const syncedAt = new Date().toISOString();
+
+      setServerDraftId(result.borradorId);
+      setServerDraftVersion(result.draftVersion);
+      setServerDraftLastSyncedAt(syncedAt);
+      setServerDraftSyncStatus('SINCRONIZADO');
+      setServerDraftSyncError('');
+
+      persistServerMetadataLocally({
+        currentSectionId: snapshot.currentSectionId,
+        serverDraftId: result.borradorId,
+        serverDraftVersion: result.draftVersion,
+        serverDraftLastSyncedAt: syncedAt,
+        serverDraftSyncStatus: 'SINCRONIZADO',
+        serverDraftSyncError: '',
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'No se pudo sincronizar con el servidor.';
+
+      setServerDraftSyncStatus('ERROR_SINCRONIZACION');
+      setServerDraftSyncError(message);
+
+      persistServerMetadataLocally({
+        currentSectionId: snapshot.currentSectionId,
+        serverDraftSyncStatus: 'ERROR_SINCRONIZACION',
+        serverDraftSyncError: message,
+      });
+    }
+  };
+
+  const finalizarRelevamiento = async () => {
+    setFinalizationError('');
+    persistLocalDraft();
+
+    try {
+      const result = await finalizarRelevamientoBackend(
+        buildBackendSnapshot('cierre-finalizacion'),
+        serverDraftId,
+        serverDraftVersion,
+      );
+
+      if (result.mode === 'backend') {
+        setServerDraftId(result.borradorId ?? null);
+        setServerDraftVersion(result.draftVersion ?? null);
+        setServerDraftLastSyncedAt(new Date().toISOString());
+        setServerDraftSyncStatus('SINCRONIZADO');
+        setServerDraftSyncError('');
+      }
 
       resetRelevamiento();
       setFinalizacionCompletada(true);
     } catch (error) {
-      setFinalizationError(
+      const message =
         error instanceof Error && error.message
           ? error.message
-          : 'No se pudo guardar la información. Verifique la conexión e intente nuevamente.',
+          : 'No se pudo guardar la información en el servidor. Verifique la conexión e intente nuevamente.';
+
+      setFinalizationError(message);
+      setServerDraftSyncStatus('ERROR_SINCRONIZACION');
+      setServerDraftSyncError(message);
+
+      saveLocalDraft(
+        buildLocalDraft({
+          serverDraftSyncStatus: 'ERROR_SINCRONIZACION',
+          serverDraftSyncError: message,
+        }),
       );
-    } finally {
-      setIsFinalizing(false);
     }
   };
 
@@ -617,8 +729,11 @@ export function RelevamientoFlowPage() {
       return;
     }
 
-    setCurrentSectionId(sections[currentIndex + 1].id);
-    markDraftPending();
+    const nextSectionId = sections[currentIndex + 1].id;
+    persistLocalDraft({ currentSectionId: nextSectionId });
+    setCurrentSectionId(nextSectionId);
+    setFinalizacionCompletada(false);
+    void syncServerDraftNoBloqueante(buildBackendSnapshot(nextSectionId));
     scrollToSectionStepper();
   };
 
@@ -647,6 +762,11 @@ export function RelevamientoFlowPage() {
                   <span>
                     Estado: <strong>{localDraftStatusLabel[draftStatus]}</strong>
                   </span>
+                  {getRelevamientoFinalizationMode() === 'backend' ? (
+                    <span>
+                      Servidor: <strong>{serverDraftSyncStatusLabel[serverDraftSyncStatus]}</strong>
+                    </span>
+                  ) : null}
                   {lastSavedAt ? (
                     <span className="small">
                       Último guardado: <strong>{formatSavedAt(lastSavedAt)}</strong>
