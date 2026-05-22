@@ -225,7 +225,7 @@ export function buildBackendRelevamientoDraft(
           snapshot.vivienda.cantidadHogaresDeclarada,
         ),
         vinculo_entre_hogares: snapshot.vivienda.vinculoEntreHogares,
-        observaciones: snapshot.vivienda.observacionesVivienda,
+        observaciones: asString(snapshot.vivienda.observacionesVivienda, 'Sin observaciones'),
       };
 
   return {
