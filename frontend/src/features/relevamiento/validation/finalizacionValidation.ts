@@ -173,6 +173,14 @@ function validateEntrevistaRealizada(
       );
     }
 
+    if (isBlank(hogar.formaAccesoVivienda)) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.formaAccesoVivienda`,
+        `${hogarLabel}: seleccione cómo accedieron a esta vivienda.`,
+      );
+    }
+
     const datosHogar = input.personasContactosPorHogar[hogar.id];
     const personas = datosHogar?.personas ?? [];
 
