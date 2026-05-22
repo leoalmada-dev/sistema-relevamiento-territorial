@@ -165,3 +165,23 @@ Este contrato no define:
 API-1A debe usarse como base de conversación entre frontend y backend.
 
 La implementación posterior debe separarse en nuevos bloques.
+
+## Nota API-2B — Contrato real probado posterior
+
+Este documento conserva el contrato inicial API-1A como antecedente.
+
+Luego de probar el backend real, se documentó el contrato observado en:
+
+~~~text
+docs/api/02-contrato-real-backend-probado.md
+~~~
+
+Diferencias principales detectadas:
+
+- Borrador: el backend real usa `POST /borrador/create`.
+- Recuperación: el backend real usa `GET /borrador/get/{id}`.
+- Finalización: el backend real usa `POST /relevamiento/create`.
+- Finalización requiere `draft.id` con el id del borrador.
+- `/relevamiento/create` valida de forma más estricta que `/borrador/create`.
+
+Hasta integrar frontend, este documento no debe tomarse como contrato operativo definitivo.

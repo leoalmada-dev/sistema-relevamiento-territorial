@@ -73,3 +73,24 @@ Quedan pendientes de definición antes de implementar relevamientos reales:
 - qué errores debe devolver backend ante borrador inválido, sección inválida o relevamiento inexistente.
 
 No cerrar estas decisiones dentro de API-1A sin nuevo contrato.
+
+## Pendientes API-2B — Contrato real probado con backend
+
+A partir de las pruebas contra backend de prueba queda pendiente resolver antes de integrar:
+
+- Definir si frontend mantiene `cedula` y se mapea a `documento`, o si se renombra el campo.
+- Definir si sexo/género se mapea por adapter a los valores del backend.
+- Definir si `vinculoBarrioFamilia` se mapea a `vinculo_barrio`.
+- Definir si `tiempo_vive_barrio` debe pasar a entero o si backend aceptará texto.
+- Confirmar si `parentesco_con_referente` debe enviarse siempre como string.
+- Confirmar tratamiento oficial de predio manual.
+- Confirmar si `/relevamiento/create` debería aceptar `borrador_id` top-level además de `draft.id`.
+- Confirmar si errores 500 observados serán convertidos en 422 de validación.
+- Dejar `/relevamiento/create/offline` fuera de alcance hasta definir offline real.
+
+Hallazgo probado:
+
+~~~text
+POST /borrador/create → devuelve datos.id.
+POST /relevamiento/create → requiere draft.id = datos.id.
+~~~
