@@ -192,6 +192,14 @@ function validateEntrevistaRealizada(
     const datosHogar = input.personasContactosPorHogar[hogar.id];
     const personas = datosHogar?.personas ?? [];
 
+    if (isBlank(datosHogar?.salud.servicioAtencionMedica ?? '')) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.salud.servicioAtencionMedica`,
+        `${hogarLabel}: seleccione servicio de atención médica.`,
+      );
+    }
+
     if (personas.length === 0) {
       addError(
         errors,
