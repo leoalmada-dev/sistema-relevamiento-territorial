@@ -134,3 +134,32 @@ docs/api/01-contrato-relevamientos.md
 ~~~
 
 Este contrato no define modelo definitivo de base de datos ni implica que los endpoints ya estén implementados.
+
+## API-2B — Contrato real probado con backend
+
+Se agregó documentación separada del contrato real probado contra el backend de prueba:
+
+~~~text
+docs/api/02-contrato-real-backend-probado.md
+~~~
+
+Resumen de hallazgos:
+
+- Base de prueba: `http://10.100.66.32:8000/api/v1`.
+- Las rutas GET territoriales reales responden con arrays/objetos directos.
+- `POST /borrador/create` devuelve el identificador del borrador en `datos.id`.
+- `GET /borrador/get/{id}` recupera el borrador guardado.
+- `POST /borrador/sincronizar` existe, pero queda sin utilidad fija para la primera integración online.
+- `POST /relevamiento/create` finaliza/persiste el relevamiento.
+- `/relevamiento/create` requiere el identificador del borrador en `draft.id`.
+- `/relevamiento/create/offline` queda fuera de alcance para el frontend actual.
+
+Diferencias relevantes frente al contrato inicial:
+
+- El contrato inicial proponía `PATCH /relevamientos/{id}/borrador`.
+- El backend real usa `POST /borrador/create`.
+- El contrato inicial proponía `POST /relevamientos/{id}/finalizar`.
+- El backend real usa `POST /relevamiento/create`.
+- El identificador probado para finalizar viaja como `draft.id`.
+
+La integración frontend debe basarse en el contrato real probado o en una nueva versión acordada con backend.
