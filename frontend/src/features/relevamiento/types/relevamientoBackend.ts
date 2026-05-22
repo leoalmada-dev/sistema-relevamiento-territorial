@@ -1,0 +1,152 @@
+export type BackendFinalizationMode = 'local' | 'backend';
+
+export type BackendApiResponse<T> = {
+  code?: number;
+  status?: string;
+  message?: string;
+  datos?: T;
+  errors?: unknown;
+};
+
+export type BackendBorradorCreateResponseData = {
+  id: number;
+  current_section?: string;
+  draft_version?: number;
+  saved_at_client?: string | null;
+  completed?: boolean;
+  draft?: unknown;
+};
+
+export type BackendBorradorCreatePayload = {
+  draft_version: 1;
+  current_section: string;
+  finalized_at_client: string;
+  draft: BackendRelevamientoDraftPayload;
+};
+
+export type BackendRelevamientoCreatePayload = {
+  draft_version: 1;
+  current_section: string;
+  finalized_at_client: string;
+  draft: {
+    id: number;
+  };
+};
+
+export type BackendRelevamientoDraftPayload = {
+  territorio: BackendTerritorioPayload;
+  visita: BackendVisitaPayload;
+  vivienda: BackendViviendaPayload | null;
+  hogares: BackendHogarPayload[];
+  observaciones_generales: string;
+  coordenadas: BackendCoordenadasPayload;
+};
+
+export type BackendTerritorioPayload = {
+  zona_id: number | null;
+  cuadrante_id: number | null;
+  predio_id: number | null;
+  predio?: BackendPredioPayload;
+  predio_manual?: BackendPredioManualPayload;
+};
+
+export type BackendPredioPayload = {
+  id: number | string;
+  calle: string;
+  numero_teorico_puerta: string;
+  padron: string;
+  manzana: string;
+  lote: string;
+};
+
+export type BackendPredioManualPayload = {
+  origen: 'manual';
+  cuadrante_id: number | null;
+  calle: string;
+  numero_puerta_teorico: string;
+  referencia: string;
+};
+
+export type BackendVisitaPayload = {
+  resultado: string;
+  motivo_negativa: string;
+  referencia_no_encontrado: string;
+  contacto_no_encontrado: string;
+  horario_no_encontrado: string;
+  observacion_no_encontrado: string;
+};
+
+export type BackendViviendaPayload = {
+  cantidad_hogares_declarada: number;
+  vinculo_entre_hogares: string;
+  observaciones: string;
+};
+
+export type BackendHogarPayload = {
+  temp_id: string;
+  numero_hogar: number;
+  tiempo_vive_barrio: number;
+  beneficiario_regularizacion: string;
+  forma_acceso_vivienda: string;
+  forma_acceso_otro: string;
+  titular_vivienda: string;
+  conforme_caracteristicas: string;
+  personas: BackendPersonaPayload[];
+  contactos: BackendContactoPayload[];
+  servicios: BackendServiciosPayload;
+  salud: BackendSaludPayload;
+  observaciones: string;
+};
+
+export type BackendPersonaPayload = {
+  temp_id: string;
+  nombre: string;
+  apellido: string;
+  documento: string;
+  edad: number;
+  sexo: string;
+  ocupacion: string;
+  es_referente: boolean;
+  parentesco_con_referente: string;
+  vinculo_barrio: string;
+  vinculo_barrio_familia: string;
+  observaciones: string;
+};
+
+export type BackendContactoPayload = {
+  temp_id: string;
+  orden: number;
+  telefono: string;
+  nombre_referencia: string;
+  observaciones: string;
+};
+
+export type BackendServiciosPayload = {
+  tiene_luz_agua: string;
+  tiene_convenio_luz_agua: string;
+  titular_convenio_luz_agua: string;
+  tiene_cable_internet: string;
+  titular_cable_internet: string;
+  observaciones: string;
+};
+
+export type BackendSaludPayload = {
+  servicio_atencion_medica: string;
+  prestador_privado: string;
+  centro_asse: string;
+  tiene_emergencia_movil: string;
+  emergencia_movil: string;
+  observaciones: string;
+};
+
+export type BackendCoordenadasPayload = {
+  latitud: number | null;
+  longitud: number | null;
+  hora_captura: string;
+};
+
+export type FinalizarRelevamientoBackendResult = {
+  mode: BackendFinalizationMode;
+  borradorId?: number;
+  message: string;
+};
