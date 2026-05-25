@@ -24,6 +24,12 @@ export type FinalizacionValidationInput = {
   cierre: CierreRelevamientoFormState;
 };
 
+const RESULTADOS_VISITA_VALIDOS = new Set([
+  'ENTREVISTA_REALIZADA',
+  'SE_NIEGA',
+  'NO_SE_ENCUENTRA',
+]);
+
 function isBlank(value: string) {
   return value.trim() === '';
 }
@@ -66,7 +72,28 @@ function addError(
   errors.push({ campo, mensaje });
 }
 
-function validatePredioResultadoYCierre(
+function buildValidationResult(
+  errors: FinalizacionValidationError[],
+): FinalizacionValidationResult {
+  const seen = new Set<string>();
+  const normalizedErrors = errors.filter((error) => {
+    const key = `${error.campo}-${error.mensaje}`;
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+
+  return {
+    valid: normalizedErrors.length === 0,
+    errors: normalizedErrors,
+  };
+}
+
+function validatePredioYResultado(
   input: FinalizacionValidationInput,
   errors: FinalizacionValidationError[],
 ) {
@@ -87,8 +114,22 @@ function validatePredioResultadoYCierre(
 
   if (!input.resultadoVisita.resultado) {
     addError(errors, 'resultadoVisita', 'Seleccione el resultado de la visita.');
+    return;
   }
 
+  if (!RESULTADOS_VISITA_VALIDOS.has(input.resultadoVisita.resultado)) {
+    addError(
+      errors,
+      'resultadoVisita.resultado',
+      'Seleccione un resultado de visita válido.',
+    );
+  }
+}
+
+function validateCierreFields(
+  input: FinalizacionValidationInput,
+  errors: FinalizacionValidationError[],
+) {
   if (isBlank(input.cierre.latitud)) {
     addError(errors, 'cierre.latitud', 'Cierre: complete latitud.');
   } else if (!isValidLatitude(input.cierre.latitud)) {
@@ -106,7 +147,7 @@ function validatePredioResultadoYCierre(
   }
 }
 
-function validateEntrevistaRealizada(
+function validateViviendaHogaresFields(
   input: FinalizacionValidationInput,
   errors: FinalizacionValidationError[],
 ) {
@@ -146,15 +187,13 @@ function validateEntrevistaRealizada(
     }
   }
 
-  if (isBlank(input.vivienda.vinculoEntreHogares)) {
+  if (input.hogares.length > 1 && isBlank(input.vivienda.vinculoEntreHogares)) {
     addError(
       errors,
       'vivienda.vinculoEntreHogares',
       'Vivienda: seleccione el vínculo entre hogares.',
     );
   }
-
-  const documentos = new Map<string, number>();
 
   input.hogares.forEach((hogar, hogarIndex) => {
     const hogarLabel = `Hogar ${hogarIndex + 1}`;
@@ -189,22 +228,17 @@ function validateEntrevistaRealizada(
       );
     }
 
-    if (isBlank(hogar.titularVivienda)) {
-      addError(
-        errors,
-        `hogares.${hogarIndex}.titularVivienda`,
-        `${hogarLabel}: complete titular de la vivienda.`,
-      );
-    }
+  });
+}
 
-    if (isBlank(hogar.conformeCaracteristicas)) {
-      addError(
-        errors,
-        `hogares.${hogarIndex}.conformeCaracteristicas`,
-        `${hogarLabel}: complete si está conforme con las características del hogar.`,
-      );
-    }
+function validatePersonasContactosFields(
+  input: FinalizacionValidationInput,
+  errors: FinalizacionValidationError[],
+) {
+  const documentos = new Map<string, number>();
 
+  input.hogares.forEach((hogar, hogarIndex) => {
+    const hogarLabel = `Hogar ${hogarIndex + 1}`;
     const datosHogar = input.personasContactosPorHogar[hogar.id];
     const personas = datosHogar?.personas ?? [];
 
@@ -229,6 +263,24 @@ function validateEntrevistaRealizada(
         errors,
         `hogares.${hogarIndex}.personas`,
         `${hogarLabel}: debe tener al menos una persona cargada.`,
+      );
+    }
+
+    const cantidadReferentes = personas.filter((persona) => persona.esReferente).length;
+
+    if (personas.length > 0 && cantidadReferentes === 0) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.personas.referente`,
+        `${hogarLabel}: debe tener una persona referente.`,
+      );
+    }
+
+    if (cantidadReferentes > 1) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.personas.referente`,
+        `${hogarLabel}: solo puede haber una persona referente.`,
       );
     }
 
@@ -327,29 +379,58 @@ function validateEntrevistaRealizada(
   }
 }
 
+export function validateInicioPredioVisita(
+  input: FinalizacionValidationInput,
+): FinalizacionValidationResult {
+  const errors: FinalizacionValidationError[] = [];
+
+  validatePredioYResultado(input, errors);
+
+  return buildValidationResult(errors);
+}
+
+export function validateViviendaHogares(
+  input: FinalizacionValidationInput,
+): FinalizacionValidationResult {
+  const errors: FinalizacionValidationError[] = [];
+
+  validateViviendaHogaresFields(input, errors);
+
+  return buildValidationResult(errors);
+}
+
+export function validatePersonasContactos(
+  input: FinalizacionValidationInput,
+): FinalizacionValidationResult {
+  const errors: FinalizacionValidationError[] = [];
+
+  validatePersonasContactosFields(input, errors);
+
+  return buildValidationResult(errors);
+}
+
+export function validateCierreRelevamiento(
+  input: FinalizacionValidationInput,
+): FinalizacionValidationResult {
+  const errors: FinalizacionValidationError[] = [];
+
+  validateCierreFields(input, errors);
+
+  return buildValidationResult(errors);
+}
+
 export function validateFinalizacionRelevamiento(
   input: FinalizacionValidationInput,
 ): FinalizacionValidationResult {
   const errors: FinalizacionValidationError[] = [];
 
-  validatePredioResultadoYCierre(input, errors);
+  validatePredioYResultado(input, errors);
+  validateCierreFields(input, errors);
 
   if (input.resultadoVisita.resultado === 'ENTREVISTA_REALIZADA') {
-    validateEntrevistaRealizada(input, errors);
-  } else if (
-    input.resultadoVisita.resultado !== '' &&
-    input.resultadoVisita.resultado !== 'SE_NIEGA' &&
-    input.resultadoVisita.resultado !== 'NO_SE_ENCUENTRA'
-  ) {
-    addError(
-      errors,
-      'resultadoVisita.resultado',
-      'Seleccione un resultado de visita válido.',
-    );
+    validateViviendaHogaresFields(input, errors);
+    validatePersonasContactosFields(input, errors);
   }
 
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
+  return buildValidationResult(errors);
 }
