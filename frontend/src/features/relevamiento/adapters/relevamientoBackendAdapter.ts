@@ -32,7 +32,13 @@ function asString(value: unknown, fallback = DEFAULT_EMPTY_TEXT) {
     return fallback;
   }
 
-  return String(value);
+  const stringValue = String(value).trim();
+
+  if (!stringValue) {
+    return fallback;
+  }
+
+  return stringValue;
 }
 
 function parseNumberOrNull(value: string) {
@@ -93,7 +99,7 @@ function toBackendSexo(value: string) {
 
 function buildBackendTerritorio(snapshot: RelevamientoBackendSnapshot): BackendTerritorioPayload {
   const predio = snapshot.selectedPredio;
-  const cuadranteId = parseNumericId(predio?.cuadranteId ?? snapshot.selectedCuadrante?.id);
+  const cuadranteId = parseNumericId(predio?.cuadranteId || snapshot.selectedCuadrante?.id);
   const zonaId = parseNumericId(snapshot.selectedCuadrante?.zonaId);
   const predioId = parseNumericId(predio?.id ?? snapshot.selectedPredioId);
 
@@ -200,7 +206,7 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
           personasContactos?.servicios.titularConvenioLuzAgua ?? '',
         tiene_cable_internet: personasContactos?.servicios.tieneCableInternet ?? '',
         titular_cable_internet: personasContactos?.servicios.titularCableInternet ?? '',
-        observaciones: personasContactos?.servicios.observacionesServicios ?? '',
+        observaciones: asString(personasContactos?.servicios.observacionesServicios, 'Sin observaciones'),
       },
       salud: {
         servicio_atencion_medica: personasContactos?.salud.servicioAtencionMedica ?? '',
@@ -210,7 +216,7 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
         emergencia_movil: personasContactos?.salud.emergenciaMovil ?? '',
         observaciones: personasContactos?.salud.observacionesSalud ?? '',
       },
-      observaciones: '',
+      observaciones: 'Sin observaciones',
     };
   });
 }
@@ -225,7 +231,7 @@ export function buildBackendRelevamientoDraft(
           snapshot.vivienda.cantidadHogaresDeclarada,
         ),
         vinculo_entre_hogares: snapshot.vivienda.vinculoEntreHogares,
-        observaciones: snapshot.vivienda.observacionesVivienda,
+        observaciones: asString(snapshot.vivienda.observacionesVivienda, 'Sin observaciones'),
       };
 
   return {
