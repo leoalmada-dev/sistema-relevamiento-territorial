@@ -253,6 +253,7 @@ export function RelevamientoFlowPage() {
     currentSectionId,
     selectedPredioId,
     selectedPredio,
+    selectedCuadrante,
     resultadoVisita,
     vivienda,
     hogares,
@@ -313,6 +314,7 @@ export function RelevamientoFlowPage() {
     resultadoVisita,
     selectedPredio,
     selectedPredioId,
+    selectedCuadrante,
     vivienda,
   ]);
 
@@ -320,7 +322,7 @@ export function RelevamientoFlowPage() {
     setCurrentSectionId(draft.currentSectionId);
     setSelectedPredioId(draft.selectedPredioId);
     setSelectedPredio(draft.selectedPredio);
-    setSelectedCuadrante(null);
+    setSelectedCuadrante(draft.selectedCuadrante ?? null);
     setShowCuadranteImageModal(false);
     setResultadoVisita(draft.resultadoVisita);
     setVivienda(draft.vivienda);
@@ -993,6 +995,8 @@ export function RelevamientoFlowPage() {
             <TerritorialSelector
               key={territorialSelectorKey}
               selectedPredioId={selectedPredioId}
+              selectedPredio={selectedPredio}
+              selectedCuadrante={selectedCuadrante}
               onPredioSelected={handlePredioSelected}
               onCuadranteSelected={handleCuadranteSelected}
               onRequestTerritorialChange={requestTerritorialChange}

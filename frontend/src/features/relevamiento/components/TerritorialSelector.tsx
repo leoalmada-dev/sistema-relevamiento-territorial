@@ -16,6 +16,8 @@ import type {
 
 type TerritorialSelectorProps = {
   selectedPredioId: string;
+  selectedPredio: PredioDetalle | null;
+  selectedCuadrante: CuadranteOption | null;
   onPredioSelected: (predioId: string, predioDetalle: PredioDetalle | null) => void;
   onCuadranteSelected?: (cuadrante: CuadranteOption | null) => void;
   onRequestTerritorialChange?: (applyChange: () => void) => void;
@@ -33,6 +35,8 @@ function isManualPredioId(predioId: string) {
 
 export function TerritorialSelector({
   selectedPredioId,
+  selectedPredio,
+  selectedCuadrante,
   onPredioSelected,
   onCuadranteSelected,
   onRequestTerritorialChange,
@@ -56,7 +60,7 @@ export function TerritorialSelector({
     [selectedZonaId, zonas],
   );
 
-  const selectedCuadrante = useMemo(
+  const selectedCuadranteInterno = useMemo(
     () => cuadrantes.find((cuadrante) => cuadrante.id === selectedCuadranteId) ?? null,
     [cuadrantes, selectedCuadranteId],
   );
@@ -78,6 +82,12 @@ export function TerritorialSelector({
     : selectedPredioId;
 
   const isManualPredioSelected = selectedPredioOptionValue === MANUAL_PREDIO_OPTION_VALUE;
+
+  const resetManualPredio = () => {
+    setManualPredioCalle('');
+    setManualPredioNumero('');
+    setManualPredioReferencia('');
+  };
 
   useEffect(() => {
     let active = true;
@@ -115,6 +125,62 @@ export function TerritorialSelector({
     };
   }, []);
 
+  useEffect(() => {
+    if (!selectedPredio || !selectedCuadrante) {
+      return;
+    }
+
+    let active = true;
+
+    setSelectedZonaId(selectedCuadrante.zonaId);
+    setSelectedCuadranteId(selectedCuadrante.id);
+    setPredioDetalle(selectedPredio);
+
+    if (selectedPredio.origen === 'manual') {
+      setManualPredioCalle(selectedPredio.calle);
+      setManualPredioNumero(selectedPredio.numeroPuertaTeorico);
+      setManualPredioReferencia(selectedPredio.referencia ?? '');
+    } else {
+      resetManualPredio();
+    }
+
+    setLoading(true);
+    setErrorMessage('');
+
+    Promise.all([
+      getCuadrantesByZona(selectedCuadrante.zonaId),
+      getPrediosByCuadrante(selectedCuadrante.id),
+    ])
+      .then(([nextCuadrantes, nextPredios]) => {
+        if (!active) {
+          return;
+        }
+
+        setCuadrantes(nextCuadrantes);
+        setPredios(nextPredios);
+      })
+      .catch((error: unknown) => {
+        if (!active) {
+          return;
+        }
+
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo restaurar visualmente la selección territorial.',
+        );
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedCuadrante, selectedPredio]);
+
   const runTerritorialChange = (applyChange: () => void) => {
     if (onRequestTerritorialChange) {
       onRequestTerritorialChange(applyChange);
@@ -122,12 +188,6 @@ export function TerritorialSelector({
     }
 
     applyChange();
-  };
-
-  const resetManualPredio = () => {
-    setManualPredioCalle('');
-    setManualPredioNumero('');
-    setManualPredioReferencia('');
   };
 
   const buildManualPredioDetalle = (
@@ -138,7 +198,12 @@ export function TerritorialSelector({
     const calleNormalizada = calle.trim();
     const numeroNormalizado = numeroPuertaTeorico.trim();
 
-    if (!selectedCuadrante || !selectedCuadranteId || !calleNormalizada || !numeroNormalizado) {
+    if (
+      !selectedCuadranteInterno ||
+      !selectedCuadranteId ||
+      !calleNormalizada ||
+      !numeroNormalizado
+    ) {
       return null;
     }
 
@@ -151,7 +216,7 @@ export function TerritorialSelector({
       manzana: '',
       lote: '',
       referencia: referencia.trim() || 'Predio ingresado manualmente',
-      nombreCuadrante: selectedCuadrante.nombre,
+      nombreCuadrante: selectedCuadranteInterno.nombre,
       origen: 'manual',
     };
   };
@@ -469,16 +534,16 @@ export function TerritorialSelector({
             </Card>
           ) : null}
 
-          {selectedZona || selectedCuadrante ? (
+          {selectedZona || selectedCuadranteInterno ? (
             <Alert variant="secondary" className="mb-0">
               {selectedZona ? (
                 <>
                   Zona seleccionada: <strong>{selectedZona.nombre}</strong>.
                 </>
               ) : null}{' '}
-              {selectedCuadrante ? (
+              {selectedCuadranteInterno ? (
                 <>
-                  Cuadrante seleccionado: <strong>{selectedCuadrante.nombre}</strong>.
+                  Cuadrante seleccionado: <strong>{selectedCuadranteInterno.nombre}</strong>.
                 </>
               ) : null}
             </Alert>
