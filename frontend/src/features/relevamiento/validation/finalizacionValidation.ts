@@ -266,6 +266,24 @@ function validatePersonasContactosFields(
       );
     }
 
+    const cantidadReferentes = personas.filter((persona) => persona.esReferente).length;
+
+    if (personas.length > 0 && cantidadReferentes === 0) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.personas.referente`,
+        `${hogarLabel}: debe tener una persona referente.`,
+      );
+    }
+
+    if (cantidadReferentes > 1) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.personas.referente`,
+        `${hogarLabel}: solo puede haber una persona referente.`,
+      );
+    }
+
     const contactos = datosHogar?.contactos ?? [];
 
     contactos.forEach((contacto, contactoIndex) => {
