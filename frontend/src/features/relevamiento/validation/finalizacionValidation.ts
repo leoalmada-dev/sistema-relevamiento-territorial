@@ -232,6 +232,18 @@ function validateEntrevistaRealizada(
       );
     }
 
+    const contactos = datosHogar?.contactos ?? [];
+
+    contactos.forEach((contacto, contactoIndex) => {
+      if (isBlank(contacto.telefono)) {
+        addError(
+          errors,
+          `hogares.${hogarIndex}.contactos.${contactoIndex}.telefono`,
+          `Contacto ${contactoIndex + 1} del ${hogarLabel}: complete teléfono o elimine el contacto.`,
+        );
+      }
+    });
+
     personas.forEach((persona, personaIndex) => {
       const personaLabel = `Persona ${personaIndex + 1} del ${hogarLabel}`;
       const documento = persona.cedula.trim();
