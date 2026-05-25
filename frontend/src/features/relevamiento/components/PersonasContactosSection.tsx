@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Col, Form, Row, Stack } from 'react-bootstrap';
+import { Alert, Badge, Button, Card, Col, Row, Stack } from 'react-bootstrap';
 import { ContactoFormCard } from './ContactoFormCard';
 import { PersonaFormCard } from './PersonaFormCard';
 import { ServiciosSaludSection } from './ServiciosSaludSection';
@@ -22,8 +22,24 @@ type PersonasContactosSectionProps = {
 };
 
 type PersonasContactosConfirmAction =
-  | { type: 'remove-persona'; personaId: string }
-  | { type: 'remove-contacto'; contactoId: string };
+  | { type: 'remove-persona'; hogarId: string; personaId: string }
+  | { type: 'remove-contacto'; hogarId: string; contactoId: string };
+
+function hasCompletedValue(value: unknown): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value);
+  }
+
+  return String(value ?? '').trim().length > 0;
+}
+
+function getHogarLabel(hogar: HogarFormState, index: number): string {
+  return `Hogar ${hogar.numeroHogar || index + 1}`;
+}
 
 export function PersonasContactosSection({
   hogares,
@@ -47,28 +63,53 @@ export function PersonasContactosSection({
     }
   }, [hogares, selectedHogarId]);
 
-  const selectedHogar = useMemo(
-    () => hogares.find((hogar) => hogar.id === selectedHogarId) ?? null,
+  const selectedHogarIndex = useMemo(
+    () => hogares.findIndex((hogar) => hogar.id === selectedHogarId),
     [hogares, selectedHogarId],
   );
+
+  const selectedHogar = selectedHogarIndex >= 0 ? hogares[selectedHogarIndex] : null;
+
+  const selectedHogarLabel = selectedHogar
+    ? getHogarLabel(selectedHogar, selectedHogarIndex)
+    : 'hogar seleccionado';
+
+  const selectedHogarPosition =
+    selectedHogarIndex >= 0 ? `${selectedHogarIndex + 1} de ${hogares.length}` : '';
+
+  const getDatosHogarById = (hogarId: string): PersonasContactosHogarState =>
+    personasContactosPorHogar[hogarId] ?? crearPersonasContactosHogarInicial();
 
   const datosHogar = useMemo<PersonasContactosHogarState>(() => {
     if (!selectedHogarId) {
       return crearPersonasContactosHogarInicial();
     }
 
-    return personasContactosPorHogar[selectedHogarId] ?? crearPersonasContactosHogarInicial();
+    return getDatosHogarById(selectedHogarId);
   }, [personasContactosPorHogar, selectedHogarId]);
+
+  const updateDatosHogarForHogar = (
+    hogarId: string,
+    nextDatosHogar: PersonasContactosHogarState,
+  ) => {
+    const hogarExists = hogares.some((hogar) => hogar.id === hogarId);
+
+    if (!hogarExists) {
+      return;
+    }
+
+    onChange({
+      ...personasContactosPorHogar,
+      [hogarId]: nextDatosHogar,
+    });
+  };
 
   const updateDatosHogar = (nextDatosHogar: PersonasContactosHogarState) => {
     if (!selectedHogarId) {
       return;
     }
 
-    onChange({
-      ...personasContactosPorHogar,
-      [selectedHogarId]: nextDatosHogar,
-    });
+    updateDatosHogarForHogar(selectedHogarId, nextDatosHogar);
   };
 
   const addPersona = () => {
@@ -91,13 +132,23 @@ export function PersonasContactosSection({
   };
 
   const requestRemovePersona = (personaId: string) => {
-    setPendingConfirmAction({ type: 'remove-persona', personaId });
+    if (!selectedHogarId) {
+      return;
+    }
+
+    setPendingConfirmAction({
+      type: 'remove-persona',
+      hogarId: selectedHogarId,
+      personaId,
+    });
   };
 
-  const removePersona = (personaId: string) => {
-    updateDatosHogar({
-      ...datosHogar,
-      personas: datosHogar.personas.filter((persona) => persona.id !== personaId),
+  const removePersona = (hogarId: string, personaId: string) => {
+    const targetDatosHogar = getDatosHogarById(hogarId);
+
+    updateDatosHogarForHogar(hogarId, {
+      ...targetDatosHogar,
+      personas: targetDatosHogar.personas.filter((persona) => persona.id !== personaId),
     });
   };
 
@@ -121,13 +172,25 @@ export function PersonasContactosSection({
   };
 
   const requestRemoveContacto = (contactoId: string) => {
-    setPendingConfirmAction({ type: 'remove-contacto', contactoId });
+    if (!selectedHogarId) {
+      return;
+    }
+
+    setPendingConfirmAction({
+      type: 'remove-contacto',
+      hogarId: selectedHogarId,
+      contactoId,
+    });
   };
 
-  const removeContacto = (contactoId: string) => {
-    updateDatosHogar({
-      ...datosHogar,
-      contactos: datosHogar.contactos.filter((contacto) => contacto.id !== contactoId),
+  const removeContacto = (hogarId: string, contactoId: string) => {
+    const targetDatosHogar = getDatosHogarById(hogarId);
+
+    updateDatosHogarForHogar(hogarId, {
+      ...targetDatosHogar,
+      contactos: targetDatosHogar.contactos.filter(
+        (contacto) => contacto.id !== contactoId,
+      ),
     });
   };
 
@@ -156,12 +219,12 @@ export function PersonasContactosSection({
     }
 
     if (pendingConfirmAction.type === 'remove-persona') {
-      removePersona(pendingConfirmAction.personaId);
+      removePersona(pendingConfirmAction.hogarId, pendingConfirmAction.personaId);
       setPendingConfirmAction(null);
       return;
     }
 
-    removeContacto(pendingConfirmAction.contactoId);
+    removeContacto(pendingConfirmAction.hogarId, pendingConfirmAction.contactoId);
     setPendingConfirmAction(null);
   };
 
@@ -194,43 +257,88 @@ export function PersonasContactosSection({
           <Stack gap={3}>
             <div>
               <Badge bg="primary" className="mb-2">
-                Hogar seleccionado
+                Hogares
               </Badge>
-              <h3 className="h5 mb-1">Personas y contactos por hogar</h3>
+              <h3 className="h5 mb-1">Seleccione el hogar a completar</h3>
               <p className="text-secondary mb-0">
-                Seleccione el hogar para cargar sus integrantes, contactos, servicios y salud.
+                Toque un hogar para cargar sus personas, contactos, servicios y salud.
               </p>
             </div>
 
             <Row className="g-3">
-              <Col md={6}>
-                <Form.Group controlId="hogar-personas-contactos">
-                  <Form.Label>Hogar a completar</Form.Label>
-                  <Form.Select
-                    value={selectedHogarId}
-                    onChange={(event) => setSelectedHogarId(event.target.value)}
-                  >
-                    {hogares.map((hogar, index) => (
-                      <option key={hogar.id} value={hogar.id}>
-                        Hogar {hogar.numeroHogar || index + 1}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
+              {hogares.map((hogar, index) => {
+                const hogarLabel = getHogarLabel(hogar, index);
+                const hogarDatos = getDatosHogarById(hogar.id);
+                const isSelected = hogar.id === selectedHogarId;
+                const cantidadPersonas = hogarDatos.personas.length;
+                const cantidadContactos = hogarDatos.contactos.length;
+                const tieneReferente = hogarDatos.personas.some((persona) => persona.esReferente);
+                const tieneServicios = Object.values(hogarDatos.servicios).some(hasCompletedValue);
+                const tieneSaludBasica =
+                  hasCompletedValue(hogarDatos.salud.servicioAtencionMedica) &&
+                  hasCompletedValue(hogarDatos.salud.tieneEmergenciaMovil);
 
-              <Col md={6}>
-                <Alert variant="info" className="mb-0">
-                  {selectedHogar ? (
-                    <>
-                      Completando datos del <strong>Hogar {selectedHogar.numeroHogar}</strong>.
-                    </>
-                  ) : (
-                    'Seleccioná un hogar para completar.'
-                  )}
-                </Alert>
-              </Col>
+                return (
+                  <Col md={6} xl={4} key={hogar.id}>
+                    <Button
+                      type="button"
+                      variant={isSelected ? 'primary' : 'outline-primary'}
+                      className="w-100 h-100 text-start p-3"
+                      aria-pressed={isSelected}
+                      onClick={() => setSelectedHogarId(hogar.id)}
+                    >
+                      <Stack gap={2}>
+                        <div className="d-flex justify-content-between align-items-start gap-2">
+                          <span className="fw-semibold">{hogarLabel}</span>
+                          {isSelected ? (
+                            <Badge bg="light" text="dark">
+                              Editando
+                            </Badge>
+                          ) : (
+                            <Badge bg="secondary">Seleccionar</Badge>
+                          )}
+                        </div>
+
+                        <div className="d-flex flex-wrap gap-2">
+                          <Badge bg={isSelected ? 'light' : 'secondary'} text={isSelected ? 'dark' : undefined}>
+                            {cantidadPersonas} {cantidadPersonas === 1 ? 'persona' : 'personas'}
+                          </Badge>
+                          <Badge bg={tieneReferente ? 'success' : 'warning'} text={tieneReferente ? undefined : 'dark'}>
+                            Referente {tieneReferente ? 'sí' : 'no'}
+                          </Badge>
+                          <Badge bg={isSelected ? 'light' : 'secondary'} text={isSelected ? 'dark' : undefined}>
+                            {cantidadContactos} {cantidadContactos === 1 ? 'contacto' : 'contactos'}
+                          </Badge>
+                          <Badge bg={tieneSaludBasica ? 'success' : 'warning'} text={tieneSaludBasica ? undefined : 'dark'}>
+                            Salud {tieneSaludBasica ? 'cargada' : 'pendiente'}
+                          </Badge>
+                          <Badge bg={tieneServicios ? 'success' : 'warning'} text={tieneServicios ? undefined : 'dark'}>
+                            Servicios {tieneServicios ? 'con datos' : 'pendientes'}
+                          </Badge>
+                        </div>
+                      </Stack>
+                    </Button>
+                  </Col>
+                );
+              })}
             </Row>
+
+            <Alert variant="info" className="mb-0">
+              {selectedHogar ? (
+                <>
+                  Editando <strong>{selectedHogarLabel}</strong>
+                  {selectedHogarPosition ? (
+                    <>
+                      {' '}
+                      (<strong>{selectedHogarPosition}</strong>)
+                    </>
+                  ) : null}
+                  . Todo lo que cargue debajo quedará asociado a este hogar.
+                </>
+              ) : (
+                'Seleccione un hogar para completar.'
+              )}
+            </Alert>
           </Stack>
         </Card.Body>
       </Card>
@@ -243,15 +351,15 @@ export function PersonasContactosSection({
                 <Badge bg="primary" className="mb-2">
                   Personas
                 </Badge>
-                <h3 className="h5 mb-1">Integrantes del hogar</h3>
+                <h3 className="h5 mb-1">Personas del {selectedHogarLabel}</h3>
                 <p className="text-secondary mb-0">
-                  Personas integrantes del hogar seleccionado.
+                  Integrantes asociados al {selectedHogarLabel}.
                 </p>
               </div>
 
               <div>
-                <Button variant="primary" onClick={addPersona}>
-                  Agregar persona
+                <Button variant="primary" onClick={addPersona} disabled={!selectedHogar}>
+                  Agregar persona al {selectedHogarLabel}
                 </Button>
               </div>
             </div>
@@ -270,7 +378,7 @@ export function PersonasContactosSection({
               </Stack>
             ) : (
               <Alert variant="secondary" className="mb-0">
-                Todavía no hay personas cargadas para este hogar.
+                Todavía no hay personas cargadas para el {selectedHogarLabel}.
               </Alert>
             )}
           </Stack>
@@ -285,28 +393,29 @@ export function PersonasContactosSection({
                 <Badge bg="primary" className="mb-2">
                   Contactos
                 </Badge>
-                <h3 className="h5 mb-1">Contactos del hogar</h3>
+                <h3 className="h5 mb-1">Contactos del {selectedHogarLabel}</h3>
                 <p className="text-secondary mb-0">
-                  Objetivo inicial: cargar en lo posible hasta dos contactos por hogar.
+                  Objetivo inicial: cargar en lo posible hasta dos contactos para el{' '}
+                  {selectedHogarLabel}.
                 </p>
               </div>
 
               <div>
-                <Button variant="primary" onClick={addContacto}>
-                  Agregar contacto
+                <Button variant="primary" onClick={addContacto} disabled={!selectedHogar}>
+                  Agregar contacto al {selectedHogarLabel}
                 </Button>
               </div>
             </div>
 
             {datosHogar.contactos.length > 2 ? (
               <Alert variant="warning" className="mb-0">
-                Hay más de dos contactos cargados. No se bloquea en esta etapa, pero el
-                objetivo operativo inicial son dos contactos por hogar.
+                Hay más de dos contactos cargados para el {selectedHogarLabel}. No se bloquea en
+                esta etapa, pero el objetivo operativo inicial son dos contactos por hogar.
               </Alert>
             ) : (
               <Alert variant="info" className="mb-0">
-                Contactos cargados para este hogar: <strong>{datosHogar.contactos.length}</strong>.
-                Objetivo inicial: hasta dos.
+                Contactos cargados para el {selectedHogarLabel}:{' '}
+                <strong>{datosHogar.contactos.length}</strong>. Objetivo inicial: hasta dos.
               </Alert>
             )}
 
@@ -324,19 +433,32 @@ export function PersonasContactosSection({
               </Stack>
             ) : (
               <Alert variant="secondary" className="mb-0">
-                Todavía no hay contactos cargados para este hogar.
+                Todavía no hay contactos cargados para el {selectedHogarLabel}.
               </Alert>
             )}
           </Stack>
         </Card.Body>
       </Card>
 
-      <ServiciosSaludSection
-        servicios={datosHogar.servicios}
-        salud={datosHogar.salud}
-        onServiciosChange={updateServicios}
-        onSaludChange={updateSalud}
-      />
+      <Stack gap={3}>
+        <div>
+          <Badge bg="primary" className="mb-2">
+            Servicios y salud
+          </Badge>
+          <h3 className="h5 mb-1">Servicios y salud del {selectedHogarLabel}</h3>
+          <p className="text-secondary mb-0">
+            Los datos de servicios y salud que complete debajo se guardan para el{' '}
+            {selectedHogarLabel}.
+          </p>
+        </div>
+
+        <ServiciosSaludSection
+          servicios={datosHogar.servicios}
+          salud={datosHogar.salud}
+          onServiciosChange={updateServicios}
+          onSaludChange={updateSalud}
+        />
+      </Stack>
 
       <ConfirmActionModal
         show={Boolean(confirmActionContent)}
