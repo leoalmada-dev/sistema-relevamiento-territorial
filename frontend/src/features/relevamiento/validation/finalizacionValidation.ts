@@ -187,7 +187,7 @@ function validateViviendaHogaresFields(
     }
   }
 
-  if (isBlank(input.vivienda.vinculoEntreHogares)) {
+  if (input.hogares.length > 1 && isBlank(input.vivienda.vinculoEntreHogares)) {
     addError(
       errors,
       'vivienda.vinculoEntreHogares',
@@ -225,14 +225,6 @@ function validateViviendaHogaresFields(
         errors,
         `hogares.${hogarIndex}.formaAccesoVivienda`,
         `${hogarLabel}: seleccione cómo accedieron a esta vivienda.`,
-      );
-    }
-
-    if (isBlank(hogar.titularVivienda)) {
-      addError(
-        errors,
-        `hogares.${hogarIndex}.titularVivienda`,
-        `${hogarLabel}: complete titular de la vivienda.`,
       );
     }
 

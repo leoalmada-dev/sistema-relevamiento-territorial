@@ -175,8 +175,8 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
       beneficiario_regularizacion: hogar.beneficiarioRegularizacion,
       forma_acceso_vivienda: hogar.formaAccesoVivienda,
       forma_acceso_otro: hogar.formaAccesoOtro,
-      titular_vivienda: hogar.titularVivienda,
-      conforme_caracteristicas: hogar.conformeCaracteristicas,
+      titular_vivienda: asString(hogar.titularVivienda, 'Sin dato'),
+      conforme_caracteristicas: asString(hogar.conformeCaracteristicas, 'Sin dato'),
       personas: personas.map((persona) => {
         const vinculoBarrio = asString(
           persona.vinculoBarrioFamilia,
@@ -224,13 +224,18 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
 export function buildBackendRelevamientoDraft(
   snapshot: RelevamientoBackendSnapshot,
 ): BackendRelevamientoDraftPayload {
+  const vinculoEntreHogares =
+    snapshot.hogares.length === 1
+      ? asString(snapshot.vivienda.vinculoEntreHogares, 'No corresponde - único hogar')
+      : snapshot.vivienda.vinculoEntreHogares;
+
   const vivienda = esCorteTemprano(snapshot.resultadoVisita.resultado)
     ? null
     : {
         cantidad_hogares_declarada: parseIntegerOrZero(
           snapshot.vivienda.cantidadHogaresDeclarada,
         ),
-        vinculo_entre_hogares: snapshot.vivienda.vinculoEntreHogares,
+        vinculo_entre_hogares: vinculoEntreHogares,
         observaciones: asString(snapshot.vivienda.observacionesVivienda, 'Sin observaciones'),
       };
 

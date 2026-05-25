@@ -165,6 +165,7 @@ export function RelevamientoFlowPage() {
   const [pendingConfirmAction, setPendingConfirmAction] =
     useState<FlowConfirmAction | null>(null);
   const sectionStepperRef = useRef<HTMLDivElement | null>(null);
+  const sectionValidationAlertRef = useRef<HTMLDivElement | null>(null);
 
   const currentIndex = sections.findIndex((section) => section.id === currentSectionId);
   const currentSection = sections[currentIndex] ?? sections[0];
@@ -818,7 +819,7 @@ export function RelevamientoFlowPage() {
       setSectionValidationErrors(validation.errors);
       setFinalizationValidationErrors([]);
       setFinalizationError('');
-      scrollToSectionStepper();
+      scrollToSectionValidationAlert();
       return;
     }
 
@@ -832,6 +833,15 @@ export function RelevamientoFlowPage() {
       sectionStepperRef.current?.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
+      });
+    });
+  };
+
+  const scrollToSectionValidationAlert = () => {
+    requestAnimationFrame(() => {
+      sectionValidationAlertRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
       });
     });
   };
@@ -856,7 +866,7 @@ export function RelevamientoFlowPage() {
       setSectionValidationErrors(validation.errors);
       setFinalizationValidationErrors([]);
       setFinalizationError('');
-      scrollToSectionStepper();
+      scrollToSectionValidationAlert();
       return;
     }
 
@@ -1058,16 +1068,18 @@ export function RelevamientoFlowPage() {
       ) : null}
 
       {sectionValidationErrors.length > 0 ? (
-        <Alert variant="warning" className="mb-0">
-          <div className="fw-semibold mb-2">
-            Antes de avanzar, revise los siguientes datos:
-          </div>
-          <ul className="mb-0">
-            {sectionValidationErrors.map((error) => (
-              <li key={`${error.campo}-${error.mensaje}`}>{error.mensaje}</li>
-            ))}
-          </ul>
-        </Alert>
+        <div ref={sectionValidationAlertRef}>
+          <Alert variant="warning" className="mb-0">
+            <div className="fw-semibold mb-2">
+              Antes de avanzar, revise los siguientes datos:
+            </div>
+            <ul className="mb-0">
+              {sectionValidationErrors.map((error) => (
+                <li key={`${error.campo}-${error.mensaje}`}>{error.mensaje}</li>
+              ))}
+            </ul>
+          </Alert>
+        </div>
       ) : null}
 
       {finalizationValidationErrors.length > 0 ? (
