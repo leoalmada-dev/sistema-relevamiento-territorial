@@ -228,13 +228,6 @@ function validateViviendaHogaresFields(
       );
     }
 
-    if (isBlank(hogar.conformeCaracteristicas)) {
-      addError(
-        errors,
-        `hogares.${hogarIndex}.conformeCaracteristicas`,
-        `${hogarLabel}: complete si está conforme con las características del hogar.`,
-      );
-    }
   });
 }
 

@@ -271,7 +271,6 @@ export function RelevamientoFlowPage() {
     setFinalizacionCompletada(false);
     setFinalizationError('');
     setFinalizationValidationErrors([]);
-    setSectionValidationErrors([]);
     setDraftStatus('CAMBIOS_PENDIENTES');
   };
 
@@ -808,6 +807,7 @@ export function RelevamientoFlowPage() {
     }
 
     if (nextSection.order <= currentSection.order) {
+      setSectionValidationErrors([]);
       setCurrentSectionId(sectionId);
       markDraftPending();
       return;
@@ -851,6 +851,7 @@ export function RelevamientoFlowPage() {
       return;
     }
 
+    setSectionValidationErrors([]);
     setCurrentSectionId(sections[currentIndex - 1].id);
     markDraftPending();
   };
