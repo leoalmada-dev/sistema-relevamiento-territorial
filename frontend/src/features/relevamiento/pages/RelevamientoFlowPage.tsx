@@ -128,6 +128,13 @@ type FlowConfirmAction =
   | { type: 'change-resultado-corte-temprano'; nextResultado: ResultadoVisitaFormState }
   | { type: 'finalize-relevamiento' };
 
+function formatCurrentTimeForInput(date = new Date()) {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${hours}:${minutes}`;
+}
+
 export function RelevamientoFlowPage() {
   const [currentSectionId, setCurrentSectionId] =
     useState<RelevamientoSectionId>('inicio-predio-visita');
@@ -274,6 +281,30 @@ export function RelevamientoFlowPage() {
     setFinalizationValidationErrors([]);
     setDraftStatus('CAMBIOS_PENDIENTES');
   };
+
+  useEffect(() => {
+    const shouldPrefillCaptureTime =
+      (currentSection.id === 'cierre-finalizacion' ||
+        (currentSection.id === 'inicio-predio-visita' && visitaTieneCorteTemprano)) &&
+      !cierre.horaCaptura;
+
+    if (!shouldPrefillCaptureTime) {
+      return;
+    }
+
+    setCierre((currentCierre) => {
+      if (currentCierre.horaCaptura) {
+        return currentCierre;
+      }
+
+      return {
+        ...currentCierre,
+        horaCaptura: formatCurrentTimeForInput(),
+      };
+    });
+
+    markDraftPending();
+  }, [cierre.horaCaptura, currentSection.id, visitaTieneCorteTemprano]);
 
   useEffect(() => {
     const existingDraft = getLocalDraft();

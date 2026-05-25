@@ -1,4 +1,5 @@
-import { Alert, Badge, Button, Card, Col, Form, Row, Stack } from 'react-bootstrap';
+import { useState } from 'react';
+import { Alert, Badge, Button, Card, Col, Form, Row, Spinner, Stack } from 'react-bootstrap';
 import { ResumenRelevamiento } from './ResumenRelevamiento';
 import type { CierreRelevamientoFormState } from '../types/cierreRelevamiento';
 import type { PersonasContactosPorHogarState } from '../types/personaContacto';
@@ -7,6 +8,8 @@ import type { PredioDetalle } from '../types/territorio';
 import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
 
 type CierreRelevamientoModo = 'completo' | 'corte-temprano';
+
+type GeolocationStatus = 'idle' | 'loading' | 'success' | 'error';
 
 type CierreRelevamientoSectionProps = {
   cierre: CierreRelevamientoFormState;
@@ -21,6 +24,33 @@ type CierreRelevamientoSectionProps = {
   onFinalizarRelevamiento: () => void;
 };
 
+function formatCurrentTimeForInput(date = new Date()) {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${hours}:${minutes}`;
+}
+
+function formatCoordinate(value: number) {
+  return value.toFixed(6);
+}
+
+function getGeolocationErrorMessage(error: GeolocationPositionError) {
+  if (error.code === error.PERMISSION_DENIED) {
+    return 'Permiso de ubicación denegado o no disponible.';
+  }
+
+  if (error.code === error.POSITION_UNAVAILABLE) {
+    return 'No se pudo obtener la ubicación. Verifique señal GPS o conexión del dispositivo.';
+  }
+
+  if (error.code === error.TIMEOUT) {
+    return 'No se pudo obtener la ubicación dentro del tiempo esperado.';
+  }
+
+  return 'No se pudo obtener la ubicación.';
+}
+
 export function CierreRelevamientoSection({
   cierre,
   selectedPredio,
@@ -33,16 +63,58 @@ export function CierreRelevamientoSection({
   onCierreChange,
   onFinalizarRelevamiento,
 }: CierreRelevamientoSectionProps) {
+  const [geolocationStatus, setGeolocationStatus] = useState<GeolocationStatus>('idle');
+  const [geolocationMessage, setGeolocationMessage] = useState('');
+
   const esCorteTemprano = modo === 'corte-temprano';
+
+  const updateCierre = (updates: Partial<CierreRelevamientoFormState>) => {
+    onCierreChange({
+      ...cierre,
+      ...updates,
+    });
+  };
 
   const updateField = <Field extends keyof CierreRelevamientoFormState>(
     field: Field,
     value: CierreRelevamientoFormState[Field],
   ) => {
-    onCierreChange({
-      ...cierre,
-      [field]: value,
-    });
+    updateCierre({ [field]: value });
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setGeolocationStatus('error');
+      setGeolocationMessage('Este dispositivo/navegador no permite geolocalización.');
+      return;
+    }
+
+    setGeolocationStatus('loading');
+    setGeolocationMessage('Obteniendo ubicación...');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+
+        updateCierre({
+          latitud: formatCoordinate(latitude),
+          longitud: formatCoordinate(longitude),
+          horaCaptura: cierre.horaCaptura || formatCurrentTimeForInput(),
+        });
+
+        setGeolocationStatus('success');
+        setGeolocationMessage('Ubicación cargada correctamente.');
+      },
+      (error) => {
+        setGeolocationStatus('error');
+        setGeolocationMessage(getGeolocationErrorMessage(error));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      },
+    );
   };
 
   return (
@@ -85,17 +157,44 @@ export function CierreRelevamientoSection({
               </Badge>
               <h3 className="h5 mb-1">Ubicación del relevamiento</h3>
               <p className="text-secondary mb-0">
-                Ingrese la ubicación disponible o déjela pendiente para confirmarla más adelante.
+                Use la ubicación actual de la tablet o complete la ubicación manualmente.
               </p>
             </div>
 
             <Alert variant="warning" className="mb-0">
-              Ingrese o confirme manualmente la ubicación disponible. Esta información podrá verificarse más adelante.
+              Si la tablet no permite obtener la ubicación, complete latitud, longitud y hora de captura manualmente.
             </Alert>
+
+            <div>
+              <Button
+                type="button"
+                variant="outline-primary"
+                onClick={handleUseCurrentLocation}
+                disabled={geolocationStatus === 'loading'}
+              >
+                {geolocationStatus === 'loading' ? (
+                  <>
+                    <Spinner size="sm" className="me-2" />
+                    Obteniendo ubicación...
+                  </>
+                ) : (
+                  'Usar ubicación actual de la tablet'
+                )}
+              </Button>
+            </div>
+
+            {geolocationStatus !== 'idle' && geolocationMessage ? (
+              <Alert
+                variant={geolocationStatus === 'success' ? 'success' : geolocationStatus === 'loading' ? 'info' : 'danger'}
+                className="mb-0"
+              >
+                {geolocationMessage}
+              </Alert>
+            ) : null}
 
             <Row className="g-3">
               <Col md={4}>
-                <Form.Group controlId="latitud-a confirmar">
+                <Form.Group controlId="latitud-a-confirmar">
                   <Form.Label>Latitud</Form.Label>
                   <Form.Control
                     value={cierre.latitud}
@@ -106,7 +205,7 @@ export function CierreRelevamientoSection({
               </Col>
 
               <Col md={4}>
-                <Form.Group controlId="longitud-a confirmar">
+                <Form.Group controlId="longitud-a-confirmar">
                   <Form.Label>Longitud</Form.Label>
                   <Form.Control
                     value={cierre.longitud}
@@ -117,7 +216,7 @@ export function CierreRelevamientoSection({
               </Col>
 
               <Col md={4}>
-                <Form.Group controlId="hora-captura-a confirmar">
+                <Form.Group controlId="hora-captura-a-confirmar">
                   <Form.Label>Hora de captura</Form.Label>
                   <Form.Control
                     type="time"
