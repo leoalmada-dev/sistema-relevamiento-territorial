@@ -20,8 +20,13 @@ import {
   guardarBorradorServidor,
 } from '../services/relevamientoBackendService';
 import {
+  validateCierreRelevamiento,
   validateFinalizacionRelevamiento,
+  validateInicioPredioVisita,
+  validatePersonasContactos,
+  validateViviendaHogares,
   type FinalizacionValidationError,
+  type FinalizacionValidationResult,
 } from '../validation/finalizacionValidation';
 import {
   cierreRelevamientoInicial,
@@ -143,6 +148,8 @@ export function RelevamientoFlowPage() {
   const [finalizationError, setFinalizationError] = useState('');
   const [finalizationValidationErrors, setFinalizationValidationErrors] =
     useState<FinalizacionValidationError[]>([]);
+  const [sectionValidationErrors, setSectionValidationErrors] =
+    useState<FinalizacionValidationError[]>([]);
   const [serverDraftId, setServerDraftId] = useState<number | null>(null);
   const [serverDraftVersion, setServerDraftVersion] = useState<number | null>(null);
   const [serverDraftLastSyncedAt, setServerDraftLastSyncedAt] = useState('');
@@ -210,12 +217,15 @@ export function RelevamientoFlowPage() {
   const canGoBack = currentIndex > 0;
   const canGoForward =
     currentIndex < sections.length - 1 &&
-    (currentSection.id !== 'inicio-predio-visita' || seccionInicialCompleta) &&
-    (currentSection.id !== 'vivienda-hogares' || cantidadHogaresCoincide);
+    !(currentSection.id === 'inicio-predio-visita' && visitaTieneCorteTemprano);
 
   const nextSectionTitle = useMemo(() => {
     if (currentSection.id === 'inicio-predio-visita' && visitaTieneCorteTemprano) {
       return 'Corte temprano';
+    }
+
+    if (currentSection.id === 'inicio-predio-visita' && !seccionInicialCompleta) {
+      return 'Completar Sección 1';
     }
 
     if (currentSection.id === 'vivienda-hogares' && !cantidadHogaresCoincide) {
@@ -230,6 +240,7 @@ export function RelevamientoFlowPage() {
   }, [
     canGoForward,
     cantidadHogaresCoincide,
+    seccionInicialCompleta,
     currentIndex,
     currentSection.id,
     visitaTieneCorteTemprano,
@@ -259,6 +270,7 @@ export function RelevamientoFlowPage() {
     setFinalizacionCompletada(false);
     setFinalizationError('');
     setFinalizationValidationErrors([]);
+    setSectionValidationErrors([]);
     setDraftStatus('CAMBIOS_PENDIENTES');
   };
 
@@ -558,6 +570,8 @@ export function RelevamientoFlowPage() {
     setLastSavedAt('');
     setDraftStatus('SIN_BORRADOR');
     setFinalizationError('');
+    setFinalizationValidationErrors([]);
+    setSectionValidationErrors([]);
     setPendingConfirmAction(null);
     setTerritorialSelectorKey((currentKey) => currentKey + 1);
   };
@@ -642,6 +656,73 @@ export function RelevamientoFlowPage() {
     }
   };
 
+  const buildSectionValidationResult = (
+    errors: FinalizacionValidationError[],
+  ): FinalizacionValidationResult => ({
+    valid: errors.length === 0,
+    errors,
+  });
+
+  const validateSectionForAdvance = (
+    sectionId: RelevamientoSectionId,
+  ): FinalizacionValidationResult => {
+    const snapshot = buildBackendSnapshot(sectionId);
+
+    if (sectionId === 'inicio-predio-visita') {
+      return validateInicioPredioVisita(snapshot);
+    }
+
+    if (sectionId === 'vivienda-hogares') {
+      return validateViviendaHogares(snapshot);
+    }
+
+    if (sectionId === 'datos-por-hogar') {
+      return validatePersonasContactos(snapshot);
+    }
+
+    return validateCierreRelevamiento(snapshot);
+  };
+
+  const validateCurrentSectionBeforeAdvance = (): FinalizacionValidationResult => {
+    if (currentSection.id === 'inicio-predio-visita' && visitaTieneCorteTemprano) {
+      return buildSectionValidationResult([
+        {
+          campo: 'resultadoVisita.resultado',
+          mensaje: 'Resultado de visita: este resultado se finaliza desde la Sección 1.',
+        },
+      ]);
+    }
+
+    return validateSectionForAdvance(currentSection.id);
+  };
+
+  const validateSectionsBeforeNavigation = (
+    targetSectionId: RelevamientoSectionId,
+  ): FinalizacionValidationResult => {
+    const targetIndex = sections.findIndex((section) => section.id === targetSectionId);
+    const errors: FinalizacionValidationError[] = [];
+
+    if (targetIndex <= 0) {
+      return buildSectionValidationResult(errors);
+    }
+
+    for (let index = 0; index < targetIndex; index += 1) {
+      const sectionId = sections[index].id;
+
+      if (sectionId === 'inicio-predio-visita' && visitaTieneCorteTemprano) {
+        errors.push({
+          campo: 'resultadoVisita.resultado',
+          mensaje: 'Resultado de visita: este resultado se finaliza desde la Sección 1.',
+        });
+        break;
+      }
+
+      errors.push(...validateSectionForAdvance(sectionId).errors);
+    }
+
+    return buildSectionValidationResult(errors);
+  };
+
   const finalizarRelevamiento = async () => {
     setFinalizationError('');
 
@@ -651,10 +732,12 @@ export function RelevamientoFlowPage() {
 
     if (!validation.valid) {
       setFinalizationValidationErrors(validation.errors);
+      setSectionValidationErrors([]);
       return;
     }
 
     setFinalizationValidationErrors([]);
+    setSectionValidationErrors([]);
     persistLocalDraft();
 
     try {
@@ -704,33 +787,42 @@ export function RelevamientoFlowPage() {
 
     if (!validation.valid) {
       setFinalizationValidationErrors(validation.errors);
+      setSectionValidationErrors([]);
       setFinalizationError('');
       return;
     }
 
     setFinalizationValidationErrors([]);
+    setSectionValidationErrors([]);
     setPendingConfirmAction({ type: 'finalize-relevamiento' });
   };
 
-  const isSectionDisabled = (section: RelevamientoSection) => {
-    if (section.order === 1) {
-      return false;
-    }
-
-    if (section.order === 2) {
-      return !seccionInicialCompleta;
-    }
-
-    return !seccionInicialCompleta || !cantidadHogaresCoincide;
-  };
+  const isSectionDisabled = () => false;
 
   const selectSection = (sectionId: RelevamientoSectionId) => {
     const nextSection = sections.find((section) => section.id === sectionId);
 
-    if (!nextSection || isSectionDisabled(nextSection)) {
+    if (!nextSection) {
       return;
     }
 
+    if (nextSection.order <= currentSection.order) {
+      setCurrentSectionId(sectionId);
+      markDraftPending();
+      return;
+    }
+
+    const validation = validateSectionsBeforeNavigation(sectionId);
+
+    if (!validation.valid) {
+      setSectionValidationErrors(validation.errors);
+      setFinalizationValidationErrors([]);
+      setFinalizationError('');
+      scrollToSectionStepper();
+      return;
+    }
+
+    setSectionValidationErrors([]);
     setCurrentSectionId(sectionId);
     markDraftPending();
   };
@@ -757,6 +849,18 @@ export function RelevamientoFlowPage() {
     if (!canGoForward) {
       return;
     }
+
+    const validation = validateCurrentSectionBeforeAdvance();
+
+    if (!validation.valid) {
+      setSectionValidationErrors(validation.errors);
+      setFinalizationValidationErrors([]);
+      setFinalizationError('');
+      scrollToSectionStepper();
+      return;
+    }
+
+    setSectionValidationErrors([]);
 
     const nextSectionId = sections[currentIndex + 1].id;
     persistLocalDraft({ currentSectionId: nextSectionId });
@@ -950,6 +1054,19 @@ export function RelevamientoFlowPage() {
       {isFinalizing ? (
         <Alert variant="info" className="mb-0">
           Guardando información...
+        </Alert>
+      ) : null}
+
+      {sectionValidationErrors.length > 0 ? (
+        <Alert variant="warning" className="mb-0">
+          <div className="fw-semibold mb-2">
+            Antes de avanzar, revise los siguientes datos:
+          </div>
+          <ul className="mb-0">
+            {sectionValidationErrors.map((error) => (
+              <li key={`${error.campo}-${error.mensaje}`}>{error.mensaje}</li>
+            ))}
+          </ul>
         </Alert>
       ) : null}
 
