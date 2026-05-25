@@ -58,28 +58,45 @@ function getServiciosSaludResumen(datosHogar: PersonasContactosHogarState): stri
   return 'pendiente';
 }
 
+function normalizeAccordionEventKey(eventKey: unknown): string[] {
+  if (Array.isArray(eventKey)) {
+    return eventKey.map((key) => String(key)).filter(Boolean);
+  }
+
+  if (eventKey === null || eventKey === undefined || eventKey === '') {
+    return [];
+  }
+
+  return [String(eventKey)];
+}
+
 export function PersonasContactosSection({
   hogares,
   personasContactosPorHogar,
   onChange,
 }: PersonasContactosSectionProps) {
-  const [activeHogarId, setActiveHogarId] = useState(hogares[0]?.id ?? '');
+  const [activeHogarIds, setActiveHogarIds] = useState<string[]>(
+    hogares[0]?.id ? [hogares[0].id] : [],
+  );
   const [pendingConfirmAction, setPendingConfirmAction] =
     useState<PersonasContactosConfirmAction | null>(null);
   const hogarItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    if (hogares.length === 0) {
-      setActiveHogarId('');
-      return;
-    }
+    const existingHogarIds = new Set(hogares.map((hogar) => hogar.id));
 
-    const activeHogarExists = hogares.some((hogar) => hogar.id === activeHogarId);
+    setActiveHogarIds((currentActiveIds) => {
+      const nextActiveIds = currentActiveIds.filter((hogarId) =>
+        existingHogarIds.has(hogarId),
+      );
 
-    if (!activeHogarExists) {
-      setActiveHogarId(hogares[0].id);
-    }
-  }, [activeHogarId, hogares]);
+      if (nextActiveIds.length === currentActiveIds.length) {
+        return currentActiveIds;
+      }
+
+      return nextActiveIds;
+    });
+  }, [hogares]);
 
   const getDatosHogarById = (hogarId: string): PersonasContactosHogarState =>
     personasContactosPorHogar[hogarId] ?? crearPersonasContactosHogarInicial();
@@ -101,23 +118,24 @@ export function PersonasContactosSection({
   };
 
   const scrollToHogar = (hogarId: string) => {
-    requestAnimationFrame(() => {
+    window.setTimeout(() => {
       hogarItemRefs.current[hogarId]?.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
       });
-    });
+    }, 120);
   };
 
   const handleAccordionSelect = (eventKey: unknown) => {
-    const nextHogarId = Array.isArray(eventKey)
-      ? String(eventKey[0] ?? '')
-      : String(eventKey ?? '');
+    const nextActiveIds = normalizeAccordionEventKey(eventKey);
+    const openedHogarId = nextActiveIds.find(
+      (hogarId) => !activeHogarIds.includes(hogarId),
+    );
 
-    setActiveHogarId(nextHogarId);
+    setActiveHogarIds(nextActiveIds);
 
-    if (nextHogarId) {
-      scrollToHogar(nextHogarId);
+    if (openedHogarId) {
+      scrollToHogar(openedHogarId);
     }
   };
 
@@ -276,7 +294,7 @@ export function PersonasContactosSection({
         </Card.Body>
       </Card>
 
-      <Accordion activeKey={activeHogarId} onSelect={handleAccordionSelect}>
+      <Accordion alwaysOpen activeKey={activeHogarIds} onSelect={handleAccordionSelect}>
         <Stack gap={3}>
           {hogares.map((hogar, index) => {
             const hogarLabel = getHogarLabel(hogar, index);
