@@ -2,7 +2,7 @@ import type { CierreRelevamientoFormState } from './cierreRelevamiento';
 import type { PersonasContactosPorHogarState } from './personaContacto';
 import type { ResultadoVisitaFormState } from './resultadoVisita';
 import type { RelevamientoSectionId } from './relevamientoFlow';
-import type { PredioDetalle } from './territorio';
+import type { CuadranteOption, PredioDetalle } from './territorio';
 import type { HogarFormState, ViviendaFormState } from './viviendaHogar';
 
 export type ServerDraftSyncStatus =
@@ -26,6 +26,7 @@ export type RelevamientoLocalDraft = {
   currentSectionId: RelevamientoSectionId;
   selectedPredioId: string;
   selectedPredio: PredioDetalle | null;
+  selectedCuadrante?: CuadranteOption | null;
   resultadoVisita: ResultadoVisitaFormState;
   vivienda: ViviendaFormState;
   hogares: HogarFormState[];
