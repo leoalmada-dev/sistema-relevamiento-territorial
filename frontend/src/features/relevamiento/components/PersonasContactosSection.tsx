@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Accordion, Alert, Button, Card, Stack } from 'react-bootstrap';
 import { ContactoFormCard } from './ContactoFormCard';
 import { PersonaFormCard } from './PersonaFormCard';
@@ -63,8 +63,23 @@ export function PersonasContactosSection({
   personasContactosPorHogar,
   onChange,
 }: PersonasContactosSectionProps) {
+  const [activeHogarId, setActiveHogarId] = useState(hogares[0]?.id ?? '');
   const [pendingConfirmAction, setPendingConfirmAction] =
     useState<PersonasContactosConfirmAction | null>(null);
+  const hogarItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (hogares.length === 0) {
+      setActiveHogarId('');
+      return;
+    }
+
+    const activeHogarExists = hogares.some((hogar) => hogar.id === activeHogarId);
+
+    if (!activeHogarExists) {
+      setActiveHogarId(hogares[0].id);
+    }
+  }, [activeHogarId, hogares]);
 
   const getDatosHogarById = (hogarId: string): PersonasContactosHogarState =>
     personasContactosPorHogar[hogarId] ?? crearPersonasContactosHogarInicial();
@@ -83,6 +98,27 @@ export function PersonasContactosSection({
       ...personasContactosPorHogar,
       [hogarId]: nextDatosHogar,
     });
+  };
+
+  const scrollToHogar = (hogarId: string) => {
+    requestAnimationFrame(() => {
+      hogarItemRefs.current[hogarId]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  };
+
+  const handleAccordionSelect = (eventKey: unknown) => {
+    const nextHogarId = Array.isArray(eventKey)
+      ? String(eventKey[0] ?? '')
+      : String(eventKey ?? '');
+
+    setActiveHogarId(nextHogarId);
+
+    if (nextHogarId) {
+      scrollToHogar(nextHogarId);
+    }
   };
 
   const addPersona = (hogarId: string) => {
@@ -240,7 +276,7 @@ export function PersonasContactosSection({
         </Card.Body>
       </Card>
 
-      <Accordion defaultActiveKey={hogares[0]?.id}>
+      <Accordion activeKey={activeHogarId} onSelect={handleAccordionSelect}>
         <Stack gap={3}>
           {hogares.map((hogar, index) => {
             const hogarLabel = getHogarLabel(hogar, index);
@@ -251,146 +287,156 @@ export function PersonasContactosSection({
             const serviciosSaludResumen = getServiciosSaludResumen(datosHogar);
 
             return (
-              <Accordion.Item
-                eventKey={hogar.id}
+              <div
                 key={hogar.id}
-                className="border rounded-3 overflow-hidden"
+                ref={(element) => {
+                  hogarItemRefs.current[hogar.id] = element;
+                }}
               >
-                <Accordion.Header>
-                  <div className="d-flex flex-column gap-1 text-start">
-                    <span className="fw-semibold">{hogarLabel}</span>
-                    <span className="text-secondary small">
-                      Personas: {cantidadPersonas} · Referente:{' '}
-                      {tieneReferente ? 'Sí' : 'No'} · Contactos: {cantidadContactos} ·
-                      Servicios y salud: {serviciosSaludResumen}
-                    </span>
-                  </div>
-                </Accordion.Header>
+                <Accordion.Item
+                  eventKey={hogar.id}
+                  className="border rounded-3 overflow-hidden"
+                >
+                  <Accordion.Header>
+                    <div className="d-flex flex-column gap-1 text-start">
+                      <span className="fw-semibold">{hogarLabel}</span>
+                      <span className="text-secondary small">
+                        Personas: {cantidadPersonas} · Referente:{' '}
+                        {tieneReferente ? 'Sí' : 'No'} · Contactos: {cantidadContactos} ·
+                        Servicios y salud: {serviciosSaludResumen}
+                      </span>
+                    </div>
+                  </Accordion.Header>
 
-                <Accordion.Body>
-                  <Stack gap={4}>
-                    <Card className="border-0 bg-light">
-                      <Card.Body>
-                        <Stack gap={3}>
-                          <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                  <Accordion.Body>
+                    <Stack gap={4}>
+                      <Card className="border-0 bg-light">
+                        <Card.Body>
+                          <Stack gap={3}>
+                            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                              <div>
+                                <h4 className="h6 mb-1">Personas</h4>
+                                <p className="text-secondary mb-0">
+                                  Integrantes cargados para el {hogarLabel}.
+                                </p>
+                              </div>
+
+                              <div>
+                                <Button variant="primary" onClick={() => addPersona(hogar.id)}>
+                                  Agregar persona
+                                </Button>
+                              </div>
+                            </div>
+
+                            {datosHogar.personas.length > 0 ? (
+                              <Stack gap={3}>
+                                {datosHogar.personas.map((persona, personaIndex) => (
+                                  <PersonaFormCard
+                                    key={persona.id}
+                                    persona={persona}
+                                    index={personaIndex}
+                                    onChange={(updatedPersona) =>
+                                      updatePersona(hogar.id, updatedPersona)
+                                    }
+                                    onRemove={(personaId) =>
+                                      requestRemovePersona(hogar.id, personaId)
+                                    }
+                                  />
+                                ))}
+                              </Stack>
+                            ) : (
+                              <Alert variant="secondary" className="mb-0">
+                                Todavía no hay personas cargadas para el {hogarLabel}.
+                              </Alert>
+                            )}
+                          </Stack>
+                        </Card.Body>
+                      </Card>
+
+                      <Card className="border-0 bg-light">
+                        <Card.Body>
+                          <Stack gap={3}>
+                            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                              <div>
+                                <h4 className="h6 mb-1">Contactos</h4>
+                                <p className="text-secondary mb-0">
+                                  Contactos cargados para el {hogarLabel}. Objetivo inicial:
+                                  hasta dos contactos.
+                                </p>
+                              </div>
+
+                              <div>
+                                <Button variant="primary" onClick={() => addContacto(hogar.id)}>
+                                  Agregar contacto
+                                </Button>
+                              </div>
+                            </div>
+
+                            {datosHogar.contactos.length > 2 ? (
+                              <Alert variant="warning" className="mb-0">
+                                Hay más de dos contactos cargados para el {hogarLabel}. No se
+                                bloquea en esta etapa, pero el objetivo operativo inicial son dos
+                                contactos por hogar.
+                              </Alert>
+                            ) : (
+                              <Alert variant="info" className="mb-0">
+                                Contactos cargados para el {hogarLabel}:{' '}
+                                <strong>{datosHogar.contactos.length}</strong>. Objetivo inicial:
+                                hasta dos.
+                              </Alert>
+                            )}
+
+                            {datosHogar.contactos.length > 0 ? (
+                              <Stack gap={3}>
+                                {datosHogar.contactos.map((contacto, contactoIndex) => (
+                                  <ContactoFormCard
+                                    key={contacto.id}
+                                    contacto={contacto}
+                                    index={contactoIndex}
+                                    onChange={(updatedContacto) =>
+                                      updateContacto(hogar.id, updatedContacto)
+                                    }
+                                    onRemove={(contactoId) =>
+                                      requestRemoveContacto(hogar.id, contactoId)
+                                    }
+                                  />
+                                ))}
+                              </Stack>
+                            ) : (
+                              <Alert variant="secondary" className="mb-0">
+                                Todavía no hay contactos cargados para el {hogarLabel}.
+                              </Alert>
+                            )}
+                          </Stack>
+                        </Card.Body>
+                      </Card>
+
+                      <Card className="border-0 bg-light">
+                        <Card.Body>
+                          <Stack gap={3}>
                             <div>
-                              <h4 className="h6 mb-1">Personas</h4>
+                              <h4 className="h6 mb-1">Servicios y salud</h4>
                               <p className="text-secondary mb-0">
-                                Integrantes cargados para este hogar.
+                                Datos asociados al {hogarLabel}.
                               </p>
                             </div>
 
-                            <div>
-                              <Button variant="primary" onClick={() => addPersona(hogar.id)}>
-                                Agregar persona
-                              </Button>
-                            </div>
-                          </div>
-
-                          {datosHogar.personas.length > 0 ? (
-                            <Stack gap={3}>
-                              {datosHogar.personas.map((persona, personaIndex) => (
-                                <PersonaFormCard
-                                  key={persona.id}
-                                  persona={persona}
-                                  index={personaIndex}
-                                  onChange={(updatedPersona) =>
-                                    updatePersona(hogar.id, updatedPersona)
-                                  }
-                                  onRemove={(personaId) =>
-                                    requestRemovePersona(hogar.id, personaId)
-                                  }
-                                />
-                              ))}
-                            </Stack>
-                          ) : (
-                            <Alert variant="secondary" className="mb-0">
-                              Todavía no hay personas cargadas para este hogar.
-                            </Alert>
-                          )}
-                        </Stack>
-                      </Card.Body>
-                    </Card>
-
-                    <Card className="border-0 bg-light">
-                      <Card.Body>
-                        <Stack gap={3}>
-                          <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-                            <div>
-                              <h4 className="h6 mb-1">Contactos</h4>
-                              <p className="text-secondary mb-0">
-                                Objetivo inicial: cargar en lo posible hasta dos contactos.
-                              </p>
-                            </div>
-
-                            <div>
-                              <Button variant="primary" onClick={() => addContacto(hogar.id)}>
-                                Agregar contacto
-                              </Button>
-                            </div>
-                          </div>
-
-                          {datosHogar.contactos.length > 2 ? (
-                            <Alert variant="warning" className="mb-0">
-                              Hay más de dos contactos cargados. No se bloquea en esta etapa, pero
-                              el objetivo operativo inicial son dos contactos por hogar.
-                            </Alert>
-                          ) : (
-                            <Alert variant="info" className="mb-0">
-                              Contactos cargados: <strong>{datosHogar.contactos.length}</strong>.
-                              Objetivo inicial: hasta dos.
-                            </Alert>
-                          )}
-
-                          {datosHogar.contactos.length > 0 ? (
-                            <Stack gap={3}>
-                              {datosHogar.contactos.map((contacto, contactoIndex) => (
-                                <ContactoFormCard
-                                  key={contacto.id}
-                                  contacto={contacto}
-                                  index={contactoIndex}
-                                  onChange={(updatedContacto) =>
-                                    updateContacto(hogar.id, updatedContacto)
-                                  }
-                                  onRemove={(contactoId) =>
-                                    requestRemoveContacto(hogar.id, contactoId)
-                                  }
-                                />
-                              ))}
-                            </Stack>
-                          ) : (
-                            <Alert variant="secondary" className="mb-0">
-                              Todavía no hay contactos cargados para este hogar.
-                            </Alert>
-                          )}
-                        </Stack>
-                      </Card.Body>
-                    </Card>
-
-                    <Card className="border-0 bg-light">
-                      <Card.Body>
-                        <Stack gap={3}>
-                          <div>
-                            <h4 className="h6 mb-1">Servicios y salud</h4>
-                            <p className="text-secondary mb-0">
-                              Datos asociados a este hogar.
-                            </p>
-                          </div>
-
-                          <ServiciosSaludSection
-                            servicios={datosHogar.servicios}
-                            salud={datosHogar.salud}
-                            onServiciosChange={(servicios) =>
-                              updateServicios(hogar.id, servicios)
-                            }
-                            onSaludChange={(salud) => updateSalud(hogar.id, salud)}
-                          />
-                        </Stack>
-                      </Card.Body>
-                    </Card>
-                  </Stack>
-                </Accordion.Body>
-              </Accordion.Item>
+                            <ServiciosSaludSection
+                              hogarLabel={hogarLabel}
+                              servicios={datosHogar.servicios}
+                              salud={datosHogar.salud}
+                              onServiciosChange={(servicios) =>
+                                updateServicios(hogar.id, servicios)
+                              }
+                              onSaludChange={(salud) => updateSalud(hogar.id, salud)}
+                            />
+                          </Stack>
+                        </Card.Body>
+                      </Card>
+                    </Stack>
+                  </Accordion.Body>
+                </Accordion.Item>
+              </div>
             );
           })}
         </Stack>
