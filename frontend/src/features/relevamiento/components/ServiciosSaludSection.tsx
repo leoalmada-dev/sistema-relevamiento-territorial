@@ -2,6 +2,7 @@ import { Badge, Card, Col, Form, Row, Stack } from 'react-bootstrap';
 import type { SaludFormState, ServiciosFormState } from '../types/serviciosSalud';
 
 type ServiciosSaludSectionProps = {
+  hogarLabel?: string;
   servicios: ServiciosFormState;
   salud: SaludFormState;
   onServiciosChange: (servicios: ServiciosFormState) => void;
@@ -13,7 +14,10 @@ export function ServiciosSaludSection({
   salud,
   onServiciosChange,
   onSaludChange,
+  hogarLabel = 'hogar seleccionado',
 }: ServiciosSaludSectionProps) {
+  const hogarContextLabel = hogarLabel === 'hogar seleccionado' ? 'al hogar seleccionado' : `al ${hogarLabel}`;
+
   const updateServiciosField = <Field extends keyof ServiciosFormState>(
     field: Field,
     value: ServiciosFormState[Field],
@@ -53,7 +57,7 @@ export function ServiciosSaludSection({
               </Badge>
               <h3 className="h5 mb-1">Servicios del hogar</h3>
               <p className="text-secondary mb-0">
-                Complete los datos asociados al hogar seleccionado.
+                Complete los datos asociados {hogarContextLabel}.
               </p>
             </div>
 
@@ -171,7 +175,7 @@ export function ServiciosSaludSection({
               </Badge>
               <h3 className="h5 mb-1">Salud del hogar</h3>
               <p className="text-secondary mb-0">
-                Complete los datos asociados al hogar seleccionado.
+                Complete los datos asociados {hogarContextLabel}.
               </p>
             </div>
 

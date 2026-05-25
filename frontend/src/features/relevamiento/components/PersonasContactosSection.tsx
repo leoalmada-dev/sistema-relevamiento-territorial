@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Col, Form, Row, Stack } from 'react-bootstrap';
+import { useEffect, useRef, useState } from 'react';
+import { Accordion, Alert, Button, Card, Stack } from 'react-bootstrap';
 import { ContactoFormCard } from './ContactoFormCard';
 import { PersonaFormCard } from './PersonaFormCard';
 import { ServiciosSaludSection } from './ServiciosSaludSection';
@@ -22,57 +22,127 @@ type PersonasContactosSectionProps = {
 };
 
 type PersonasContactosConfirmAction =
-  | { type: 'remove-persona'; personaId: string }
-  | { type: 'remove-contacto'; contactoId: string };
+  | { type: 'remove-persona'; hogarId: string; personaId: string }
+  | { type: 'remove-contacto'; hogarId: string; contactoId: string };
+
+function hasCompletedValue(value: unknown): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value);
+  }
+
+  return String(value ?? '').trim().length > 0;
+}
+
+function getHogarLabel(hogar: HogarFormState, index: number): string {
+  return `Hogar ${hogar.numeroHogar || index + 1}`;
+}
+
+function getServiciosSaludResumen(datosHogar: PersonasContactosHogarState): string {
+  const tieneServicios = Object.values(datosHogar.servicios).some(hasCompletedValue);
+  const tieneSaludBasica =
+    hasCompletedValue(datosHogar.salud.servicioAtencionMedica) &&
+    hasCompletedValue(datosHogar.salud.tieneEmergenciaMovil);
+
+  if (tieneServicios && tieneSaludBasica) {
+    return 'con datos';
+  }
+
+  if (tieneServicios || tieneSaludBasica) {
+    return 'parcial';
+  }
+
+  return 'pendiente';
+}
+
+function normalizeAccordionEventKey(eventKey: unknown): string[] {
+  if (Array.isArray(eventKey)) {
+    return eventKey.map((key) => String(key)).filter(Boolean);
+  }
+
+  if (eventKey === null || eventKey === undefined || eventKey === '') {
+    return [];
+  }
+
+  return [String(eventKey)];
+}
 
 export function PersonasContactosSection({
   hogares,
   personasContactosPorHogar,
   onChange,
 }: PersonasContactosSectionProps) {
-  const [selectedHogarId, setSelectedHogarId] = useState('');
+  const [activeHogarIds, setActiveHogarIds] = useState<string[]>(
+    hogares[0]?.id ? [hogares[0].id] : [],
+  );
   const [pendingConfirmAction, setPendingConfirmAction] =
     useState<PersonasContactosConfirmAction | null>(null);
+  const hogarItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    if (hogares.length === 0) {
-      setSelectedHogarId('');
-      return;
-    }
+    const existingHogarIds = new Set(hogares.map((hogar) => hogar.id));
 
-    const selectedExists = hogares.some((hogar) => hogar.id === selectedHogarId);
+    setActiveHogarIds((currentActiveIds) => {
+      const nextActiveIds = currentActiveIds.filter((hogarId) =>
+        existingHogarIds.has(hogarId),
+      );
 
-    if (!selectedExists) {
-      setSelectedHogarId(hogares[0].id);
-    }
-  }, [hogares, selectedHogarId]);
+      if (nextActiveIds.length === currentActiveIds.length) {
+        return currentActiveIds;
+      }
 
-  const selectedHogar = useMemo(
-    () => hogares.find((hogar) => hogar.id === selectedHogarId) ?? null,
-    [hogares, selectedHogarId],
-  );
+      return nextActiveIds;
+    });
+  }, [hogares]);
 
-  const datosHogar = useMemo<PersonasContactosHogarState>(() => {
-    if (!selectedHogarId) {
-      return crearPersonasContactosHogarInicial();
-    }
+  const getDatosHogarById = (hogarId: string): PersonasContactosHogarState =>
+    personasContactosPorHogar[hogarId] ?? crearPersonasContactosHogarInicial();
 
-    return personasContactosPorHogar[selectedHogarId] ?? crearPersonasContactosHogarInicial();
-  }, [personasContactosPorHogar, selectedHogarId]);
+  const updateDatosHogarForHogar = (
+    hogarId: string,
+    nextDatosHogar: PersonasContactosHogarState,
+  ) => {
+    const hogarExists = hogares.some((hogar) => hogar.id === hogarId);
 
-  const updateDatosHogar = (nextDatosHogar: PersonasContactosHogarState) => {
-    if (!selectedHogarId) {
+    if (!hogarExists) {
       return;
     }
 
     onChange({
       ...personasContactosPorHogar,
-      [selectedHogarId]: nextDatosHogar,
+      [hogarId]: nextDatosHogar,
     });
   };
 
-  const addPersona = () => {
-    updateDatosHogar({
+  const scrollToHogar = (hogarId: string) => {
+    window.setTimeout(() => {
+      hogarItemRefs.current[hogarId]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 120);
+  };
+
+  const handleAccordionSelect = (eventKey: unknown) => {
+    const nextActiveIds = normalizeAccordionEventKey(eventKey);
+    const openedHogarId = nextActiveIds.find(
+      (hogarId) => !activeHogarIds.includes(hogarId),
+    );
+
+    setActiveHogarIds(nextActiveIds);
+
+    if (openedHogarId) {
+      scrollToHogar(openedHogarId);
+    }
+  };
+
+  const addPersona = (hogarId: string) => {
+    const datosHogar = getDatosHogarById(hogarId);
+
+    updateDatosHogarForHogar(hogarId, {
       ...datosHogar,
       personas: [
         ...datosHogar.personas,
@@ -81,8 +151,10 @@ export function PersonasContactosSection({
     });
   };
 
-  const updatePersona = (updatedPersona: PersonaFormState) => {
-    updateDatosHogar({
+  const updatePersona = (hogarId: string, updatedPersona: PersonaFormState) => {
+    const datosHogar = getDatosHogarById(hogarId);
+
+    updateDatosHogarForHogar(hogarId, {
       ...datosHogar,
       personas: datosHogar.personas.map((persona) =>
         persona.id === updatedPersona.id ? updatedPersona : persona,
@@ -90,19 +162,27 @@ export function PersonasContactosSection({
     });
   };
 
-  const requestRemovePersona = (personaId: string) => {
-    setPendingConfirmAction({ type: 'remove-persona', personaId });
+  const requestRemovePersona = (hogarId: string, personaId: string) => {
+    setPendingConfirmAction({
+      type: 'remove-persona',
+      hogarId,
+      personaId,
+    });
   };
 
-  const removePersona = (personaId: string) => {
-    updateDatosHogar({
+  const removePersona = (hogarId: string, personaId: string) => {
+    const datosHogar = getDatosHogarById(hogarId);
+
+    updateDatosHogarForHogar(hogarId, {
       ...datosHogar,
       personas: datosHogar.personas.filter((persona) => persona.id !== personaId),
     });
   };
 
-  const addContacto = () => {
-    updateDatosHogar({
+  const addContacto = (hogarId: string) => {
+    const datosHogar = getDatosHogarById(hogarId);
+
+    updateDatosHogarForHogar(hogarId, {
       ...datosHogar,
       contactos: [
         ...datosHogar.contactos,
@@ -111,8 +191,10 @@ export function PersonasContactosSection({
     });
   };
 
-  const updateContacto = (updatedContacto: ContactoFormState) => {
-    updateDatosHogar({
+  const updateContacto = (hogarId: string, updatedContacto: ContactoFormState) => {
+    const datosHogar = getDatosHogarById(hogarId);
+
+    updateDatosHogarForHogar(hogarId, {
       ...datosHogar,
       contactos: datosHogar.contactos.map((contacto) =>
         contacto.id === updatedContacto.id ? updatedContacto : contacto,
@@ -120,14 +202,41 @@ export function PersonasContactosSection({
     });
   };
 
-  const requestRemoveContacto = (contactoId: string) => {
-    setPendingConfirmAction({ type: 'remove-contacto', contactoId });
+  const requestRemoveContacto = (hogarId: string, contactoId: string) => {
+    setPendingConfirmAction({
+      type: 'remove-contacto',
+      hogarId,
+      contactoId,
+    });
   };
 
-  const removeContacto = (contactoId: string) => {
-    updateDatosHogar({
+  const removeContacto = (hogarId: string, contactoId: string) => {
+    const datosHogar = getDatosHogarById(hogarId);
+
+    updateDatosHogarForHogar(hogarId, {
       ...datosHogar,
       contactos: datosHogar.contactos.filter((contacto) => contacto.id !== contactoId),
+    });
+  };
+
+  const updateServicios = (
+    hogarId: string,
+    servicios: PersonasContactosHogarState['servicios'],
+  ) => {
+    const datosHogar = getDatosHogarById(hogarId);
+
+    updateDatosHogarForHogar(hogarId, {
+      ...datosHogar,
+      servicios,
+    });
+  };
+
+  const updateSalud = (hogarId: string, salud: PersonasContactosHogarState['salud']) => {
+    const datosHogar = getDatosHogarById(hogarId);
+
+    updateDatosHogarForHogar(hogarId, {
+      ...datosHogar,
+      salud,
     });
   };
 
@@ -156,27 +265,13 @@ export function PersonasContactosSection({
     }
 
     if (pendingConfirmAction.type === 'remove-persona') {
-      removePersona(pendingConfirmAction.personaId);
+      removePersona(pendingConfirmAction.hogarId, pendingConfirmAction.personaId);
       setPendingConfirmAction(null);
       return;
     }
 
-    removeContacto(pendingConfirmAction.contactoId);
+    removeContacto(pendingConfirmAction.hogarId, pendingConfirmAction.contactoId);
     setPendingConfirmAction(null);
-  };
-
-  const updateServicios = (servicios: PersonasContactosHogarState['servicios']) => {
-    updateDatosHogar({
-      ...datosHogar,
-      servicios,
-    });
-  };
-
-  const updateSalud = (salud: PersonasContactosHogarState['salud']) => {
-    updateDatosHogar({
-      ...datosHogar,
-      salud,
-    });
   };
 
   if (hogares.length === 0) {
@@ -191,152 +286,179 @@ export function PersonasContactosSection({
     <Stack gap={3}>
       <Card className="border-0 bg-light">
         <Card.Body>
-          <Stack gap={3}>
-            <div>
-              <Badge bg="primary" className="mb-2">
-                Hogar seleccionado
-              </Badge>
-              <h3 className="h5 mb-1">Personas y contactos por hogar</h3>
-              <p className="text-secondary mb-0">
-                Seleccione el hogar para cargar sus integrantes, contactos, servicios y salud.
-              </p>
-            </div>
-
-            <Row className="g-3">
-              <Col md={6}>
-                <Form.Group controlId="hogar-personas-contactos">
-                  <Form.Label>Hogar a completar</Form.Label>
-                  <Form.Select
-                    value={selectedHogarId}
-                    onChange={(event) => setSelectedHogarId(event.target.value)}
-                  >
-                    {hogares.map((hogar, index) => (
-                      <option key={hogar.id} value={hogar.id}>
-                        Hogar {hogar.numeroHogar || index + 1}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-
-              <Col md={6}>
-                <Alert variant="info" className="mb-0">
-                  {selectedHogar ? (
-                    <>
-                      Completando datos del <strong>Hogar {selectedHogar.numeroHogar}</strong>.
-                    </>
-                  ) : (
-                    'Seleccioná un hogar para completar.'
-                  )}
-                </Alert>
-              </Col>
-            </Row>
-          </Stack>
+          <h3 className="h5 mb-1">Datos por hogar</h3>
+          <p className="text-secondary mb-0">
+            Abra cada hogar para cargar sus personas, contactos, servicios y salud. La información
+            queda asociada al hogar correspondiente.
+          </p>
         </Card.Body>
       </Card>
 
-      <Card className="border-0 bg-light">
-        <Card.Body>
-          <Stack gap={3}>
-            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-              <div>
-                <Badge bg="primary" className="mb-2">
-                  Personas
-                </Badge>
-                <h3 className="h5 mb-1">Integrantes del hogar</h3>
-                <p className="text-secondary mb-0">
-                  Personas integrantes del hogar seleccionado.
-                </p>
+      <Accordion alwaysOpen activeKey={activeHogarIds} onSelect={handleAccordionSelect}>
+        <Stack gap={3}>
+          {hogares.map((hogar, index) => {
+            const hogarLabel = getHogarLabel(hogar, index);
+            const datosHogar = getDatosHogarById(hogar.id);
+            const cantidadPersonas = datosHogar.personas.length;
+            const cantidadContactos = datosHogar.contactos.length;
+            const tieneReferente = datosHogar.personas.some((persona) => persona.esReferente);
+            const serviciosSaludResumen = getServiciosSaludResumen(datosHogar);
+
+            return (
+              <div
+                key={hogar.id}
+                ref={(element) => {
+                  hogarItemRefs.current[hogar.id] = element;
+                }}
+              >
+                <Accordion.Item
+                  eventKey={hogar.id}
+                  className="border rounded-3 overflow-hidden"
+                >
+                  <Accordion.Header>
+                    <div className="d-flex flex-column gap-1 text-start">
+                      <span className="fw-semibold">{hogarLabel}</span>
+                      <span className="text-secondary small">
+                        Personas: {cantidadPersonas} · Referente:{' '}
+                        {tieneReferente ? 'Sí' : 'No'} · Contactos: {cantidadContactos} ·
+                        Servicios y salud: {serviciosSaludResumen}
+                      </span>
+                    </div>
+                  </Accordion.Header>
+
+                  <Accordion.Body>
+                    <Stack gap={4}>
+                      <Card className="border-0 bg-light">
+                        <Card.Body>
+                          <Stack gap={3}>
+                            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                              <div>
+                                <h4 className="h6 mb-1">Personas</h4>
+                                <p className="text-secondary mb-0">
+                                  Integrantes cargados para el {hogarLabel}.
+                                </p>
+                              </div>
+
+                              <div>
+                                <Button variant="primary" onClick={() => addPersona(hogar.id)}>
+                                  Agregar persona
+                                </Button>
+                              </div>
+                            </div>
+
+                            {datosHogar.personas.length > 0 ? (
+                              <Stack gap={3}>
+                                {datosHogar.personas.map((persona, personaIndex) => (
+                                  <PersonaFormCard
+                                    key={persona.id}
+                                    persona={persona}
+                                    index={personaIndex}
+                                    onChange={(updatedPersona) =>
+                                      updatePersona(hogar.id, updatedPersona)
+                                    }
+                                    onRemove={(personaId) =>
+                                      requestRemovePersona(hogar.id, personaId)
+                                    }
+                                  />
+                                ))}
+                              </Stack>
+                            ) : (
+                              <Alert variant="secondary" className="mb-0">
+                                Todavía no hay personas cargadas para el {hogarLabel}.
+                              </Alert>
+                            )}
+                          </Stack>
+                        </Card.Body>
+                      </Card>
+
+                      <Card className="border-0 bg-light">
+                        <Card.Body>
+                          <Stack gap={3}>
+                            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                              <div>
+                                <h4 className="h6 mb-1">Contactos</h4>
+                                <p className="text-secondary mb-0">
+                                  Contactos cargados para el {hogarLabel}. Objetivo inicial:
+                                  hasta dos contactos.
+                                </p>
+                              </div>
+
+                              <div>
+                                <Button variant="primary" onClick={() => addContacto(hogar.id)}>
+                                  Agregar contacto
+                                </Button>
+                              </div>
+                            </div>
+
+                            {datosHogar.contactos.length > 2 ? (
+                              <Alert variant="warning" className="mb-0">
+                                Hay más de dos contactos cargados para el {hogarLabel}. No se
+                                bloquea en esta etapa, pero el objetivo operativo inicial son dos
+                                contactos por hogar.
+                              </Alert>
+                            ) : (
+                              <Alert variant="info" className="mb-0">
+                                Contactos cargados para el {hogarLabel}:{' '}
+                                <strong>{datosHogar.contactos.length}</strong>. Objetivo inicial:
+                                hasta dos.
+                              </Alert>
+                            )}
+
+                            {datosHogar.contactos.length > 0 ? (
+                              <Stack gap={3}>
+                                {datosHogar.contactos.map((contacto, contactoIndex) => (
+                                  <ContactoFormCard
+                                    key={contacto.id}
+                                    contacto={contacto}
+                                    index={contactoIndex}
+                                    onChange={(updatedContacto) =>
+                                      updateContacto(hogar.id, updatedContacto)
+                                    }
+                                    onRemove={(contactoId) =>
+                                      requestRemoveContacto(hogar.id, contactoId)
+                                    }
+                                  />
+                                ))}
+                              </Stack>
+                            ) : (
+                              <Alert variant="secondary" className="mb-0">
+                                Todavía no hay contactos cargados para el {hogarLabel}.
+                              </Alert>
+                            )}
+                          </Stack>
+                        </Card.Body>
+                      </Card>
+
+                      <Card className="border-0 bg-light">
+                        <Card.Body>
+                          <Stack gap={3}>
+                            <div>
+                              <h4 className="h6 mb-1">Servicios y salud</h4>
+                              <p className="text-secondary mb-0">
+                                Datos asociados al {hogarLabel}.
+                              </p>
+                            </div>
+
+                            <ServiciosSaludSection
+                              hogarLabel={hogarLabel}
+                              servicios={datosHogar.servicios}
+                              salud={datosHogar.salud}
+                              onServiciosChange={(servicios) =>
+                                updateServicios(hogar.id, servicios)
+                              }
+                              onSaludChange={(salud) => updateSalud(hogar.id, salud)}
+                            />
+                          </Stack>
+                        </Card.Body>
+                      </Card>
+                    </Stack>
+                  </Accordion.Body>
+                </Accordion.Item>
               </div>
-
-              <div>
-                <Button variant="primary" onClick={addPersona}>
-                  Agregar persona
-                </Button>
-              </div>
-            </div>
-
-            {datosHogar.personas.length > 0 ? (
-              <Stack gap={3}>
-                {datosHogar.personas.map((persona, index) => (
-                  <PersonaFormCard
-                    key={persona.id}
-                    persona={persona}
-                    index={index}
-                    onChange={updatePersona}
-                    onRemove={requestRemovePersona}
-                  />
-                ))}
-              </Stack>
-            ) : (
-              <Alert variant="secondary" className="mb-0">
-                Todavía no hay personas cargadas para este hogar.
-              </Alert>
-            )}
-          </Stack>
-        </Card.Body>
-      </Card>
-
-      <Card className="border-0 bg-light">
-        <Card.Body>
-          <Stack gap={3}>
-            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-              <div>
-                <Badge bg="primary" className="mb-2">
-                  Contactos
-                </Badge>
-                <h3 className="h5 mb-1">Contactos del hogar</h3>
-                <p className="text-secondary mb-0">
-                  Objetivo inicial: cargar en lo posible hasta dos contactos por hogar.
-                </p>
-              </div>
-
-              <div>
-                <Button variant="primary" onClick={addContacto}>
-                  Agregar contacto
-                </Button>
-              </div>
-            </div>
-
-            {datosHogar.contactos.length > 2 ? (
-              <Alert variant="warning" className="mb-0">
-                Hay más de dos contactos cargados. No se bloquea en esta etapa, pero el
-                objetivo operativo inicial son dos contactos por hogar.
-              </Alert>
-            ) : (
-              <Alert variant="info" className="mb-0">
-                Contactos cargados para este hogar: <strong>{datosHogar.contactos.length}</strong>.
-                Objetivo inicial: hasta dos.
-              </Alert>
-            )}
-
-            {datosHogar.contactos.length > 0 ? (
-              <Stack gap={3}>
-                {datosHogar.contactos.map((contacto, index) => (
-                  <ContactoFormCard
-                    key={contacto.id}
-                    contacto={contacto}
-                    index={index}
-                    onChange={updateContacto}
-                    onRemove={requestRemoveContacto}
-                  />
-                ))}
-              </Stack>
-            ) : (
-              <Alert variant="secondary" className="mb-0">
-                Todavía no hay contactos cargados para este hogar.
-              </Alert>
-            )}
-          </Stack>
-        </Card.Body>
-      </Card>
-
-      <ServiciosSaludSection
-        servicios={datosHogar.servicios}
-        salud={datosHogar.salud}
-        onServiciosChange={updateServicios}
-        onSaludChange={updateSalud}
-      />
+            );
+          })}
+        </Stack>
+      </Accordion>
 
       <ConfirmActionModal
         show={Boolean(confirmActionContent)}
