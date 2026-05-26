@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Card, Col, Modal, Row, Stack } from 'react-bootstrap';
+import { BorradoresLocalesList } from '../components/BorradoresLocalesList';
 import { CierreRelevamientoSection } from '../components/CierreRelevamientoSection';
 import { CuadranteImageModal } from '../components/CuadranteImageModal';
 import { PersonasContactosSection } from '../components/PersonasContactosSection';
@@ -10,8 +11,12 @@ import { TerritorialSelector } from '../components/TerritorialSelector';
 import { ViviendaHogaresSection } from '../components/ViviendaHogaresSection';
 import { ConfirmActionModal } from '../../../shared/components/ConfirmActionModal';
 import {
+  buildLocalDraftKey,
   clearLocalDraft,
   getLocalDraft,
+  getLocalDraftByKey,
+  getLocalDraftsIndex,
+  removeLocalDraftByKey,
   saveLocalDraft,
 } from '../services/draftStorageService';
 import {
@@ -38,6 +43,7 @@ import {
   serverDraftSyncStatusLabel,
   type LocalDraftStatus,
   type RelevamientoLocalDraft,
+  type RelevamientoLocalDraftIndexItem,
   type ServerDraftSyncStatus,
 } from '../types/relevamientoDraft';
 import {
@@ -166,6 +172,8 @@ export function RelevamientoFlowPage() {
   const [territorialSelectorKey, setTerritorialSelectorKey] = useState(0);
   const [pendingLocalDraft, setPendingLocalDraft] =
     useState<RelevamientoLocalDraft | null>(null);
+  const [localDraftsIndex, setLocalDraftsIndex] =
+    useState<RelevamientoLocalDraftIndexItem[]>([]);
   const [draftStatus, setDraftStatus] = useState<LocalDraftStatus>('SIN_BORRADOR');
   const [lastSavedAt, setLastSavedAt] = useState('');
   const [draftRecoveryChecked, setDraftRecoveryChecked] = useState(false);
@@ -185,6 +193,12 @@ export function RelevamientoFlowPage() {
     Number.isFinite(cantidadHogaresDeclarada) && cantidadHogaresDeclarada > 0;
   const cantidadHogaresCoincide =
     cantidadHogaresDeclaradaValida && cantidadHogaresDeclarada === hogares.length;
+
+  const activeLocalDraftKey = buildLocalDraftKey({
+    selectedPredioId,
+    selectedPredio,
+    selectedCuadrante,
+  });
 
   const hasStartedDraft = Boolean(
     selectedPredioId ||
@@ -221,6 +235,14 @@ export function RelevamientoFlowPage() {
       resultadoVisita.observacion ||
       hasPostVisitData,
   );
+
+  const refreshLocalDraftsIndex = () => {
+    setLocalDraftsIndex(getLocalDraftsIndex());
+  };
+
+  useEffect(() => {
+    refreshLocalDraftsIndex();
+  }, []);
 
   const canGoBack = currentIndex > 0;
   const canGoForward =
@@ -325,6 +347,7 @@ export function RelevamientoFlowPage() {
 
     const draft = buildLocalDraft();
     const saved = saveLocalDraft(draft);
+    refreshLocalDraftsIndex();
 
     if (saved) {
       setLastSavedAt(draft.savedAt);
@@ -372,6 +395,7 @@ export function RelevamientoFlowPage() {
 
   const discardLocalDraft = () => {
     clearLocalDraft();
+    refreshLocalDraftsIndex();
     setPendingLocalDraft(null);
     setLastSavedAt('');
     setDraftStatus('SIN_BORRADOR');
@@ -396,6 +420,68 @@ export function RelevamientoFlowPage() {
     setVivienda(viviendaInicial);
     setHogares([]);
     resetPersonasContactos();
+  };
+
+
+  const handleRetomarLocalDraftByKey = (draftKey: string) => {
+    const draft = getLocalDraftByKey(draftKey);
+
+    if (!draft) {
+      refreshLocalDraftsIndex();
+      setFinalizationError(
+        'No se pudo recuperar ese borrador local. Puede haber sido descartado o eliminado del navegador.',
+      );
+      return;
+    }
+
+    saveLocalDraft(draft);
+    applyLocalDraft(draft);
+    refreshLocalDraftsIndex();
+    setFinalizationError('');
+  };
+
+  const resetActiveDraftState = () => {
+    setCurrentSectionId('inicio-predio-visita');
+    setSelectedPredioId('');
+    setSelectedPredio(null);
+    setSelectedCuadrante(null);
+    setResultadoVisita(resultadoVisitaInicial);
+    setVivienda(viviendaInicial);
+    setHogares([]);
+    setPersonasContactosPorHogar({});
+    setCierre(cierreRelevamientoInicial);
+    setFinalizacionCompletada(false);
+    setFinalizationError('');
+    setFinalizationValidationErrors([]);
+    setSectionValidationErrors([]);
+    setServerDraftId(null);
+    setServerDraftVersion(null);
+    setServerDraftLastSyncedAt('');
+    setServerDraftSyncStatus('SIN_BORRADOR_SERVIDOR');
+    setServerDraftSyncError('');
+    setPendingLocalDraft(null);
+    setDraftStatus('SIN_BORRADOR');
+    setLastSavedAt('');
+    setTerritorialSelectorKey((currentKey) => currentKey + 1);
+  };
+
+  const handleDescartarLocalDraftByKey = (draftKey: string) => {
+    const confirmed = window.confirm(
+      '¿Descartar este borrador local? Esta acción solo elimina la copia guardada en esta tablet.',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    removeLocalDraftByKey(draftKey);
+
+    if (activeLocalDraftKey === draftKey) {
+      clearLocalDraft();
+      resetActiveDraftState();
+    }
+
+    refreshLocalDraftsIndex();
   };
 
   const handleCuadranteSelected = (cuadrante: CuadranteOption | null) => {
@@ -589,6 +675,7 @@ export function RelevamientoFlowPage() {
 
   const resetRelevamiento = () => {
     clearLocalDraft();
+    refreshLocalDraftsIndex();
     setCurrentSectionId('inicio-predio-visita');
     setSelectedPredioId('');
     setSelectedPredio(null);
@@ -624,6 +711,7 @@ export function RelevamientoFlowPage() {
   const persistLocalDraft = (overrides: Partial<RelevamientoLocalDraft> = {}) => {
     const draft = buildLocalDraft(overrides);
     const saved = saveLocalDraft(draft);
+    refreshLocalDraftsIndex();
 
     if (saved) {
       setLastSavedAt(draft.savedAt);
@@ -637,6 +725,7 @@ export function RelevamientoFlowPage() {
 
   const persistServerMetadataLocally = (metadata: Partial<RelevamientoLocalDraft>) => {
     saveLocalDraft(buildLocalDraft(metadata));
+    refreshLocalDraftsIndex();
   };
 
   const syncServerDraftNoBloqueante = async (
@@ -992,7 +1081,14 @@ export function RelevamientoFlowPage() {
       ) : null}
 
       <div ref={sectionStepperRef}>
-        <SectionStepper
+        <BorradoresLocalesList
+        drafts={localDraftsIndex}
+        activeDraftKey={activeLocalDraftKey}
+        onRetomar={handleRetomarLocalDraftByKey}
+        onDescartar={handleDescartarLocalDraftByKey}
+      />
+
+      <SectionStepper
           sections={sections}
           currentSectionId={currentSection.id}
           onSelectSection={selectSection}

@@ -40,6 +40,19 @@ export type RelevamientoLocalDraft = {
   serverDraftSyncError?: string;
 };
 
+export type RelevamientoLocalDraftIndexItem = {
+  draftKey: string;
+  predioLabel: string;
+  selectedPredioId: string;
+  selectedPredio: PredioDetalle | null;
+  selectedCuadrante: CuadranteOption | null;
+  currentSectionId: RelevamientoSectionId;
+  savedAt: string;
+  cantidadHogares: number;
+  serverDraftId?: number | null;
+  serverDraftVersion?: number | null;
+};
+
 export type LocalDraftStatus =
   | 'SIN_BORRADOR'
   | 'CAMBIOS_PENDIENTES'
