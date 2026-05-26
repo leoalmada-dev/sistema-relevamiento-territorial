@@ -43,29 +43,24 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
       <Card.Body>
         <Stack gap={3}>
           <Row className="g-3">
-            <Col md={4}>
-              <Form.Group controlId={`numero-hogar-${hogar.id}`}>
-                <Form.Label>Número de hogar</Form.Label>
-                <Form.Control
-                  value={hogar.numeroHogar}
-                  onChange={(event) => updateField('numeroHogar', event.target.value)}
-                  placeholder="Ej: 1"
-                />
-              </Form.Group>
-            </Col>
-
-            <Col md={4}>
+            <Col md={6}>
               <Form.Group controlId={`tiempo-vive-barrio-${hogar.id}`}>
                 <Form.Label>Tiempo que vive en el barrio</Form.Label>
                 <Form.Control
+                  type="number"
+                  min="0"
+                  step="1"
                   value={hogar.tiempoViveBarrio}
                   onChange={(event) => updateField('tiempoViveBarrio', event.target.value)}
-                  placeholder="Ej: 5 años"
+                  placeholder="Ej: 5"
                 />
+                <Form.Text className="text-secondary">
+                  Indique la cantidad de años.
+                </Form.Text>
               </Form.Group>
             </Col>
 
-            <Col md={4}>
+            <Col md={6}>
               <Form.Group controlId={`beneficiario-regularizacion-${hogar.id}`}>
                 <Form.Label>Beneficiario de regularización PIAI</Form.Label>
                 <Form.Select
@@ -130,10 +125,7 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
 
             <Col md={6}>
               <Form.Group controlId={`conforme-caracteristicas-${hogar.id}`}>
-                <Form.Label>
-                  ¿Está conforme con las características del hogar? Indique sí, no,
-                  parcialmente y detalle el motivo si corresponde.
-                </Form.Label>
+                <Form.Label>¿Está conforme con las características del hogar?</Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={2}
@@ -143,6 +135,9 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
                   }
                   placeholder="Ingrese la respuesta y el motivo si corresponde."
                 />
+                <Form.Text className="text-secondary">
+                  Indique sí, no, parcialmente y detalle el motivo si corresponde.
+                </Form.Text>
               </Form.Group>
             </Col>
           </Row>

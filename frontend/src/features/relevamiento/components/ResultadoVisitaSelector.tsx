@@ -54,7 +54,7 @@ export function ResultadoVisitaSelector({ value, onChange }: ResultadoVisitaSele
                 type="radio"
                 id="resultado-entrevista-realizada"
                 name="resultado-visita"
-                label="Entrevista realizada"
+                label="Se procede a la entrevista"
                 checked={value.resultado === 'ENTREVISTA_REALIZADA'}
                 onChange={() => handleResultadoChange('ENTREVISTA_REALIZADA')}
               />
@@ -148,7 +148,7 @@ export function ResultadoVisitaSelector({ value, onChange }: ResultadoVisitaSele
 
           {permiteContinuarFormulario(value.resultado) ? (
             <Alert variant="success" className="mb-0">
-              La entrevista fue realizada. El flujo puede continuar hacia vivienda y hogares.
+              Se procede a la entrevista. El flujo puede continuar hacia vivienda y hogares.
             </Alert>
           ) : null}
 
