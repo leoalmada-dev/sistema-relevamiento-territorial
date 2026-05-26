@@ -43,7 +43,7 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
       <Card.Body>
         <Stack gap={3}>
           <Row className="g-3">
-            <Col md={4}>
+            <Col md={6}>
               <Form.Group controlId={`tiempo-vive-barrio-${hogar.id}`}>
                 <Form.Label>Tiempo que vive en el barrio</Form.Label>
                 <Form.Control
@@ -60,7 +60,7 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
               </Form.Group>
             </Col>
 
-            <Col md={4}>
+            <Col md={6}>
               <Form.Group controlId={`beneficiario-regularizacion-${hogar.id}`}>
                 <Form.Label>Beneficiario de regularización PIAI</Form.Label>
                 <Form.Select
