@@ -44,20 +44,8 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
         <Stack gap={3}>
           <Row className="g-3">
             <Col md={4}>
-              <Form.Group controlId={`numero-hogar-${hogar.id}`}>
-                <Form.Label>Hogar</Form.Label>
-                <div className="form-control-plaintext fw-semibold">
-                  Hogar {index + 1}
-                </div>
-                <Form.Text className="text-secondary">
-                  El número de hogar se asigna automáticamente.
-                </Form.Text>
-              </Form.Group>
-            </Col>
-
-            <Col md={4}>
               <Form.Group controlId={`tiempo-vive-barrio-${hogar.id}`}>
-                <Form.Label>Tiempo que vive en el barrio (años)</Form.Label>
+                <Form.Label>Tiempo que vive en el barrio</Form.Label>
                 <Form.Control
                   type="number"
                   min="0"
@@ -66,6 +54,9 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
                   onChange={(event) => updateField('tiempoViveBarrio', event.target.value)}
                   placeholder="Ej: 5"
                 />
+                <Form.Text className="text-secondary">
+                  Indique la cantidad de años.
+                </Form.Text>
               </Form.Group>
             </Col>
 
@@ -134,10 +125,7 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
 
             <Col md={6}>
               <Form.Group controlId={`conforme-caracteristicas-${hogar.id}`}>
-                <Form.Label>
-                  ¿Está conforme con las características del hogar? Indique sí, no,
-                  parcialmente y detalle el motivo si corresponde.
-                </Form.Label>
+                <Form.Label>¿Está conforme con las características del hogar?</Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={2}
@@ -147,6 +135,9 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
                   }
                   placeholder="Ingrese la respuesta y el motivo si corresponde."
                 />
+                <Form.Text className="text-secondary">
+                  Indique sí, no, parcialmente y detalle el motivo si corresponde.
+                </Form.Text>
               </Form.Group>
             </Col>
           </Row>
