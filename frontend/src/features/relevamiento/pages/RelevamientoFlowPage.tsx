@@ -174,6 +174,9 @@ export function RelevamientoFlowPage() {
     useState<RelevamientoLocalDraft | null>(null);
   const [localDraftsIndex, setLocalDraftsIndex] =
     useState<RelevamientoLocalDraftIndexItem[]>([]);
+  const [showLocalDraftsModal, setShowLocalDraftsModal] = useState(false);
+  const [localDraftToRecover, setLocalDraftToRecover] =
+    useState<RelevamientoLocalDraftIndexItem | null>(null);
   const [draftStatus, setDraftStatus] = useState<LocalDraftStatus>('SIN_BORRADOR');
   const [lastSavedAt, setLastSavedAt] = useState('');
   const [draftRecoveryChecked, setDraftRecoveryChecked] = useState(false);
@@ -235,6 +238,9 @@ export function RelevamientoFlowPage() {
       resultadoVisita.observacion ||
       hasPostVisitData,
   );
+
+  const getLocalDraftSectionLabel = (sectionId: RelevamientoSectionId) =>
+    sections.find((section) => section.id === sectionId)?.title ?? sectionId;
 
   const refreshLocalDraftsIndex = () => {
     setLocalDraftsIndex(getLocalDraftsIndex());
@@ -484,6 +490,42 @@ export function RelevamientoFlowPage() {
     refreshLocalDraftsIndex();
   };
 
+  const maybeOfferLocalDraftRecovery = (
+    nextSelectedPredioId: string,
+    nextSelectedPredio: PredioDetalle | null,
+  ) => {
+    if (!nextSelectedPredio) {
+      return;
+    }
+
+    const nextDraftKey = buildLocalDraftKey({
+      selectedPredioId: nextSelectedPredioId,
+      selectedPredio: nextSelectedPredio,
+      selectedCuadrante,
+    });
+
+    if (!nextDraftKey || activeLocalDraftKey === nextDraftKey) {
+      return;
+    }
+
+    const nextIndex = getLocalDraftsIndex();
+    const existingDraft = nextIndex.find((draft) => draft.draftKey === nextDraftKey);
+    setLocalDraftsIndex(nextIndex);
+
+    if (existingDraft) {
+      setLocalDraftToRecover(existingDraft);
+    }
+  };
+
+  const handleRecoverSelectedPredioDraft = () => {
+    if (!localDraftToRecover) {
+      return;
+    }
+
+    handleRetomarLocalDraftByKey(localDraftToRecover.draftKey);
+    setLocalDraftToRecover(null);
+  };
+
   const handleCuadranteSelected = (cuadrante: CuadranteOption | null) => {
     setSelectedCuadrante(cuadrante);
 
@@ -497,6 +539,7 @@ export function RelevamientoFlowPage() {
 
     setSelectedPredioId(predioId);
     setSelectedPredio(predioDetalle);
+    maybeOfferLocalDraftRecovery(predioId, predioDetalle);
 
     if (isSamePredio) {
       markDraftPending();
@@ -1081,12 +1124,95 @@ export function RelevamientoFlowPage() {
       ) : null}
 
       <div ref={sectionStepperRef}>
-        <BorradoresLocalesList
-        drafts={localDraftsIndex}
-        activeDraftKey={activeLocalDraftKey}
-        onRetomar={handleRetomarLocalDraftByKey}
-        onDescartar={handleDescartarLocalDraftByKey}
-      />
+      {localDraftsIndex.length > 0 ? (
+        <Alert variant="light" className="border shadow-sm mb-0">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+              <strong>Hay cargas guardadas en esta tablet.</strong>{' '}
+              <span className="text-secondary">
+                Podés revisarlas sin ocupar espacio en la pantalla principal.
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="outline-secondary"
+              size="sm"
+              onClick={() => setShowLocalDraftsModal(true)}
+            >
+              Ver cargas guardadas
+            </Button>
+          </div>
+        </Alert>
+      ) : null}
+
+      <Modal
+        show={showLocalDraftsModal}
+        onHide={() => setShowLocalDraftsModal(false)}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Borradores locales de esta tablet</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="warning">
+            Esta recuperación es local. No permite retomar la carga desde otra tablet ni si se
+            borra el almacenamiento del navegador.
+          </Alert>
+
+          <BorradoresLocalesList
+            drafts={localDraftsIndex}
+            activeDraftKey={activeLocalDraftKey}
+            onRetomar={(draftKey) => {
+              handleRetomarLocalDraftByKey(draftKey);
+              setShowLocalDraftsModal(false);
+            }}
+            onDescartar={handleDescartarLocalDraftByKey}
+          />
+        </Modal.Body>
+      </Modal>
+
+      <Modal
+        show={Boolean(localDraftToRecover)}
+        onHide={() => setLocalDraftToRecover(null)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Ya existe una carga local para este predio</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Stack gap={3}>
+            <p className="mb-0">
+              Hay un borrador guardado en esta tablet para: <br />
+              <strong>{localDraftToRecover?.predioLabel}</strong>
+            </p>
+
+            {localDraftToRecover ? (
+              <div className="text-secondary">
+                <div>Guardado: {formatSavedAt(localDraftToRecover.savedAt)}</div>
+                <div>
+                  Sección:{' '}
+                  {getLocalDraftSectionLabel(localDraftToRecover.currentSectionId)}
+                </div>
+                <div>Hogares cargados: {localDraftToRecover.cantidadHogares}</div>
+              </div>
+            ) : null}
+
+            <Alert variant="warning" className="mb-0">
+              Si continuás cargando este predio sin recuperar el borrador, podrías reemplazar la
+              carga local guardada para este mismo predio.
+            </Alert>
+          </Stack>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setLocalDraftToRecover(null)}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={handleRecoverSelectedPredioDraft}>
+            Recuperar carga
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <SectionStepper
           sections={sections}

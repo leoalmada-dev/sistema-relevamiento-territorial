@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Card, Col, ListGroup, Row, Stack } from 'react-bootstrap';
+import { Badge, Button, Col, ListGroup, Row, Stack } from 'react-bootstrap';
 import type { RelevamientoLocalDraftIndexItem } from '../types/relevamientoDraft';
 
 type BorradoresLocalesListProps = {
@@ -37,94 +37,71 @@ export function BorradoresLocalesList({
   onDescartar,
 }: BorradoresLocalesListProps) {
   if (drafts.length === 0) {
-    return null;
+    return (
+      <p className="text-secondary mb-0">
+        No hay cargas locales sin finalizar guardadas en esta tablet.
+      </p>
+    );
   }
 
   return (
-    <Card className="border-0 shadow-sm">
-      <Card.Body>
-        <Stack gap={3}>
-          <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
-            <div>
-              <p className="text-uppercase text-secondary fw-semibold small mb-2">
-                Recuperación local
-              </p>
-              <h2 className="h5 mb-1">Borradores locales de esta tablet</h2>
-              <p className="text-secondary mb-0">
-                Cargas sin finalizar guardadas solamente en esta tablet y este navegador.
-              </p>
-            </div>
+    <ListGroup variant="flush">
+      {drafts.map((draft) => {
+        const isActive = activeDraftKey === draft.draftKey;
 
-            <Badge bg="secondary" className="align-self-start">
-              {drafts.length} {drafts.length === 1 ? 'borrador' : 'borradores'}
-            </Badge>
-          </div>
+        return (
+          <ListGroup.Item key={draft.draftKey} className="px-0">
+            <Row className="align-items-center g-3">
+              <Col lg={7}>
+                <Stack gap={1}>
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    <strong>{draft.predioLabel}</strong>
+                    {isActive ? <Badge bg="primary">Carga activa</Badge> : null}
+                  </div>
 
-          <Alert variant="warning" className="mb-0">
-            Esta recuperación es local. No permite retomar la carga desde otra tablet ni si se
-            borra el almacenamiento del navegador.
-          </Alert>
+                  <span className="text-secondary small">
+                    Sección: {formatSectionLabel(draft.currentSectionId)}
+                  </span>
 
-          <ListGroup variant="flush">
-            {drafts.map((draft) => {
-              const isActive = activeDraftKey === draft.draftKey;
+                  <span className="text-secondary small">
+                    Hogares cargados: {draft.cantidadHogares} · Guardado:{' '}
+                    {formatSavedAt(draft.savedAt)}
+                  </span>
 
-              return (
-                <ListGroup.Item key={draft.draftKey} className="px-0">
-                  <Row className="align-items-center g-3">
-                    <Col lg={7}>
-                      <Stack gap={1}>
-                        <div className="d-flex flex-wrap align-items-center gap-2">
-                          <strong>{draft.predioLabel}</strong>
-                          {isActive ? <Badge bg="primary">Carga activa</Badge> : null}
-                        </div>
+                  {draft.serverDraftId ? (
+                    <span className="text-secondary small">
+                      Borrador servidor: #{draft.serverDraftId}
+                      {draft.serverDraftVersion ? ` · versión ${draft.serverDraftVersion}` : ''}
+                    </span>
+                  ) : null}
+                </Stack>
+              </Col>
 
-                        <span className="text-secondary small">
-                          Sección: {formatSectionLabel(draft.currentSectionId)}
-                        </span>
+              <Col lg={5}>
+                <div className="d-flex flex-column flex-md-row justify-content-lg-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={() => onRetomar(draft.draftKey)}
+                  >
+                    Retomar
+                  </Button>
 
-                        <span className="text-secondary small">
-                          Hogares cargados: {draft.cantidadHogares} · Guardado:{' '}
-                          {formatSavedAt(draft.savedAt)}
-                        </span>
-
-                        {draft.serverDraftId ? (
-                          <span className="text-secondary small">
-                            Borrador servidor: #{draft.serverDraftId}
-                            {draft.serverDraftVersion ? ` · versión ${draft.serverDraftVersion}` : ''}
-                          </span>
-                        ) : null}
-                      </Stack>
-                    </Col>
-
-                    <Col lg={5}>
-                      <div className="d-flex flex-column flex-md-row justify-content-lg-end gap-2">
-                        <Button
-                          type="button"
-                          variant="outline-primary"
-                          size="sm"
-                          onClick={() => onRetomar(draft.draftKey)}
-                        >
-                          Retomar
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => onDescartar(draft.draftKey)}
-                        >
-                          Descartar
-                        </Button>
-                      </div>
-                    </Col>
-                  </Row>
-                </ListGroup.Item>
-              );
-            })}
-          </ListGroup>
-        </Stack>
-      </Card.Body>
-    </Card>
+                  <Button
+                    type="button"
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => onDescartar(draft.draftKey)}
+                  >
+                    Descartar
+                  </Button>
+                </div>
+              </Col>
+            </Row>
+          </ListGroup.Item>
+        );
+      })}
+    </ListGroup>
   );
 }

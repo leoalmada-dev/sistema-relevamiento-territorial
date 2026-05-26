@@ -78,8 +78,9 @@ function buildPredioLabel(draft: Pick<RelevamientoLocalDraft, 'selectedPredio' |
     'calleNombre',
   ]);
   const numero = getPredioFieldValue(selectedPredio, [
-    'numero',
+    'numeroPuertaTeorico',
     'numeroPuerta',
+    'numero',
     'numeroTeorico',
     'puerta',
     'nroPuerta',
@@ -102,8 +103,9 @@ export function buildLocalDraftKey(
     'calleNombre',
   ]);
   const numero = getPredioFieldValue(draft.selectedPredio, [
-    'numero',
+    'numeroPuertaTeorico',
     'numeroPuerta',
+    'numero',
     'numeroTeorico',
     'puerta',
     'nroPuerta',
@@ -113,6 +115,7 @@ export function buildLocalDraftKey(
     getPredioFieldValue(draft.selectedPredio, ['cuadranteId', 'idCuadrante']);
 
   const looksManual =
+    draft.selectedPredio?.origen === 'manual' ||
     draft.selectedPredioId.toLowerCase().includes('manual') ||
     predioId.toLowerCase().includes('manual');
 
