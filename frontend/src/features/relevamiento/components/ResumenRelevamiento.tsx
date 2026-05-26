@@ -6,7 +6,7 @@ import type { PredioDetalle } from '../types/territorio';
 import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
 
 const resultadoVisitaLabels: Record<string, string> = {
-  ENTREVISTA_REALIZADA: 'Entrevista realizada',
+  ENTREVISTA_REALIZADA: 'Se procede a la entrevista',
   SE_NIEGA: 'Se niega a brindar información',
   NO_SE_ENCUENTRA: 'No se encuentra',
 };

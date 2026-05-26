@@ -45,22 +45,26 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
           <Row className="g-3">
             <Col md={4}>
               <Form.Group controlId={`numero-hogar-${hogar.id}`}>
-                <Form.Label>Número de hogar</Form.Label>
-                <Form.Control
-                  value={hogar.numeroHogar}
-                  onChange={(event) => updateField('numeroHogar', event.target.value)}
-                  placeholder="Ej: 1"
-                />
+                <Form.Label>Hogar</Form.Label>
+                <div className="form-control-plaintext fw-semibold">
+                  Hogar {index + 1}
+                </div>
+                <Form.Text className="text-secondary">
+                  El número de hogar se asigna automáticamente.
+                </Form.Text>
               </Form.Group>
             </Col>
 
             <Col md={4}>
               <Form.Group controlId={`tiempo-vive-barrio-${hogar.id}`}>
-                <Form.Label>Tiempo que vive en el barrio</Form.Label>
+                <Form.Label>Tiempo que vive en el barrio (años)</Form.Label>
                 <Form.Control
+                  type="number"
+                  min="0"
+                  step="1"
                   value={hogar.tiempoViveBarrio}
                   onChange={(event) => updateField('tiempoViveBarrio', event.target.value)}
-                  placeholder="Ej: 5 años"
+                  placeholder="Ej: 5"
                 />
               </Form.Group>
             </Col>
