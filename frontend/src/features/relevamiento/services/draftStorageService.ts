@@ -160,11 +160,24 @@ export function localDraftMatchesSelectedPredio(
     const storedIds = getNormalizedStrongPredioIds(storedDraft);
     const selectedIds = getNormalizedStrongPredioIds(selectedDraft);
 
-    if (storedIds.length === 0 || selectedIds.length === 0) {
+    if (
+      storedIds.length > 0 &&
+      selectedIds.length > 0 &&
+      storedIds.some((storedId) => selectedIds.includes(storedId))
+    ) {
+      return true;
+    }
+
+    const storedCalle = normalizeDraftKeyPart(getLocalDraftStreet(storedDraft));
+    const selectedCalle = normalizeDraftKeyPart(getLocalDraftStreet(selectedDraft));
+    const storedNumero = normalizeDraftKeyPart(getLocalDraftPredioDoorNumber(storedDraft));
+    const selectedNumero = normalizeDraftKeyPart(getLocalDraftPredioDoorNumber(selectedDraft));
+
+    if (!storedCalle || !selectedCalle || !storedNumero || !selectedNumero) {
       return false;
     }
 
-    return storedIds.some((storedId) => selectedIds.includes(storedId));
+    return storedCalle === selectedCalle && storedNumero === selectedNumero;
   }
 
   const storedCuadrante = normalizeDraftKeyPart(getLocalDraftCuadranteId(storedDraft));
@@ -325,6 +338,38 @@ export function getLocalDraftsIndex(): RelevamientoLocalDraftIndexItem[] {
   }
 }
 
+function draftHasPostSelectionData(draft: RelevamientoLocalDraft) {
+  return Boolean(
+    draft.currentSectionId !== 'inicio-predio-visita' ||
+      draft.resultadoVisita.resultado ||
+      draft.resultadoVisita.motivoNegativa ||
+      draft.resultadoVisita.referencia ||
+      draft.resultadoVisita.contacto ||
+      draft.resultadoVisita.horario ||
+      draft.resultadoVisita.observacion ||
+      draft.vivienda.cantidadHogaresDeclarada ||
+      draft.vivienda.vinculoEntreHogares ||
+      draft.vivienda.observacionesVivienda ||
+      draft.hogares.length > 0 ||
+      Object.keys(draft.personasContactosPorHogar).length > 0 ||
+      draft.cierre.observacionesGenerales ||
+      draft.cierre.latitud ||
+      draft.cierre.longitud ||
+      draft.cierre.horaCaptura,
+  );
+}
+
+function isDestructiveSnapshotReplacement(
+  existingDraft: RelevamientoLocalDraft,
+  nextDraft: RelevamientoLocalDraft,
+) {
+  return (
+    draftHasPostSelectionData(existingDraft) &&
+    !draftHasPostSelectionData(nextDraft) &&
+    nextDraft.currentSectionId === 'inicio-predio-visita'
+  );
+}
+
 export function getLocalDraftByKey(draftKey: string): RelevamientoLocalDraft | null {
   try {
     const rawDraft = window.localStorage.getItem(getLocalDraftItemStorageKey(draftKey));
@@ -337,6 +382,33 @@ export function getLocalDraftByKey(draftKey: string): RelevamientoLocalDraft | n
   } catch {
     return null;
   }
+}
+
+export function findLocalDraftForSelectedPredio(
+  selectedDraft: Pick<
+    RelevamientoLocalDraft,
+    'selectedPredioId' | 'selectedPredio' | 'selectedCuadrante'
+  >,
+): RelevamientoLocalDraftIndexItem | null {
+  const localDraftsIndex = getLocalDraftsIndex();
+
+  for (const indexItem of localDraftsIndex) {
+    if (!indexItem.draftKey || !indexItem.selectedPredio) {
+      continue;
+    }
+
+    const savedDraft = getLocalDraftByKey(indexItem.draftKey);
+
+    if (!savedDraft || !savedDraft.selectedPredio) {
+      continue;
+    }
+
+    if (localDraftMatchesSelectedPredio(savedDraft, selectedDraft)) {
+      return indexItem;
+    }
+  }
+
+  return null;
 }
 
 export function saveLocalDraftSnapshot(draft: RelevamientoLocalDraft): boolean {
@@ -360,6 +432,12 @@ export function saveLocalDraftSnapshot(draft: RelevamientoLocalDraft): boolean {
       serverDraftId: draft.serverDraftId ?? null,
       serverDraftVersion: draft.serverDraftVersion ?? null,
     };
+
+    const existingDraft = getLocalDraftByKey(draftKey);
+
+    if (existingDraft && isDestructiveSnapshotReplacement(existingDraft, draft)) {
+      return true;
+    }
 
     window.localStorage.setItem(
       getLocalDraftItemStorageKey(draftKey),

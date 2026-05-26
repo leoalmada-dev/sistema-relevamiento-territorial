@@ -13,11 +13,11 @@ import { ConfirmActionModal } from '../../../shared/components/ConfirmActionModa
 import {
   buildLocalDraftKey,
   clearLocalDraft,
+  findLocalDraftForSelectedPredio,
   getLocalDraft,
   getLocalDraftByKey,
   getLocalDraftPredioDisplayLabel,
   getLocalDraftPredioDoorNumber,
-  localDraftMatchesSelectedPredio,
   getLocalDraftsIndex,
   removeLocalDraftByKey,
   saveLocalDraft,
@@ -507,31 +507,11 @@ export function RelevamientoFlowPage() {
       selectedCuadrante,
     };
 
-    const nextDraftKey = buildLocalDraftKey(selectedDraftReference);
-
-    if (!nextDraftKey || activeLocalDraftKey === nextDraftKey) {
-      return false;
-    }
-
-    const savedDraft = getLocalDraftByKey(nextDraftKey);
+    const existingDraft = findLocalDraftForSelectedPredio(selectedDraftReference);
     const nextIndex = getLocalDraftsIndex();
-    const existingDraft = nextIndex.find((draft) => draft.draftKey === nextDraftKey);
     setLocalDraftsIndex(nextIndex);
 
-    if (!existingDraft || !savedDraft) {
-      return false;
-    }
-
-    const indexMatchesSelectedPredio = localDraftMatchesSelectedPredio(
-      existingDraft,
-      selectedDraftReference,
-    );
-    const savedDraftMatchesSelectedPredio = localDraftMatchesSelectedPredio(
-      savedDraft,
-      selectedDraftReference,
-    );
-
-    if (!indexMatchesSelectedPredio || !savedDraftMatchesSelectedPredio) {
+    if (!existingDraft || activeLocalDraftKey === existingDraft.draftKey) {
       return false;
     }
 
