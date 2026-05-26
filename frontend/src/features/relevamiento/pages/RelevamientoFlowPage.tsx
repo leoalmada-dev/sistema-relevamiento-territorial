@@ -17,6 +17,7 @@ import {
   getLocalDraftByKey,
   getLocalDraftPredioDisplayLabel,
   getLocalDraftPredioDoorNumber,
+  localDraftMatchesSelectedPredio,
   getLocalDraftsIndex,
   removeLocalDraftByKey,
   saveLocalDraft,
@@ -500,11 +501,13 @@ export function RelevamientoFlowPage() {
       return false;
     }
 
-    const nextDraftKey = buildLocalDraftKey({
+    const selectedDraftReference = {
       selectedPredioId: nextSelectedPredioId,
       selectedPredio: nextSelectedPredio,
       selectedCuadrante,
-    });
+    };
+
+    const nextDraftKey = buildLocalDraftKey(selectedDraftReference);
 
     if (!nextDraftKey || activeLocalDraftKey === nextDraftKey) {
       return false;
@@ -515,12 +518,25 @@ export function RelevamientoFlowPage() {
     const existingDraft = nextIndex.find((draft) => draft.draftKey === nextDraftKey);
     setLocalDraftsIndex(nextIndex);
 
-    if (existingDraft && savedDraft) {
-      setLocalDraftToRecover(existingDraft);
-      return true;
+    if (!existingDraft || !savedDraft) {
+      return false;
     }
 
-    return false;
+    const indexMatchesSelectedPredio = localDraftMatchesSelectedPredio(
+      existingDraft,
+      selectedDraftReference,
+    );
+    const savedDraftMatchesSelectedPredio = localDraftMatchesSelectedPredio(
+      savedDraft,
+      selectedDraftReference,
+    );
+
+    if (!indexMatchesSelectedPredio || !savedDraftMatchesSelectedPredio) {
+      return false;
+    }
+
+    setLocalDraftToRecover(existingDraft);
+    return true;
   };
 
   const handleRecoverSelectedPredioDraft = () => {

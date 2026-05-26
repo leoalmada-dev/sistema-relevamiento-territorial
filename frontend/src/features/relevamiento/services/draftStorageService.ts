@@ -55,6 +55,47 @@ function getPredioFieldValue(
   return '';
 }
 
+function getLocalDraftStreet(
+  draft: Pick<RelevamientoLocalDraftIndexItem, 'selectedPredio'>,
+) {
+  return getPredioFieldValue(draft.selectedPredio, [
+    'calle',
+    'nombreCalle',
+    'calleNombre',
+  ]);
+}
+
+function getLocalDraftCuadranteId(
+  draft: Pick<RelevamientoLocalDraft, 'selectedPredio' | 'selectedCuadrante'>,
+) {
+  return (
+    draft.selectedCuadrante?.id ||
+    getPredioFieldValue(draft.selectedPredio, ['cuadranteId', 'idCuadrante'])
+  );
+}
+
+function getNormalizedStrongPredioIds(
+  draft: Pick<RelevamientoLocalDraftIndexItem, 'selectedPredio' | 'selectedPredioId'>,
+) {
+  return [
+    draft.selectedPredioId,
+    getPredioFieldValue(draft.selectedPredio, ['id']),
+  ]
+    .filter((value): value is string => Boolean(value))
+    .map(normalizeDraftKeyPart)
+    .filter(Boolean);
+}
+
+function looksLikeManualDraft(
+  draft: Pick<RelevamientoLocalDraftIndexItem, 'selectedPredio' | 'selectedPredioId'>,
+) {
+  return (
+    draft.selectedPredio?.origen === 'manual' ||
+    draft.selectedPredioId.toLowerCase().includes('manual') ||
+    getPredioFieldValue(draft.selectedPredio, ['id']).toLowerCase().includes('manual')
+  );
+}
+
 export function getLocalDraftPredioDoorNumber(
   draft: Pick<RelevamientoLocalDraftIndexItem, 'selectedPredio'>,
 ) {
@@ -96,6 +137,59 @@ export function getLocalDraftPredioDisplayLabel(
   }
 
   return draft.predioLabel || draft.selectedPredioId || selectedPredio.id || 'Predio sin identificar';
+}
+
+export function localDraftMatchesSelectedPredio(
+  storedDraft: Pick<
+    RelevamientoLocalDraft,
+    'selectedPredioId' | 'selectedPredio' | 'selectedCuadrante'
+  >,
+  selectedDraft: Pick<
+    RelevamientoLocalDraft,
+    'selectedPredioId' | 'selectedPredio' | 'selectedCuadrante'
+  >,
+) {
+  if (!storedDraft.selectedPredio || !selectedDraft.selectedPredio) {
+    return false;
+  }
+
+  const storedLooksManual = looksLikeManualDraft(storedDraft);
+  const selectedLooksManual = looksLikeManualDraft(selectedDraft);
+
+  if (!storedLooksManual && !selectedLooksManual) {
+    const storedIds = getNormalizedStrongPredioIds(storedDraft);
+    const selectedIds = getNormalizedStrongPredioIds(selectedDraft);
+
+    if (storedIds.length === 0 || selectedIds.length === 0) {
+      return false;
+    }
+
+    return storedIds.some((storedId) => selectedIds.includes(storedId));
+  }
+
+  const storedCuadrante = normalizeDraftKeyPart(getLocalDraftCuadranteId(storedDraft));
+  const selectedCuadrante = normalizeDraftKeyPart(getLocalDraftCuadranteId(selectedDraft));
+  const storedCalle = normalizeDraftKeyPart(getLocalDraftStreet(storedDraft));
+  const selectedCalle = normalizeDraftKeyPart(getLocalDraftStreet(selectedDraft));
+  const storedNumero = normalizeDraftKeyPart(getLocalDraftPredioDoorNumber(storedDraft));
+  const selectedNumero = normalizeDraftKeyPart(getLocalDraftPredioDoorNumber(selectedDraft));
+
+  if (
+    !storedCuadrante ||
+    !selectedCuadrante ||
+    !storedCalle ||
+    !selectedCalle ||
+    !storedNumero ||
+    !selectedNumero
+  ) {
+    return false;
+  }
+
+  return (
+    storedCuadrante === selectedCuadrante &&
+    storedCalle === selectedCalle &&
+    storedNumero === selectedNumero
+  );
 }
 
 function buildPredioLabel(draft: Pick<RelevamientoLocalDraft, 'selectedPredio' | 'selectedPredioId'>) {
