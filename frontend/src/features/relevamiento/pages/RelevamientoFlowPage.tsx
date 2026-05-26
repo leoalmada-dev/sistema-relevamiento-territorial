@@ -180,6 +180,8 @@ export function RelevamientoFlowPage() {
   const [showLocalDraftsModal, setShowLocalDraftsModal] = useState(false);
   const [localDraftToRecover, setLocalDraftToRecover] =
     useState<RelevamientoLocalDraftIndexItem | null>(null);
+  const [localDraftToRetomar, setLocalDraftToRetomar] =
+    useState<RelevamientoLocalDraftIndexItem | null>(null);
   const [draftStatus, setDraftStatus] = useState<LocalDraftStatus>('SIN_BORRADOR');
   const [lastSavedAt, setLastSavedAt] = useState('');
   const [draftRecoveryChecked, setDraftRecoveryChecked] = useState(false);
@@ -248,6 +250,11 @@ export function RelevamientoFlowPage() {
   const refreshLocalDraftsIndex = () => {
     setLocalDraftsIndex(getLocalDraftsIndex());
   };
+
+  const getSafeDraftSectionId = (sectionId: RelevamientoSectionId) =>
+    sections.some((section) => section.id === sectionId)
+      ? sectionId
+      : 'inicio-predio-visita';
 
   useEffect(() => {
     refreshLocalDraftsIndex();
@@ -382,7 +389,7 @@ export function RelevamientoFlowPage() {
   ]);
 
   const applyLocalDraft = (draft: RelevamientoLocalDraft) => {
-    setCurrentSectionId(draft.currentSectionId);
+    setCurrentSectionId(getSafeDraftSectionId(draft.currentSectionId));
     setSelectedPredioId(draft.selectedPredioId);
     setSelectedPredio(draft.selectedPredio);
     setSelectedCuadrante(draft.selectedCuadrante ?? null);
@@ -396,6 +403,7 @@ export function RelevamientoFlowPage() {
     setLastSavedAt(draft.savedAt);
     setPendingLocalDraft(null);
     setDraftStatus('BORRADOR_RECUPERADO');
+    scrollToSectionStepper();
   };
 
   const requestDiscardLocalDraft = () => {
@@ -431,6 +439,20 @@ export function RelevamientoFlowPage() {
     resetPersonasContactos();
   };
 
+
+  const requestRetomarLocalDraftByKey = (draftKey: string) => {
+    const draftToRetomar = localDraftsIndex.find((draft) => draft.draftKey === draftKey);
+
+    if (!draftToRetomar) {
+      refreshLocalDraftsIndex();
+      setFinalizationError(
+        'No se encontró ese borrador local. Puede haber sido descartado o eliminado del navegador.',
+      );
+      return;
+    }
+
+    setLocalDraftToRetomar(draftToRetomar);
+  };
 
   const handleRetomarLocalDraftByKey = (draftKey: string) => {
     const draft = getLocalDraftByKey(draftKey);
@@ -517,6 +539,20 @@ export function RelevamientoFlowPage() {
 
     setLocalDraftToRecover(existingDraft);
     return true;
+  };
+
+  const handleConfirmRetomarLocalDraft = () => {
+    if (!localDraftToRetomar) {
+      return;
+    }
+
+    handleRetomarLocalDraftByKey(localDraftToRetomar.draftKey);
+    setLocalDraftToRetomar(null);
+    setShowLocalDraftsModal(false);
+  };
+
+  const handleCancelRetomarLocalDraft = () => {
+    setLocalDraftToRetomar(null);
   };
 
   const handleRecoverSelectedPredioDraft = () => {
@@ -1173,13 +1209,61 @@ export function RelevamientoFlowPage() {
           <BorradoresLocalesList
             drafts={localDraftsIndex}
             activeDraftKey={activeLocalDraftKey}
-            onRetomar={(draftKey) => {
-              handleRetomarLocalDraftByKey(draftKey);
-              setShowLocalDraftsModal(false);
-            }}
+            onRetomar={requestRetomarLocalDraftByKey}
             onDescartar={handleDescartarLocalDraftByKey}
           />
         </Modal.Body>
+      </Modal>
+
+      <Modal
+        show={Boolean(localDraftToRetomar)}
+        onHide={handleCancelRetomarLocalDraft}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Retomar carga local</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Stack gap={3}>
+            <p className="mb-0">
+              Se cargará el borrador guardado para este predio y se reemplazará la información que
+              esté abierta actualmente en el formulario.
+            </p>
+
+            {localDraftToRetomar ? (
+              <div className="text-secondary">
+                <div>
+                  Predio:{' '}
+                  <strong>{getLocalDraftPredioDisplayLabel(localDraftToRetomar)}</strong>
+                </div>
+                {getLocalDraftPredioDoorNumber(localDraftToRetomar) ? (
+                  <div>
+                    Número de puerta: {getLocalDraftPredioDoorNumber(localDraftToRetomar)}
+                  </div>
+                ) : null}
+                <div>Guardado: {formatSavedAt(localDraftToRetomar.savedAt)}</div>
+                <div>
+                  Sección:{' '}
+                  {getLocalDraftSectionLabel(localDraftToRetomar.currentSectionId)}
+                </div>
+                <div>Hogares cargados: {localDraftToRetomar.cantidadHogares}</div>
+              </div>
+            ) : null}
+
+            <Alert variant="warning" className="mb-0">
+              Si continuás, se reemplazará la carga que esté abierta actualmente en pantalla por
+              este borrador local.
+            </Alert>
+          </Stack>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={handleCancelRetomarLocalDraft}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={handleConfirmRetomarLocalDraft}>
+            Retomar carga
+          </Button>
+        </Modal.Footer>
       </Modal>
 
       <Modal
