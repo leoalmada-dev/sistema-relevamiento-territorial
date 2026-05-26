@@ -55,6 +55,49 @@ function getPredioFieldValue(
   return '';
 }
 
+export function getLocalDraftPredioDoorNumber(
+  draft: Pick<RelevamientoLocalDraftIndexItem, 'selectedPredio'>,
+) {
+  return getPredioFieldValue(draft.selectedPredio, [
+    'numeroPuertaTeorico',
+    'numeroPuerta',
+    'numero',
+    'numeroTeorico',
+    'puerta',
+    'nroPuerta',
+  ]);
+}
+
+export function getLocalDraftPredioDisplayLabel(
+  draft: Pick<
+    RelevamientoLocalDraftIndexItem,
+    'predioLabel' | 'selectedPredio' | 'selectedPredioId'
+  >,
+) {
+  const selectedPredio = draft.selectedPredio;
+
+  if (!selectedPredio) {
+    return draft.predioLabel || draft.selectedPredioId || 'Predio sin identificar';
+  }
+
+  const calle = getPredioFieldValue(selectedPredio, [
+    'calle',
+    'nombreCalle',
+    'calleNombre',
+  ]);
+  const numeroPuerta = getLocalDraftPredioDoorNumber({ selectedPredio });
+
+  if (calle || numeroPuerta) {
+    return [calle, numeroPuerta].filter(Boolean).join(' ');
+  }
+
+  if (numeroPuerta) {
+    return `Predio ${numeroPuerta}`;
+  }
+
+  return draft.predioLabel || draft.selectedPredioId || selectedPredio.id || 'Predio sin identificar';
+}
+
 function buildPredioLabel(draft: Pick<RelevamientoLocalDraft, 'selectedPredio' | 'selectedPredioId'>) {
   const selectedPredio = draft.selectedPredio;
 
@@ -69,6 +112,12 @@ function buildPredioLabel(draft: Pick<RelevamientoLocalDraft, 'selectedPredio' |
   ]);
 
   if (direccion) {
+    const numeroPuerta = getLocalDraftPredioDoorNumber({ selectedPredio });
+
+    if (numeroPuerta && !direccion.includes(numeroPuerta)) {
+      return `${direccion} ${numeroPuerta}`;
+    }
+
     return direccion;
   }
 
@@ -77,14 +126,7 @@ function buildPredioLabel(draft: Pick<RelevamientoLocalDraft, 'selectedPredio' |
     'nombreCalle',
     'calleNombre',
   ]);
-  const numero = getPredioFieldValue(selectedPredio, [
-    'numeroPuertaTeorico',
-    'numeroPuerta',
-    'numero',
-    'numeroTeorico',
-    'puerta',
-    'nroPuerta',
-  ]);
+  const numero = getLocalDraftPredioDoorNumber({ selectedPredio });
 
   if (calle || numero) {
     return [calle, numero].filter(Boolean).join(' ');

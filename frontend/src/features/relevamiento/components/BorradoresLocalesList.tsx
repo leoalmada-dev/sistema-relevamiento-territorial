@@ -1,4 +1,5 @@
 import { Badge, Button, Col, ListGroup, Row, Stack } from 'react-bootstrap';
+import { getLocalDraftPredioDisplayLabel } from '../services/draftStorageService';
 import type { RelevamientoLocalDraftIndexItem } from '../types/relevamientoDraft';
 
 type BorradoresLocalesListProps = {
@@ -48,6 +49,7 @@ export function BorradoresLocalesList({
     <ListGroup variant="flush">
       {drafts.map((draft) => {
         const isActive = activeDraftKey === draft.draftKey;
+        const predioLabel = getLocalDraftPredioDisplayLabel(draft);
 
         return (
           <ListGroup.Item key={draft.draftKey} className="px-0">
@@ -55,7 +57,7 @@ export function BorradoresLocalesList({
               <Col lg={7}>
                 <Stack gap={1}>
                   <div className="d-flex flex-wrap align-items-center gap-2">
-                    <strong>{draft.predioLabel}</strong>
+                    <strong>{predioLabel}</strong>
                     {isActive ? <Badge bg="primary">Carga activa</Badge> : null}
                   </div>
 

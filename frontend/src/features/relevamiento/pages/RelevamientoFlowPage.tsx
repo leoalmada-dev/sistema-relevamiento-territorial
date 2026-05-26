@@ -15,6 +15,8 @@ import {
   clearLocalDraft,
   getLocalDraft,
   getLocalDraftByKey,
+  getLocalDraftPredioDisplayLabel,
+  getLocalDraftPredioDoorNumber,
   getLocalDraftsIndex,
   removeLocalDraftByKey,
   saveLocalDraft,
@@ -495,7 +497,7 @@ export function RelevamientoFlowPage() {
     nextSelectedPredio: PredioDetalle | null,
   ) => {
     if (!nextSelectedPredio) {
-      return;
+      return false;
     }
 
     const nextDraftKey = buildLocalDraftKey({
@@ -505,16 +507,20 @@ export function RelevamientoFlowPage() {
     });
 
     if (!nextDraftKey || activeLocalDraftKey === nextDraftKey) {
-      return;
+      return false;
     }
 
+    const savedDraft = getLocalDraftByKey(nextDraftKey);
     const nextIndex = getLocalDraftsIndex();
     const existingDraft = nextIndex.find((draft) => draft.draftKey === nextDraftKey);
     setLocalDraftsIndex(nextIndex);
 
-    if (existingDraft) {
+    if (existingDraft && savedDraft) {
       setLocalDraftToRecover(existingDraft);
+      return true;
     }
+
+    return false;
   };
 
   const handleRecoverSelectedPredioDraft = () => {
@@ -526,6 +532,11 @@ export function RelevamientoFlowPage() {
     setLocalDraftToRecover(null);
   };
 
+  const handleCancelSelectedPredioDraftRecovery = () => {
+    setLocalDraftToRecover(null);
+    setTerritorialSelectorKey((currentKey) => currentKey + 1);
+  };
+
   const handleCuadranteSelected = (cuadrante: CuadranteOption | null) => {
     setSelectedCuadrante(cuadrante);
 
@@ -535,11 +546,14 @@ export function RelevamientoFlowPage() {
   };
 
   const handlePredioSelected = (predioId: string, predioDetalle: PredioDetalle | null) => {
+    if (maybeOfferLocalDraftRecovery(predioId, predioDetalle)) {
+      return;
+    }
+
     const isSamePredio = predioId === selectedPredioId;
 
     setSelectedPredioId(predioId);
     setSelectedPredio(predioDetalle);
-    maybeOfferLocalDraftRecovery(predioId, predioDetalle);
 
     if (isSamePredio) {
       markDraftPending();
@@ -1174,7 +1188,7 @@ export function RelevamientoFlowPage() {
 
       <Modal
         show={Boolean(localDraftToRecover)}
-        onHide={() => setLocalDraftToRecover(null)}
+        onHide={handleCancelSelectedPredioDraftRecovery}
         centered
       >
         <Modal.Header closeButton>
@@ -1184,11 +1198,19 @@ export function RelevamientoFlowPage() {
           <Stack gap={3}>
             <p className="mb-0">
               Hay un borrador guardado en esta tablet para: <br />
-              <strong>{localDraftToRecover?.predioLabel}</strong>
+              <strong>
+                {localDraftToRecover ? getLocalDraftPredioDisplayLabel(localDraftToRecover) : ''}
+              </strong>
             </p>
 
             {localDraftToRecover ? (
               <div className="text-secondary">
+                {getLocalDraftPredioDoorNumber(localDraftToRecover) ? (
+                  <div>
+                    Número de puerta:{' '}
+                    {getLocalDraftPredioDoorNumber(localDraftToRecover)}
+                  </div>
+                ) : null}
                 <div>Guardado: {formatSavedAt(localDraftToRecover.savedAt)}</div>
                 <div>
                   Sección:{' '}
@@ -1205,7 +1227,7 @@ export function RelevamientoFlowPage() {
           </Stack>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={() => setLocalDraftToRecover(null)}>
+          <Button variant="outline-secondary" onClick={handleCancelSelectedPredioDraftRecovery}>
             Cancelar
           </Button>
           <Button variant="primary" onClick={handleRecoverSelectedPredioDraft}>
