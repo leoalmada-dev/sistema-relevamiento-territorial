@@ -3,7 +3,13 @@ import type { CierreRelevamientoFormState } from '../types/cierreRelevamiento';
 import type { PersonasContactosPorHogarState } from '../types/personaContacto';
 import type { ResultadoVisitaFormState } from '../types/resultadoVisita';
 import type { PredioDetalle } from '../types/territorio';
-import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
+import {
+  estadoHogarLabels,
+  getEstadoHogar,
+  hogarEstaEntrevistado,
+  type HogarFormState,
+  type ViviendaFormState,
+} from '../types/viviendaHogar';
 
 const resultadoVisitaLabels: Record<string, string> = {
   ENTREVISTA_REALIZADA: 'Se procede a la entrevista',
@@ -133,6 +139,8 @@ export function ResumenRelevamiento({
                 const personasConVinculoBarrio = personas.filter(
                   (persona) => persona.vinculoBarrioFamilia,
                 );
+  const estadoHogar = getEstadoHogar(hogar);
+  const estaEntrevistado = hogarEstaEntrevistado(hogar);
 
                 return (
                   <Card key={hogar.id} className="border">
@@ -187,7 +195,15 @@ export function ResumenRelevamiento({
                         </Col>
                       </Row>
 
-                      {personasConVinculoBarrio.length > 0 ? (
+                      {!estaEntrevistado ? (
+            <Alert variant="warning" className="mt-3 mb-0">
+              Este hogar quedó registrado como no entrevistado. Los datos de
+              personas, referente, salud y servicios no son obligatorios hasta
+              retomarlo.
+            </Alert>
+          ) : null}
+
+          {personasConVinculoBarrio.length > 0 ? (
                         <div className="border-top pt-3 mt-3">
                           <strong>Vínculo con el barrio / familia en la zona:</strong>
                           <ul className="mb-0 mt-2">

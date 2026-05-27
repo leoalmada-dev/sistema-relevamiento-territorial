@@ -59,6 +59,7 @@ import type { RelevamientoSection, RelevamientoSectionId } from '../types/releva
 import type { CuadranteOption, PredioDetalle } from '../types/territorio';
 import {
   crearHogarInicial,
+  hayHogaresNoEntrevistados,
   viviendaInicial,
   type HogarFormState,
   type ViviendaFormState,
@@ -1002,6 +1003,11 @@ export function RelevamientoFlowPage() {
       setFinalizationValidationErrors(validation.errors);
       setSectionValidationErrors([]);
       setFinalizationError('');
+
+      if (hayHogaresNoEntrevistados(hogares)) {
+        persistLocalDraft();
+      }
+
       return;
     }
 

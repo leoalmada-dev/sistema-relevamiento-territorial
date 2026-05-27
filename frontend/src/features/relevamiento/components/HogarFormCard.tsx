@@ -1,5 +1,11 @@
-import { Button, Card, Col, Form, Row, Stack } from 'react-bootstrap';
-import type { HogarFormState } from '../types/viviendaHogar';
+import { Alert, Button, Card, Col, Form, Row, Stack } from 'react-bootstrap';
+import {
+  estadoHogarLabels,
+  getEstadoHogar,
+  hogarEstaEntrevistado,
+  type EstadoHogarMvp,
+  type HogarFormState,
+} from '../types/viviendaHogar';
 
 type HogarFormCardProps = {
   hogar: HogarFormState;
@@ -8,7 +14,17 @@ type HogarFormCardProps = {
   onRemove: (hogarId: string) => void;
 };
 
+const estadoHogarOptions: EstadoHogarMvp[] = [
+  'ENTREVISTADO',
+  'PENDIENTE',
+  'NO_SE_ENCUENTRA',
+  'SE_NIEGA',
+];
+
 export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCardProps) {
+  const estadoHogar = getEstadoHogar(hogar);
+  const estaEntrevistado = hogarEstaEntrevistado(hogar);
+
   const updateField = <Field extends keyof HogarFormState>(
     field: Field,
     value: HogarFormState[Field],
@@ -25,9 +41,7 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
         <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
           <div>
             <strong>Hogar {index + 1}</strong>
-            <div className="text-secondary small">
-              Complete los datos básicos del hogar.
-            </div>
+            <div className="text-secondary small">Complete los datos básicos del hogar.</div>
           </div>
 
           <Button
@@ -42,6 +56,51 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
 
       <Card.Body>
         <Stack gap={3}>
+          <Row className="g-3">
+            <Col md={6}>
+              <Form.Group controlId={`estado-hogar-${hogar.id}`}>
+                <Form.Label>Estado del hogar</Form.Label>
+                <Form.Select
+                  value={estadoHogar}
+                  onChange={(event) =>
+                    updateField('estadoHogar', event.target.value as EstadoHogarMvp)
+                  }
+                >
+                  {estadoHogarOptions.map((estado) => (
+                    <option key={estado} value={estado}>
+                      {estadoHogarLabels[estado]}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+
+            <Col md={6}>
+              <Form.Group controlId={`observacion-estado-hogar-${hogar.id}`}>
+                <Form.Label>Observación / motivo / referencia</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={2}
+                  value={hogar.observacionEstadoHogar ?? ''}
+                  onChange={(event) =>
+                    updateField('observacionEstadoHogar', event.target.value)
+                  }
+                  placeholder="Ej: volver otro día, no atienden, se niega, referencia horaria."
+                />
+                <Form.Text className="text-secondary">
+                  Recomendado para hogares pendientes o no entrevistados. No bloquea el avance.
+                </Form.Text>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {!estaEntrevistado ? (
+            <Alert variant="warning" className="mb-0">
+              Este hogar queda guardado como no entrevistado. No se exigirán personas, referente,
+              salud ni servicios hasta retomarlo.
+            </Alert>
+          ) : null}
+
           <Row className="g-3">
             <Col md={6}>
               <Form.Group controlId={`tiempo-vive-barrio-${hogar.id}`}>
