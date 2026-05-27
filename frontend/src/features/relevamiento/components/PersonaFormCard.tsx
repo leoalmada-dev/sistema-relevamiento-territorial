@@ -50,7 +50,7 @@ export function PersonaFormCard({
           <Row className="g-3">
             <Col md={6}>
               <Form.Group controlId={`nombre-persona-${persona.id}`}>
-                <Form.Label>Nombre</Form.Label>
+                <Form.Label>Nombre *</Form.Label>
                 <Form.Control
                   value={persona.nombre}
                   onChange={(event) => updateField('nombre', event.target.value)}
@@ -61,7 +61,7 @@ export function PersonaFormCard({
 
             <Col md={6}>
               <Form.Group controlId={`apellido-persona-${persona.id}`}>
-                <Form.Label>Apellido</Form.Label>
+                <Form.Label>Apellido *</Form.Label>
                 <Form.Control
                   value={persona.apellido}
                   onChange={(event) => updateField('apellido', event.target.value)}
@@ -74,7 +74,7 @@ export function PersonaFormCard({
           <Row className="g-3">
             <Col md={3}>
               <Form.Group controlId={`cedula-persona-${persona.id}`}>
-                <Form.Label>Cédula</Form.Label>
+                <Form.Label>Cédula *</Form.Label>
                 <Form.Control
                   value={persona.cedula}
                   onChange={(event) => updateField('cedula', event.target.value)}
@@ -85,7 +85,7 @@ export function PersonaFormCard({
 
             <Col md={3}>
               <Form.Group controlId={`edad-persona-${persona.id}`}>
-                <Form.Label>Edad</Form.Label>
+                <Form.Label>Edad *</Form.Label>
                 <Form.Control
                   type="number"
                   min="0"
@@ -98,7 +98,7 @@ export function PersonaFormCard({
 
             <Col md={3}>
               <Form.Group controlId={`sexo-persona-${persona.id}`}>
-                <Form.Label>Género</Form.Label>
+                <Form.Label>Género *</Form.Label>
                 <Form.Select
                   value={persona.sexo}
                   onChange={(event) => updateField('sexo', event.target.value)}
@@ -116,7 +116,7 @@ export function PersonaFormCard({
 
             <Col md={3}>
               <Form.Group controlId={`ocupacion-persona-${persona.id}`}>
-                <Form.Label>Ocupación</Form.Label>
+                <Form.Label>Ocupación *</Form.Label>
                 <Form.Select
                   value={persona.ocupacion}
                   onChange={(event) => updateField('ocupacion', event.target.value)}
@@ -147,7 +147,7 @@ export function PersonaFormCard({
 
             <Col md={8}>
               <Form.Group controlId={`parentesco-persona-${persona.id}`}>
-                <Form.Label>Parentesco con referente</Form.Label>
+                <Form.Label>Parentesco con referente *</Form.Label>
                 <Form.Select
                   value={persona.parentescoConReferente}
                   onChange={(event) =>
@@ -165,7 +165,11 @@ export function PersonaFormCard({
                   <Form.Text>
                     Si esta persona es referente, el parentesco puede quedar vacío.
                   </Form.Text>
-                ) : null}
+                ) : (
+                  <Form.Text>
+                    Obligatorio si la persona no es referente.
+                  </Form.Text>
+                )}
               </Form.Group>
             </Col>
           </Row>

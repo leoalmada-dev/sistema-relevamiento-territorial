@@ -403,7 +403,7 @@ export function TerritorialSelector({
           <Row className="g-3">
             <Col md={4}>
               <Form.Group controlId="zona">
-                <Form.Label>Zona</Form.Label>
+                <Form.Label>Zona *</Form.Label>
                 <Form.Select
                   value={selectedZonaId}
                   onChange={(event) => handleZonaChange(event.target.value)}
@@ -420,7 +420,7 @@ export function TerritorialSelector({
 
             <Col md={4}>
               <Form.Group controlId="cuadrante">
-                <Form.Label>Cuadrante</Form.Label>
+                <Form.Label>Cuadrante *</Form.Label>
                 <Form.Select
                   value={selectedCuadranteId}
                   onChange={(event) => handleCuadranteChange(event.target.value)}
@@ -441,7 +441,7 @@ export function TerritorialSelector({
 
             <Col md={4}>
               <Form.Group controlId="predio">
-                <Form.Label>Predio</Form.Label>
+                <Form.Label>Predio *</Form.Label>
                 <Form.Select
                   value={selectedPredioOptionValue}
                   onChange={(event) => handlePredioChange(event.target.value)}

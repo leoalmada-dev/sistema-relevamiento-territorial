@@ -195,7 +195,7 @@ export function CierreRelevamientoSection({
             <Row className="g-3">
               <Col md={4}>
                 <Form.Group controlId="latitud-a-confirmar">
-                  <Form.Label>Latitud</Form.Label>
+                  <Form.Label>Latitud *</Form.Label>
                   <Form.Control
                     value={cierre.latitud}
                     onChange={(event) => updateField('latitud', event.target.value)}
@@ -206,7 +206,7 @@ export function CierreRelevamientoSection({
 
               <Col md={4}>
                 <Form.Group controlId="longitud-a-confirmar">
-                  <Form.Label>Longitud</Form.Label>
+                  <Form.Label>Longitud *</Form.Label>
                   <Form.Control
                     value={cierre.longitud}
                     onChange={(event) => updateField('longitud', event.target.value)}
@@ -217,7 +217,7 @@ export function CierreRelevamientoSection({
 
               <Col md={4}>
                 <Form.Group controlId="hora-captura-a-confirmar">
-                  <Form.Label>Hora de captura</Form.Label>
+                  <Form.Label>Hora de captura *</Form.Label>
                   <Form.Control
                     type="time"
                     value={cierre.horaCaptura}

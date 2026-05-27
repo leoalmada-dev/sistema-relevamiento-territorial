@@ -185,7 +185,7 @@ export function ServiciosSaludSection({
             <Row className="g-3">
               <Col md={4}>
                 <Form.Group controlId="servicio-atencion-medica">
-                  <Form.Label>Servicio de atención médica</Form.Label>
+                  <Form.Label>Servicio de atención médica *</Form.Label>
                   <Form.Select
                     value={salud.servicioAtencionMedica}
                     onChange={(event) =>
@@ -238,7 +238,7 @@ export function ServiciosSaludSection({
             <Row className="g-3">
               <Col md={4}>
                 <Form.Group controlId="tiene-emergencia-movil">
-                  <Form.Label>Tiene emergencia móvil</Form.Label>
+                  <Form.Label>Tiene emergencia móvil *</Form.Label>
                   <Form.Select
                     value={salud.tieneEmergenciaMovil}
                     onChange={(event) =>
