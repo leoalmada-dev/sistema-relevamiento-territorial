@@ -452,6 +452,7 @@ export function RelevamientoFlowPage() {
     }
 
     setLocalDraftToRetomar(draftToRetomar);
+    setShowLocalDraftsModal(false);
   };
 
   const handleRetomarLocalDraftByKey = (draftKey: string) => {
@@ -553,6 +554,7 @@ export function RelevamientoFlowPage() {
 
   const handleCancelRetomarLocalDraft = () => {
     setLocalDraftToRetomar(null);
+    setShowLocalDraftsModal(true);
   };
 
   const handleRecoverSelectedPredioDraft = () => {
