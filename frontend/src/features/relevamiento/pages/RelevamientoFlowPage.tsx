@@ -521,6 +521,14 @@ export function RelevamientoFlowPage() {
     setDraftStatus('CAMBIOS_PENDIENTES');
   };
 
+  const clearServerDraftBinding = () => {
+    setServerDraftId(null);
+    setServerDraftVersion(null);
+    setServerDraftLastSyncedAt('');
+    setServerDraftSyncStatus('SIN_BORRADOR_SERVIDOR');
+    setServerDraftSyncError('');
+  };
+
   useEffect(() => {
     const shouldPrefillCaptureTime =
       (currentSection.id === 'cierre-finalizacion' ||
@@ -864,6 +872,7 @@ export function RelevamientoFlowPage() {
       return;
     }
 
+    clearServerDraftBinding();
     setResultadoVisita(resultadoVisitaInicial);
     resetViviendaHogares();
     setCurrentSectionId('inicio-predio-visita');
