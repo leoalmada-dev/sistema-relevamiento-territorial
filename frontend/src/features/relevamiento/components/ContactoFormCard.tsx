@@ -60,12 +60,15 @@ export function ContactoFormCard({
 
           <Col md={4}>
             <Form.Group controlId={`telefono-contacto-${contacto.id}`}>
-              <Form.Label>Teléfono</Form.Label>
+              <Form.Label>Teléfono *</Form.Label>
               <Form.Control
                 value={contacto.telefono}
                 onChange={(event) => updateField('telefono', event.target.value)}
                 placeholder="Teléfono"
               />
+              <Form.Text className="text-secondary">
+                Obligatorio si se agrega un contacto.
+              </Form.Text>
             </Form.Group>
           </Col>
 

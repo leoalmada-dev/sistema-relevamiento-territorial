@@ -117,7 +117,7 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
               <Row className="g-3">
                 <Col md={6}>
                   <Form.Group controlId={`tiempo-vive-barrio-${hogar.id}`}>
-                    <Form.Label>Tiempo que vive en el barrio</Form.Label>
+                    <Form.Label>Tiempo que vive en el barrio *</Form.Label>
                     <Form.Control
                       type="number"
                       min="0"
@@ -134,7 +134,7 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
 
                 <Col md={6}>
                   <Form.Group controlId={`beneficiario-regularizacion-${hogar.id}`}>
-                    <Form.Label>Beneficiario de regularización PIAI</Form.Label>
+                    <Form.Label>Beneficiario de regularización PIAI *</Form.Label>
                     <Form.Select
                       value={hogar.beneficiarioRegularizacion}
                       onChange={(event) =>
@@ -153,7 +153,7 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
               <Row className="g-3">
                 <Col md={6}>
                   <Form.Group controlId={`forma-acceso-vivienda-${hogar.id}`}>
-                    <Form.Label>¿Cómo accedieron a esta vivienda?</Form.Label>
+                    <Form.Label>¿Cómo accedieron a esta vivienda? *</Form.Label>
                     <Form.Select
                       value={hogar.formaAccesoVivienda}
                       onChange={(event) =>

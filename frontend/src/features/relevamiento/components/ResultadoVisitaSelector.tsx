@@ -40,7 +40,7 @@ export function ResultadoVisitaSelector({ value, onChange }: ResultadoVisitaSele
         <Stack gap={3}>
           <div>
             <Badge bg="primary" className="mb-2">
-              Resultado de visita
+              Resultado de visita *
             </Badge>
             <h3 className="h5 mb-1">Definir continuidad del relevamiento</h3>
             <p className="text-secondary mb-0">

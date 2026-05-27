@@ -58,7 +58,7 @@ export function ViviendaHogaresSection({
             <Row className="g-3">
               <Col md={4}>
                 <Form.Group controlId="cantidad-hogares-declarada">
-                  <Form.Label>Cantidad de hogares declarada</Form.Label>
+                  <Form.Label>Cantidad de hogares declarada *</Form.Label>
                   <Form.Control
                     type="number"
                     min="1"
@@ -74,7 +74,7 @@ export function ViviendaHogaresSection({
 
               <Col md={8}>
                 <Form.Group controlId="vinculo-entre-hogares">
-                  <Form.Label>Vínculo entre hogares</Form.Label>
+                  <Form.Label>Vínculo entre hogares *</Form.Label>
                   <Form.Select
                     value={vivienda.vinculoEntreHogares}
                     onChange={(event) =>
@@ -86,6 +86,9 @@ export function ViviendaHogaresSection({
                     <option value="UNIDADES_INDEPENDIENTES">Unidades independientes</option>
                     <option value="OTROS">Otros</option>
                   </Form.Select>
+                  <Form.Text className="text-secondary">
+                    Obligatorio si hay más de un hogar.
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
