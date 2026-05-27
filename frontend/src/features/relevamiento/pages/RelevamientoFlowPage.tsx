@@ -141,6 +141,89 @@ type FlowConfirmAction =
   | { type: 'change-resultado-corte-temprano'; nextResultado: ResultadoVisitaFormState }
   | { type: 'finalize-relevamiento' };
 
+function getPredioActualLabel(
+  selectedPredio: PredioDetalle | null,
+  selectedPredioId: string,
+) {
+  if (!selectedPredio) {
+    return 'sin seleccionar';
+  }
+
+  const predioRecord = selectedPredio as unknown as Record<string, unknown>;
+
+  const getTextField = (fieldNames: string[]) => {
+    for (const fieldName of fieldNames) {
+      const value = predioRecord[fieldName];
+
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return String(value);
+      }
+    }
+
+    return '';
+  };
+
+  const direccion = getTextField(['direccion', 'direccionCompleta', 'domicilio']);
+  const calle = getTextField(['calle', 'nombreCalle', 'calleNombre']);
+  const numeroPuerta = getTextField([
+    'numeroPuertaTeorico',
+    'numeroPuerta',
+    'numero',
+    'numeroTeorico',
+    'puerta',
+    'nroPuerta',
+  ]);
+
+  if (direccion) {
+    return numeroPuerta && !direccion.includes(numeroPuerta)
+      ? `${direccion} ${numeroPuerta}`
+      : direccion;
+  }
+
+  if (calle || numeroPuerta) {
+    return [calle, numeroPuerta].filter(Boolean).join(' ');
+  }
+
+  return selectedPredioId || selectedPredio.id || 'sin identificar';
+}
+
+function getCuadranteActualLabel(
+  selectedCuadrante: CuadranteOption | null,
+  selectedPredio: PredioDetalle | null,
+) {
+  if (selectedCuadrante?.nombre) {
+    return selectedCuadrante.nombre;
+  }
+
+  if (selectedCuadrante?.id) {
+    return selectedCuadrante.id;
+  }
+
+  if (!selectedPredio) {
+    return 'sin seleccionar';
+  }
+
+  const predioRecord = selectedPredio as unknown as Record<string, unknown>;
+
+  for (const fieldName of ['cuadrante', 'cuadranteId', 'idCuadrante']) {
+    const value = predioRecord[fieldName];
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+  }
+
+  return 'sin identificar';
+}
+
 function formatCurrentTimeForInput(date = new Date()) {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -217,6 +300,9 @@ export function RelevamientoFlowPage() {
     selectedPredio,
     selectedCuadrante,
   });
+
+  const predioActualLabel = getPredioActualLabel(selectedPredio, selectedPredioId);
+  const cuadranteActualLabel = getCuadranteActualLabel(selectedCuadrante, selectedPredio);
 
   const hasStartedDraft = Boolean(
     selectedPredioId ||
@@ -1249,32 +1335,18 @@ export function RelevamientoFlowPage() {
         </Card.Body>
       </Card>
 
-      {pendingLocalDraft ? (
-        <Alert variant="info" className="mb-0 shadow-sm">
-          <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+      <div ref={sectionStepperRef}>
+        <Alert variant="light" className="border shadow-sm mb-0">
+          <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
             <div>
-              Hay información guardada disponible del{' '}
-              <strong>{formatSavedAt(pendingLocalDraft.savedAt)}</strong>.
-              Podés continuar la carga o descartarla.
+              <strong>Predio actual:</strong> {predioActualLabel}
             </div>
-
-            <div className="d-flex flex-column flex-md-row gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => applyLocalDraft(pendingLocalDraft)}
-              >
-                Continuar carga
-              </Button>
-              <Button variant="outline-danger" size="sm" onClick={requestDiscardLocalDraft}>
-                Descartar información guardada
-              </Button>
+            <div className="text-secondary">
+              <strong>Cuadrante:</strong> {cuadranteActualLabel}
             </div>
           </div>
         </Alert>
-      ) : null}
 
-      <div ref={sectionStepperRef}>
       {localDraftsIndex.length > 0 ? (
         <Alert variant="light" className="border shadow-sm mb-0">
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
