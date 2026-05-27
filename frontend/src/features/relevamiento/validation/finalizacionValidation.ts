@@ -273,6 +273,30 @@ function validatePersonasContactosFields(
     const datosHogar = input.personasContactosPorHogar[hogar.id];
     const personas = datosHogar?.personas ?? [];
 
+    if (isBlank(datosHogar?.servicios.tieneLuzAgua ?? '')) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.servicios.tieneLuzAgua`,
+        `${hogarLabel}: seleccione si tiene luz / agua.`,
+      );
+    }
+
+    if (isBlank(datosHogar?.servicios.tieneConvenioLuzAgua ?? '')) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.servicios.tieneConvenioLuzAgua`,
+        `${hogarLabel}: seleccione si tiene convenio de luz / agua.`,
+      );
+    }
+
+    if (isBlank(datosHogar?.servicios.tieneCableInternet ?? '')) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.servicios.tieneCableInternet`,
+        `${hogarLabel}: seleccione si tiene cable / internet.`,
+      );
+    }
+
     if (isBlank(datosHogar?.salud.servicioAtencionMedica ?? '')) {
       addError(
         errors,
