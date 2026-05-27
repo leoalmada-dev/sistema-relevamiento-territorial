@@ -13,6 +13,7 @@ import { ConfirmActionModal } from '../../../shared/components/ConfirmActionModa
 import {
   buildLocalDraftKey,
   clearLocalDraft,
+  LOCAL_DRAFT_STORAGE_KEY,
   findLocalDraftForSelectedPredio,
   getLocalDraft,
   getLocalDraftByKey,
@@ -59,10 +60,13 @@ import type { RelevamientoSection, RelevamientoSectionId } from '../types/releva
 import type { CuadranteOption, PredioDetalle } from '../types/territorio';
 import {
   crearHogarInicial,
+  hayHogaresNoEntrevistados,
   viviendaInicial,
   type HogarFormState,
   type ViviendaFormState,
 } from '../types/viviendaHogar';
+
+const MAX_HOGARES_DECLARADOS = 5;
 
 const sections: RelevamientoSection[] = [
   {
@@ -166,6 +170,10 @@ export function RelevamientoFlowPage() {
     useState<FinalizacionValidationError[]>([]);
   const [sectionValidationErrors, setSectionValidationErrors] =
     useState<FinalizacionValidationError[]>([]);
+  const [showHogaresPendientesFinalizacionModal, setShowHogaresPendientesFinalizacionModal] =
+    useState(false);
+  const [showBorradorPendienteGuardadoModal, setShowBorradorPendienteGuardadoModal] =
+    useState(false);
   const [serverDraftId, setServerDraftId] = useState<number | null>(null);
   const [serverDraftVersion, setServerDraftVersion] = useState<number | null>(null);
   const [serverDraftLastSyncedAt, setServerDraftLastSyncedAt] = useState('');
@@ -198,7 +206,9 @@ export function RelevamientoFlowPage() {
   const seccionInicialCompleta = Boolean(selectedPredio) && visitaPermiteContinuar;
   const cantidadHogaresDeclarada = Number(vivienda.cantidadHogaresDeclarada);
   const cantidadHogaresDeclaradaValida =
-    Number.isFinite(cantidadHogaresDeclarada) && cantidadHogaresDeclarada > 0;
+    Number.isInteger(cantidadHogaresDeclarada) &&
+    cantidadHogaresDeclarada > 0 &&
+    cantidadHogaresDeclarada <= MAX_HOGARES_DECLARADOS;
   const cantidadHogaresCoincide =
     cantidadHogaresDeclaradaValida && cantidadHogaresDeclarada === hogares.length;
 
@@ -317,6 +327,7 @@ export function RelevamientoFlowPage() {
     setFinalizacionCompletada(false);
     setFinalizationError('');
     setFinalizationValidationErrors([]);
+    setShowBorradorPendienteGuardadoModal(false);
     setDraftStatus('CAMBIOS_PENDIENTES');
   };
 
@@ -636,6 +647,29 @@ export function RelevamientoFlowPage() {
 
   const handleViviendaChange = (nextVivienda: ViviendaFormState) => {
     setVivienda(nextVivienda);
+
+    const cantidadDeclarada = Number(nextVivienda.cantidadHogaresDeclarada);
+    const debeCrearHogares =
+      Number.isInteger(cantidadDeclarada) &&
+      cantidadDeclarada > 0 &&
+      cantidadDeclarada <= MAX_HOGARES_DECLARADOS;
+
+    if (debeCrearHogares) {
+      setHogares((currentHogares) => {
+        if (cantidadDeclarada <= currentHogares.length) {
+          return currentHogares;
+        }
+
+        const nextHogares = [...currentHogares];
+
+        for (let index = currentHogares.length; index < cantidadDeclarada; index += 1) {
+          nextHogares.push(crearHogarInicial(index + 1));
+        }
+
+        return nextHogares;
+      });
+    }
+
     markDraftPending();
   };
 
@@ -762,6 +796,55 @@ export function RelevamientoFlowPage() {
     setCierre(nextCierre);
     setFinalizacionCompletada(false);
     markDraftPending();
+  };
+
+  const resetFormularioActivoSinEliminarSnapshots = () => {
+    window.localStorage.removeItem(LOCAL_DRAFT_STORAGE_KEY);
+    setCurrentSectionId('inicio-predio-visita');
+    setSelectedPredioId('');
+    setSelectedPredio(null);
+    setSelectedCuadrante(null);
+    setShowCuadranteImageModal(false);
+    setResultadoVisita(resultadoVisitaInicial);
+    setVivienda(viviendaInicial);
+    setHogares([]);
+    setPersonasContactosPorHogar({});
+    setCierre(cierreRelevamientoInicial);
+    setPendingLocalDraft(null);
+    setLastSavedAt('');
+    setDraftStatus('SIN_BORRADOR');
+    setFinalizationError('');
+    setFinalizationValidationErrors([]);
+    setSectionValidationErrors([]);
+    setServerDraftId(null);
+    setServerDraftVersion(null);
+    setServerDraftLastSyncedAt('');
+    setServerDraftSyncStatus('SIN_BORRADOR_SERVIDOR');
+    setServerDraftSyncError('');
+    setPendingConfirmAction(null);
+    setLocalDraftToRecover(null);
+    setLocalDraftToRetomar(null);
+    setShowLocalDraftsModal(false);
+    setTerritorialSelectorKey((currentKey) => currentKey + 1);
+    refreshLocalDraftsIndex();
+    scrollToSectionStepper();
+  };
+
+  const handleGuardarBorradorHogaresPendientes = () => {
+    persistLocalDraft();
+    setShowHogaresPendientesFinalizacionModal(false);
+    resetFormularioActivoSinEliminarSnapshots();
+    setShowBorradorPendienteGuardadoModal(true);
+  };
+
+  const handleIrSeccionHogaresPendientes = () => {
+    persistLocalDraft({ currentSectionId: 'vivienda-hogares' });
+    setFinalizationValidationErrors([]);
+    setSectionValidationErrors([]);
+    setFinalizationError('');
+    setShowHogaresPendientesFinalizacionModal(false);
+    setCurrentSectionId('vivienda-hogares');
+    scrollToSectionStepper();
   };
 
   const resetRelevamiento = () => {
@@ -939,6 +1022,12 @@ export function RelevamientoFlowPage() {
   const finalizarRelevamiento = async () => {
     setFinalizationError('');
 
+    if (hayHogaresNoEntrevistados(hogares)) {
+      persistLocalDraft();
+      setShowHogaresPendientesFinalizacionModal(true);
+      return;
+    }
+
     const validation = validateFinalizacionRelevamiento(
       buildBackendSnapshot('cierre-finalizacion'),
     );
@@ -994,6 +1083,15 @@ export function RelevamientoFlowPage() {
       return;
     }
 
+    if (hayHogaresNoEntrevistados(hogares)) {
+      persistLocalDraft();
+      setFinalizationValidationErrors([]);
+      setSectionValidationErrors([]);
+      setFinalizationError('');
+      setShowHogaresPendientesFinalizacionModal(true);
+      return;
+    }
+
     const validation = validateFinalizacionRelevamiento(
       buildBackendSnapshot('cierre-finalizacion'),
     );
@@ -1002,6 +1100,11 @@ export function RelevamientoFlowPage() {
       setFinalizationValidationErrors(validation.errors);
       setSectionValidationErrors([]);
       setFinalizationError('');
+
+      if (hayHogaresNoEntrevistados(hogares)) {
+        persistLocalDraft();
+      }
+
       return;
     }
 
@@ -1492,6 +1595,66 @@ export function RelevamientoFlowPage() {
         cuadrante={selectedCuadrante}
         onHide={() => setShowCuadranteImageModal(false)}
       />
+
+      <Modal
+        show={showHogaresPendientesFinalizacionModal}
+        onHide={handleGuardarBorradorHogaresPendientes}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="h5">Antes de finalizar</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Stack gap={3}>
+            <p className="mb-0 fw-semibold">
+              Antes de finalizar, revise los siguientes datos:
+            </p>
+
+            <Alert variant="warning" className="mb-0">
+              El relevamiento tiene hogares pendientes o no entrevistados.
+              <br />
+              La carga quedará guardada como borrador para retomarla luego.
+            </Alert>
+          </Stack>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="outline-secondary"
+            onClick={handleGuardarBorradorHogaresPendientes}
+          >
+            Guardar borrador
+          </Button>
+          <Button variant="primary" onClick={handleIrSeccionHogaresPendientes}>
+            Ir a la sección 2
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={showBorradorPendienteGuardadoModal}
+        onHide={() => setShowBorradorPendienteGuardadoModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="h5">Borrador guardado</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          <p className="mb-2">Borrador guardado correctamente.</p>
+          <p className="mb-0">
+            La carga quedó disponible en “Borradores locales de esta tablet” para retomarla luego.
+          </p>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button
+            variant="primary"
+            onClick={() => setShowBorradorPendienteGuardadoModal(false)}
+          >
+            Aceptar
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <Modal
         show={finalizacionCompletada}

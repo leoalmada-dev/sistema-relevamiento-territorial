@@ -13,7 +13,12 @@ import {
   type PersonasContactosHogarState,
   type PersonasContactosPorHogarState,
 } from '../types/personaContacto';
-import type { HogarFormState } from '../types/viviendaHogar';
+import {
+  estadoHogarLabels,
+  getEstadoHogar,
+  hogarEstaEntrevistado,
+  type HogarFormState,
+} from '../types/viviendaHogar';
 
 type PersonasContactosSectionProps = {
   hogares: HogarFormState[];
@@ -56,6 +61,15 @@ function getServiciosSaludResumen(datosHogar: PersonasContactosHogarState): stri
   }
 
   return 'pendiente';
+}
+
+function hasDatosPrevios(datosHogar: PersonasContactosHogarState): boolean {
+  return Boolean(
+    datosHogar.personas.length > 0 ||
+      datosHogar.contactos.length > 0 ||
+      Object.values(datosHogar.servicios).some(hasCompletedValue) ||
+      Object.values(datosHogar.salud).some(hasCompletedValue),
+  );
 }
 
 function normalizeAccordionEventKey(eventKey: unknown): string[] {
@@ -298,11 +312,14 @@ export function PersonasContactosSection({
         <Stack gap={3}>
           {hogares.map((hogar, index) => {
             const hogarLabel = getHogarLabel(hogar, index);
+            const estadoHogar = getEstadoHogar(hogar);
+            const estaEntrevistado = hogarEstaEntrevistado(hogar);
             const datosHogar = getDatosHogarById(hogar.id);
             const cantidadPersonas = datosHogar.personas.length;
             const cantidadContactos = datosHogar.contactos.length;
             const tieneReferente = datosHogar.personas.some((persona) => persona.esReferente);
             const serviciosSaludResumen = getServiciosSaludResumen(datosHogar);
+            const tieneDatosPrevios = hasDatosPrevios(datosHogar);
 
             return (
               <div
@@ -319,139 +336,177 @@ export function PersonasContactosSection({
                     <div className="d-flex flex-column gap-1 text-start">
                       <span className="fw-semibold">{hogarLabel}</span>
                       <span className="text-secondary small">
-                        Personas: {cantidadPersonas} · Referente:{' '}
-                        {tieneReferente ? 'Sí' : 'No'} · Contactos: {cantidadContactos} ·
-                        Servicios y salud: {serviciosSaludResumen}
+                        Estado: {estadoHogarLabels[estadoHogar]}
                       </span>
+
+                      {estaEntrevistado ? (
+                        <span className="text-secondary small">
+                          Personas: {cantidadPersonas} · Referente:{' '}
+                          {tieneReferente ? 'Sí' : 'No'} · Contactos: {cantidadContactos} ·
+                          Servicios y salud: {serviciosSaludResumen}
+                        </span>
+                      ) : (
+                        <span className="text-secondary small">
+                          No se exigirán personas, referente, salud ni servicios mientras el hogar
+                          no esté entrevistado.
+                        </span>
+                      )}
                     </div>
                   </Accordion.Header>
 
                   <Accordion.Body>
-                    <Stack gap={4}>
-                      <Card className="border-0 bg-light">
-                        <Card.Body>
-                          <Stack gap={3}>
-                            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                    {!estaEntrevistado ? (
+                      <Stack gap={3}>
+                        <Alert variant="warning" className="mb-0">
+                          <div className="fw-semibold">
+                            {hogarLabel}: {estadoHogarLabels[estadoHogar]}
+                          </div>
+                          <div>
+                            Este hogar queda guardado como no entrevistado. No se exigirán personas,
+                            referente, salud ni servicios hasta retomarlo.
+                          </div>
+
+                          {hogar.observacionEstadoHogar ? (
+                            <div className="mt-2">
+                              <strong>Observación:</strong> {hogar.observacionEstadoHogar}
+                            </div>
+                          ) : null}
+                        </Alert>
+
+                        {tieneDatosPrevios ? (
+                          <Alert variant="info" className="mb-0">
+                            Hay datos cargados previamente para este hogar, pero no se validarán
+                            mientras el estado no sea “Se procede a la entrevista”.
+                          </Alert>
+                        ) : null}
+                      </Stack>
+                    ) : (
+                      <Stack gap={4}>
+                        <Card className="border-0 bg-light">
+                          <Card.Body>
+                            <Stack gap={3}>
+                              <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                                <div>
+                                  <h4 className="h6 mb-1">Personas</h4>
+                                  <p className="text-secondary mb-0">
+                                    Integrantes cargados para el {hogarLabel}.
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <Button variant="primary" onClick={() => addPersona(hogar.id)}>
+                                    Agregar persona
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {datosHogar.personas.length > 0 ? (
+                                <Stack gap={3}>
+                                  {datosHogar.personas.map((persona, personaIndex) => (
+                                    <PersonaFormCard
+                                      key={persona.id}
+                                      persona={persona}
+                                      index={personaIndex}
+                                      onChange={(updatedPersona) =>
+                                        updatePersona(hogar.id, updatedPersona)
+                                      }
+                                      onRemove={(personaId) =>
+                                        requestRemovePersona(hogar.id, personaId)
+                                      }
+                                    />
+                                  ))}
+                                </Stack>
+                              ) : (
+                                <Alert variant="secondary" className="mb-0">
+                                  Todavía no hay personas cargadas para el {hogarLabel}.
+                                </Alert>
+                              )}
+                            </Stack>
+                          </Card.Body>
+                        </Card>
+
+                        <Card className="border-0 bg-light">
+                          <Card.Body>
+                            <Stack gap={3}>
+                              <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                                <div>
+                                  <h4 className="h6 mb-1">Contactos</h4>
+                                  <p className="text-secondary mb-0">
+                                    Contactos cargados para el {hogarLabel}. Objetivo inicial:
+                                    hasta dos contactos.
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <Button variant="primary" onClick={() => addContacto(hogar.id)}>
+                                    Agregar contacto
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {datosHogar.contactos.length > 2 ? (
+                                <Alert variant="warning" className="mb-0">
+                                  Hay más de dos contactos cargados para el {hogarLabel}. No se
+                                  bloquea en esta etapa, pero el objetivo operativo inicial son dos
+                                  contactos por hogar.
+                                </Alert>
+                              ) : (
+                                <Alert variant="info" className="mb-0">
+                                  Contactos cargados para el {hogarLabel}:{' '}
+                                  <strong>{datosHogar.contactos.length}</strong>. Objetivo inicial:
+                                  hasta dos.
+                                </Alert>
+                              )}
+
+                              {datosHogar.contactos.length > 0 ? (
+                                <Stack gap={3}>
+                                  {datosHogar.contactos.map((contacto, contactoIndex) => (
+                                    <ContactoFormCard
+                                      key={contacto.id}
+                                      contacto={contacto}
+                                      index={contactoIndex}
+                                      onChange={(updatedContacto) =>
+                                        updateContacto(hogar.id, updatedContacto)
+                                      }
+                                      onRemove={(contactoId) =>
+                                        requestRemoveContacto(hogar.id, contactoId)
+                                      }
+                                    />
+                                  ))}
+                                </Stack>
+                              ) : (
+                                <Alert variant="secondary" className="mb-0">
+                                  Todavía no hay contactos cargados para el {hogarLabel}.
+                                </Alert>
+                              )}
+                            </Stack>
+                          </Card.Body>
+                        </Card>
+
+                        <Card className="border-0 bg-light">
+                          <Card.Body>
+                            <Stack gap={3}>
                               <div>
-                                <h4 className="h6 mb-1">Personas</h4>
+                                <h4 className="h6 mb-1">Servicios y salud</h4>
                                 <p className="text-secondary mb-0">
-                                  Integrantes cargados para el {hogarLabel}.
+                                  Datos asociados al {hogarLabel}.
                                 </p>
                               </div>
 
-                              <div>
-                                <Button variant="primary" onClick={() => addPersona(hogar.id)}>
-                                  Agregar persona
-                                </Button>
-                              </div>
-                            </div>
-
-                            {datosHogar.personas.length > 0 ? (
-                              <Stack gap={3}>
-                                {datosHogar.personas.map((persona, personaIndex) => (
-                                  <PersonaFormCard
-                                    key={persona.id}
-                                    persona={persona}
-                                    index={personaIndex}
-                                    onChange={(updatedPersona) =>
-                                      updatePersona(hogar.id, updatedPersona)
-                                    }
-                                    onRemove={(personaId) =>
-                                      requestRemovePersona(hogar.id, personaId)
-                                    }
-                                  />
-                                ))}
-                              </Stack>
-                            ) : (
-                              <Alert variant="secondary" className="mb-0">
-                                Todavía no hay personas cargadas para el {hogarLabel}.
-                              </Alert>
-                            )}
-                          </Stack>
-                        </Card.Body>
-                      </Card>
-
-                      <Card className="border-0 bg-light">
-                        <Card.Body>
-                          <Stack gap={3}>
-                            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-                              <div>
-                                <h4 className="h6 mb-1">Contactos</h4>
-                                <p className="text-secondary mb-0">
-                                  Contactos cargados para el {hogarLabel}. Objetivo inicial:
-                                  hasta dos contactos.
-                                </p>
-                              </div>
-
-                              <div>
-                                <Button variant="primary" onClick={() => addContacto(hogar.id)}>
-                                  Agregar contacto
-                                </Button>
-                              </div>
-                            </div>
-
-                            {datosHogar.contactos.length > 2 ? (
-                              <Alert variant="warning" className="mb-0">
-                                Hay más de dos contactos cargados para el {hogarLabel}. No se
-                                bloquea en esta etapa, pero el objetivo operativo inicial son dos
-                                contactos por hogar.
-                              </Alert>
-                            ) : (
-                              <Alert variant="info" className="mb-0">
-                                Contactos cargados para el {hogarLabel}:{' '}
-                                <strong>{datosHogar.contactos.length}</strong>. Objetivo inicial:
-                                hasta dos.
-                              </Alert>
-                            )}
-
-                            {datosHogar.contactos.length > 0 ? (
-                              <Stack gap={3}>
-                                {datosHogar.contactos.map((contacto, contactoIndex) => (
-                                  <ContactoFormCard
-                                    key={contacto.id}
-                                    contacto={contacto}
-                                    index={contactoIndex}
-                                    onChange={(updatedContacto) =>
-                                      updateContacto(hogar.id, updatedContacto)
-                                    }
-                                    onRemove={(contactoId) =>
-                                      requestRemoveContacto(hogar.id, contactoId)
-                                    }
-                                  />
-                                ))}
-                              </Stack>
-                            ) : (
-                              <Alert variant="secondary" className="mb-0">
-                                Todavía no hay contactos cargados para el {hogarLabel}.
-                              </Alert>
-                            )}
-                          </Stack>
-                        </Card.Body>
-                      </Card>
-
-                      <Card className="border-0 bg-light">
-                        <Card.Body>
-                          <Stack gap={3}>
-                            <div>
-                              <h4 className="h6 mb-1">Servicios y salud</h4>
-                              <p className="text-secondary mb-0">
-                                Datos asociados al {hogarLabel}.
-                              </p>
-                            </div>
-
-                            <ServiciosSaludSection
-                              hogarLabel={hogarLabel}
-                              servicios={datosHogar.servicios}
-                              salud={datosHogar.salud}
-                              onServiciosChange={(servicios) =>
-                                updateServicios(hogar.id, servicios)
-                              }
-                              onSaludChange={(salud) => updateSalud(hogar.id, salud)}
-                            />
-                          </Stack>
-                        </Card.Body>
-                      </Card>
-                    </Stack>
+                              <ServiciosSaludSection
+                                hogarLabel={hogarLabel}
+                                servicios={datosHogar.servicios}
+                                salud={datosHogar.salud}
+                                onServiciosChange={(servicios) =>
+                                  updateServicios(hogar.id, servicios)
+                                }
+                                onSaludChange={(salud) => updateSalud(hogar.id, salud)}
+                              />
+                            </Stack>
+                          </Card.Body>
+                        </Card>
+                      </Stack>
+                    )}
                   </Accordion.Body>
                 </Accordion.Item>
               </div>

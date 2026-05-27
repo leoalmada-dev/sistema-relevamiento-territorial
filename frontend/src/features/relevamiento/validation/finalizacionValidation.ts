@@ -2,7 +2,14 @@ import type { CierreRelevamientoFormState } from '../types/cierreRelevamiento';
 import type { PersonasContactosPorHogarState } from '../types/personaContacto';
 import type { ResultadoVisitaFormState } from '../types/resultadoVisita';
 import type { CuadranteOption, PredioDetalle } from '../types/territorio';
-import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
+import {
+  estadoHogarLabels,
+  getEstadoHogar,
+  hayHogaresNoEntrevistados,
+  hogarEstaEntrevistado,
+  type HogarFormState,
+  type ViviendaFormState,
+} from '../types/viviendaHogar';
 
 export type FinalizacionValidationError = {
   campo: string;
@@ -23,6 +30,11 @@ export type FinalizacionValidationInput = {
   personasContactosPorHogar: PersonasContactosPorHogarState;
   cierre: CierreRelevamientoFormState;
 };
+
+const MAX_HOGARES_DECLARADOS = 5;
+
+const HOGARES_NO_ENTREVISTADOS_FINALIZACION_MESSAGE =
+  'El relevamiento tiene hogares pendientes o no entrevistados. La carga quedará guardada como borrador para retomarla luego. No se puede finalizar hasta completar esos hogares o hasta que backend acepte hogares pendientes.';
 
 const RESULTADOS_VISITA_VALIDOS = new Set([
   'ENTREVISTA_REALIZADA',
@@ -176,6 +188,16 @@ function validateViviendaHogaresFields(
         'vivienda.cantidadHogaresDeclarada',
         'La cantidad de hogares declarada debe ser mayor a 0.',
       );
+      return;
+    }
+
+    if (cantidadDeclarada > MAX_HOGARES_DECLARADOS) {
+      addError(
+        errors,
+        'vivienda.cantidadHogaresDeclarada',
+        'La cantidad de hogares declarada no puede ser mayor a 5 en esta versión.',
+      );
+      return;
     }
 
     if (cantidadDeclarada !== input.hogares.length) {
@@ -197,6 +219,10 @@ function validateViviendaHogaresFields(
 
   input.hogares.forEach((hogar, hogarIndex) => {
     const hogarLabel = `Hogar ${hogarIndex + 1}`;
+
+    if (!hogarEstaEntrevistado(hogar)) {
+      return;
+    }
 
     if (isBlank(hogar.tiempoViveBarrio)) {
       addError(
@@ -239,6 +265,11 @@ function validatePersonasContactosFields(
 
   input.hogares.forEach((hogar, hogarIndex) => {
     const hogarLabel = `Hogar ${hogarIndex + 1}`;
+
+    if (!hogarEstaEntrevistado(hogar)) {
+      return;
+    }
+
     const datosHogar = input.personasContactosPorHogar[hogar.id];
     const personas = datosHogar?.personas ?? [];
 
@@ -379,6 +410,29 @@ function validatePersonasContactosFields(
   }
 }
 
+function validateHogaresNoEntrevistadosFinalizacion(
+  input: FinalizacionValidationInput,
+  errors: FinalizacionValidationError[],
+) {
+  if (!hayHogaresNoEntrevistados(input.hogares)) {
+    return;
+  }
+
+  const hogaresNoEntrevistados = input.hogares
+    .map((hogar, index) => ({ hogar, index }))
+    .filter(({ hogar }) => !hogarEstaEntrevistado(hogar))
+    .map(
+      ({ hogar, index }) =>
+        `Hogar ${hogar.numeroHogar || index + 1}: ${estadoHogarLabels[getEstadoHogar(hogar)]}`,
+    );
+
+  addError(
+    errors,
+    'hogares.estadoHogar',
+    `${HOGARES_NO_ENTREVISTADOS_FINALIZACION_MESSAGE} Hogares a retomar: ${hogaresNoEntrevistados.join('; ')}.`,
+  );
+}
+
 export function validateInicioPredioVisita(
   input: FinalizacionValidationInput,
 ): FinalizacionValidationResult {
@@ -430,6 +484,7 @@ export function validateFinalizacionRelevamiento(
   if (input.resultadoVisita.resultado === 'ENTREVISTA_REALIZADA') {
     validateViviendaHogaresFields(input, errors);
     validatePersonasContactosFields(input, errors);
+    validateHogaresNoEntrevistadosFinalizacion(input, errors);
   }
 
   return buildValidationResult(errors);
