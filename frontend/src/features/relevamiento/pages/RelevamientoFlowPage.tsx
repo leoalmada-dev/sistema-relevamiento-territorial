@@ -274,8 +274,6 @@ export function RelevamientoFlowPage() {
   const [localDraftsIndex, setLocalDraftsIndex] =
     useState<RelevamientoLocalDraftIndexItem[]>([]);
   const [showLocalDraftsModal, setShowLocalDraftsModal] = useState(false);
-  const [localDraftToRecover, setLocalDraftToRecover] =
-    useState<RelevamientoLocalDraftIndexItem | null>(null);
   const [localDraftToRetomar, setLocalDraftToRetomar] =
     useState<RelevamientoLocalDraftIndexItem | null>(null);
   const [serverDrafts, setServerDrafts] = useState<BackendBorradorServidorItem[]>([]);
@@ -287,6 +285,11 @@ export function RelevamientoFlowPage() {
   const [serverDraftsForSelectedPredio, setServerDraftsForSelectedPredio] = useState<
     BackendBorradorServidorItem[]
   >([]);
+  const [localDraftFallbackForSelectedPredio, setLocalDraftFallbackForSelectedPredio] =
+    useState<RelevamientoLocalDraftIndexItem | null>(null);
+  const [pendingDraftSourceForPredio, setPendingDraftSourceForPredio] = useState<
+    'server' | 'local' | null
+  >(null);
   const [serverDraftForPredioError, setServerDraftForPredioError] = useState('');
   const [showServerDraftForPredioModal, setShowServerDraftForPredioModal] = useState(false);
   const [serverDraftRetomarReturnTo, setServerDraftRetomarReturnTo] = useState<
@@ -394,17 +397,32 @@ export function RelevamientoFlowPage() {
     predioId: string,
     predioDetalle: PredioDetalle | null,
   ) => {
+    const fallbackToLocalDraft = (message = '') => {
+      const offeredLocalDraft = maybeOfferLocalDraftRecovery(predioId, predioDetalle, message);
+
+      if (!offeredLocalDraft) {
+        setServerDraftsForSelectedPredio([]);
+        setLocalDraftFallbackForSelectedPredio(null);
+        setPendingDraftSourceForPredio(null);
+        setServerDraftForPredioError('');
+        setShowServerDraftForPredioModal(false);
+      }
+    };
+
     if (getRelevamientoFinalizationMode() !== 'backend') {
+      fallbackToLocalDraft();
       return;
     }
 
     if (!predioDetalle || predioDetalle.origen === 'manual') {
+      fallbackToLocalDraft();
       return;
     }
 
     const backendPredioId = predioDetalle.id || predioId;
 
     if (!backendPredioId) {
+      fallbackToLocalDraft();
       return;
     }
 
@@ -412,21 +430,20 @@ export function RelevamientoFlowPage() {
       const drafts = await listarBorradoresServidorPorPredio(backendPredioId);
       const pendingDrafts = drafts.filter((draft) => !draft.completed);
 
-      setServerDraftsForSelectedPredio(pendingDrafts);
-      setServerDraftForPredioError('');
-
       if (pendingDrafts.length > 0) {
+        setServerDraftsForSelectedPredio(pendingDrafts);
+        setLocalDraftFallbackForSelectedPredio(null);
+        setPendingDraftSourceForPredio('server');
+        setServerDraftForPredioError('');
         setShowServerDraftForPredioModal(true);
+        return;
       }
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : 'No se pudo consultar si hay borradores servidor para este predio.';
 
-      setServerDraftsForSelectedPredio([]);
-      setServerDraftForPredioError(message);
-      setShowServerDraftForPredioModal(true);
+      fallbackToLocalDraft();
+    } catch {
+      fallbackToLocalDraft(
+        'No se pudo consultar el servidor. Se usará el respaldo local disponible en esta tablet.',
+      );
     }
   };
 
@@ -708,6 +725,7 @@ export function RelevamientoFlowPage() {
   const maybeOfferLocalDraftRecovery = (
     nextSelectedPredioId: string,
     nextSelectedPredio: PredioDetalle | null,
+    message = '',
   ) => {
     if (!nextSelectedPredio) {
       return false;
@@ -727,7 +745,11 @@ export function RelevamientoFlowPage() {
       return false;
     }
 
-    setLocalDraftToRecover(existingDraft);
+    setServerDraftsForSelectedPredio([]);
+    setLocalDraftFallbackForSelectedPredio(existingDraft);
+    setPendingDraftSourceForPredio('local');
+    setServerDraftForPredioError(message);
+    setShowServerDraftForPredioModal(true);
     return true;
   };
 
@@ -758,7 +780,7 @@ export function RelevamientoFlowPage() {
 
     if (!draft) {
       setServerDraftsError(
-        'No se encontró ese borrador servidor. Puede haber sido finalizado o eliminado.',
+        'No se encontró esa carga pendiente. Puede haber sido finalizada o eliminada.',
       );
       void refreshServerDrafts();
       return;
@@ -768,6 +790,7 @@ export function RelevamientoFlowPage() {
     setServerDraftToRetomar(draft);
     setShowServerDraftsModal(false);
     setShowServerDraftForPredioModal(false);
+    setPendingDraftSourceForPredio(null);
   };
 
   const handleConfirmRetomarServerDraft = () => {
@@ -784,6 +807,8 @@ export function RelevamientoFlowPage() {
     setShowServerDraftsModal(false);
     setShowServerDraftForPredioModal(false);
     setServerDraftRetomarReturnTo(null);
+    setPendingDraftSourceForPredio(null);
+    setLocalDraftFallbackForSelectedPredio(null);
     void refreshServerDrafts();
   };
 
@@ -799,24 +824,24 @@ export function RelevamientoFlowPage() {
     setServerDraftRetomarReturnTo(null);
   };
 
-  const handleContinueWithoutServerDraftForPredio = () => {
-    setShowServerDraftForPredioModal(false);
-    setServerDraftsForSelectedPredio([]);
-    setServerDraftForPredioError('');
-  };
-
-  const handleRecoverSelectedPredioDraft = () => {
-    if (!localDraftToRecover) {
+  const handleRetomarLocalFallbackForPredio = () => {
+    if (!localDraftFallbackForSelectedPredio) {
       return;
     }
 
-    handleRetomarLocalDraftByKey(localDraftToRecover.draftKey);
-    setLocalDraftToRecover(null);
+    handleRetomarLocalDraftByKey(localDraftFallbackForSelectedPredio.draftKey);
+    setLocalDraftFallbackForSelectedPredio(null);
+    setPendingDraftSourceForPredio(null);
+    setServerDraftForPredioError('');
+    setShowServerDraftForPredioModal(false);
   };
 
-  const handleCancelSelectedPredioDraftRecovery = () => {
-    setLocalDraftToRecover(null);
-    setTerritorialSelectorKey((currentKey) => currentKey + 1);
+  const handleContinueWithoutServerDraftForPredio = () => {
+    setShowServerDraftForPredioModal(false);
+    setServerDraftsForSelectedPredio([]);
+    setLocalDraftFallbackForSelectedPredio(null);
+    setPendingDraftSourceForPredio(null);
+    setServerDraftForPredioError('');
   };
 
   const handleCuadranteSelected = (cuadrante: CuadranteOption | null) => {
@@ -828,10 +853,6 @@ export function RelevamientoFlowPage() {
   };
 
   const handlePredioSelected = (predioId: string, predioDetalle: PredioDetalle | null) => {
-    if (maybeOfferLocalDraftRecovery(predioId, predioDetalle)) {
-      return;
-    }
-
     const isSamePredio = predioId === selectedPredioId;
 
     setSelectedPredioId(predioId);
@@ -1061,10 +1082,11 @@ export function RelevamientoFlowPage() {
     setServerDraftSyncStatus('SIN_BORRADOR_SERVIDOR');
     setServerDraftSyncError('');
     setPendingConfirmAction(null);
-    setLocalDraftToRecover(null);
     setLocalDraftToRetomar(null);
     setServerDraftToRetomar(null);
     setServerDraftsForSelectedPredio([]);
+    setLocalDraftFallbackForSelectedPredio(null);
+    setPendingDraftSourceForPredio(null);
     setServerDraftForPredioError('');
     setShowLocalDraftsModal(false);
     setShowServerDraftsModal(false);
@@ -1503,7 +1525,7 @@ export function RelevamientoFlowPage() {
           </div>
         </Alert>
 
-      {localDraftsIndex.length > 0 ? (
+      {localDraftsIndex.length > 0 && getRelevamientoFinalizationMode() !== 'backend' ? (
         <Alert variant="light" className="border shadow-sm mb-0">
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
             <div>
@@ -1619,27 +1641,56 @@ export function RelevamientoFlowPage() {
         size="lg"
       >
         <Modal.Header closeButton>
-          <Modal.Title>Borrador servidor detectado para este predio</Modal.Title>
+          <Modal.Title>
+            {pendingDraftSourceForPredio === 'local'
+              ? 'Carga pendiente local detectada'
+              : 'Carga pendiente detectada'}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Stack gap={3}>
-            <Alert variant="info" className="mb-0">
-              Hay un borrador servidor pendiente para este predio. Podés retomarlo o continuar
-              con la carga actual sin aplicar ese borrador.
-            </Alert>
+            {pendingDraftSourceForPredio === 'local' ? (
+              <>
+                {serverDraftForPredioError ? (
+                  <Alert variant="warning" className="mb-0">
+                    {serverDraftForPredioError}
+                  </Alert>
+                ) : null}
 
-            {serverDraftForPredioError ? (
-              <Alert variant="warning" className="mb-0">
-                {serverDraftForPredioError}
-              </Alert>
-            ) : null}
+                <Alert variant="info" className="mb-0">
+                  Hay un respaldo local en esta tablet para este predio. Podés retomarlo para
+                  continuar trabajando.
+                </Alert>
 
-            {serverDraftForPredioError ? null : (
-              <BorradoresServidorList
-                drafts={serverDraftsForSelectedPredio}
-                isLoading={false}
-                onRetomar={requestRetomarServerDraft}
-              />
+                {hasInitialChangeRiskData ? (
+                  <Alert variant="warning" className="mb-0">
+                    Ya hay datos cargados en el formulario actual. Si retomás la carga pendiente,
+                    se reemplazará lo que estás viendo ahora.
+                  </Alert>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <Alert variant="info" className="mb-0">
+                  Se encontró una carga pendiente para este predio. Te recomendamos retomarla para
+                  continuar desde el último guardado.
+                </Alert>
+
+                <p className="text-secondary small mb-0">Origen: servidor.</p>
+
+                {hasInitialChangeRiskData ? (
+                  <Alert variant="warning" className="mb-0">
+                    Ya hay datos cargados en el formulario actual. Si retomás la carga pendiente,
+                    se reemplazará lo que estás viendo ahora.
+                  </Alert>
+                ) : null}
+
+                <BorradoresServidorList
+                  drafts={serverDraftsForSelectedPredio}
+                  isLoading={false}
+                  onRetomar={requestRetomarServerDraft}
+                />
+              </>
             )}
           </Stack>
         </Modal.Body>
@@ -1647,6 +1698,11 @@ export function RelevamientoFlowPage() {
           <Button variant="outline-secondary" onClick={handleContinueWithoutServerDraftForPredio}>
             Continuar sin retomar
           </Button>
+          {pendingDraftSourceForPredio === 'local' ? (
+            <Button variant="primary" onClick={handleRetomarLocalFallbackForPredio}>
+              Retomar carga pendiente
+            </Button>
+          ) : null}
         </Modal.Footer>
       </Modal>
 
@@ -1656,12 +1712,12 @@ export function RelevamientoFlowPage() {
         centered
       >
         <Modal.Header closeButton>
-          <Modal.Title>Retomar borrador servidor</Modal.Title>
+          <Modal.Title>Retomar carga pendiente</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Stack gap={3}>
             <p className="mb-0">
-              Se cargará el borrador servidor #{serverDraftToRetomar?.id} y se reemplazará la
+              Se cargará la carga pendiente #{serverDraftToRetomar?.id} y se reemplazará la
               información que esté abierta actualmente en el formulario.
             </p>
 
@@ -1676,7 +1732,7 @@ export function RelevamientoFlowPage() {
             Cancelar
           </Button>
           <Button variant="primary" onClick={handleConfirmRetomarServerDraft}>
-            Retomar borrador servidor
+            Retomar carga pendiente
           </Button>
         </Modal.Footer>
       </Modal>
@@ -1728,56 +1784,6 @@ export function RelevamientoFlowPage() {
           </Button>
           <Button variant="primary" onClick={handleConfirmRetomarLocalDraft}>
             Retomar carga
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal
-        show={Boolean(localDraftToRecover)}
-        onHide={handleCancelSelectedPredioDraftRecovery}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Ya existe una carga local para este predio</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Stack gap={3}>
-            <p className="mb-0">
-              Hay un borrador guardado en esta tablet para: <br />
-              <strong>
-                {localDraftToRecover ? getLocalDraftPredioDisplayLabel(localDraftToRecover) : ''}
-              </strong>
-            </p>
-
-            {localDraftToRecover ? (
-              <div className="text-secondary">
-                {getLocalDraftPredioDoorNumber(localDraftToRecover) ? (
-                  <div>
-                    Número de puerta:{' '}
-                    {getLocalDraftPredioDoorNumber(localDraftToRecover)}
-                  </div>
-                ) : null}
-                <div>Guardado: {formatSavedAt(localDraftToRecover.savedAt)}</div>
-                <div>
-                  Sección:{' '}
-                  {getLocalDraftSectionLabel(localDraftToRecover.currentSectionId)}
-                </div>
-                <div>Hogares cargados: {localDraftToRecover.cantidadHogares}</div>
-              </div>
-            ) : null}
-
-            <Alert variant="warning" className="mb-0">
-              Si continuás cargando este predio sin recuperar el borrador, podrías reemplazar la
-              carga local guardada para este mismo predio.
-            </Alert>
-          </Stack>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="outline-secondary" onClick={handleCancelSelectedPredioDraftRecovery}>
-            Cancelar
-          </Button>
-          <Button variant="primary" onClick={handleRecoverSelectedPredioDraft}>
-            Recuperar carga
           </Button>
         </Modal.Footer>
       </Modal>
