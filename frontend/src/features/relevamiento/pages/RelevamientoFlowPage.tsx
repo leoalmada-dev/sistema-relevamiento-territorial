@@ -167,6 +167,8 @@ export function RelevamientoFlowPage() {
     useState<FinalizacionValidationError[]>([]);
   const [sectionValidationErrors, setSectionValidationErrors] =
     useState<FinalizacionValidationError[]>([]);
+  const [showHogaresPendientesFinalizacionModal, setShowHogaresPendientesFinalizacionModal] =
+    useState(false);
   const [serverDraftId, setServerDraftId] = useState<number | null>(null);
   const [serverDraftVersion, setServerDraftVersion] = useState<number | null>(null);
   const [serverDraftLastSyncedAt, setServerDraftLastSyncedAt] = useState('');
@@ -637,6 +639,26 @@ export function RelevamientoFlowPage() {
 
   const handleViviendaChange = (nextVivienda: ViviendaFormState) => {
     setVivienda(nextVivienda);
+
+    const cantidadDeclarada = Number(nextVivienda.cantidadHogaresDeclarada);
+    const debeCrearHogares = Number.isInteger(cantidadDeclarada) && cantidadDeclarada > 0;
+
+    if (debeCrearHogares) {
+      setHogares((currentHogares) => {
+        if (cantidadDeclarada <= currentHogares.length) {
+          return currentHogares;
+        }
+
+        const nextHogares = [...currentHogares];
+
+        for (let index = currentHogares.length; index < cantidadDeclarada; index += 1) {
+          nextHogares.push(crearHogarInicial(index + 1));
+        }
+
+        return nextHogares;
+      });
+    }
+
     markDraftPending();
   };
 
@@ -763,6 +785,24 @@ export function RelevamientoFlowPage() {
     setCierre(nextCierre);
     setFinalizacionCompletada(false);
     markDraftPending();
+  };
+
+  const handleGuardarBorradorHogaresPendientes = () => {
+    persistLocalDraft();
+    setFinalizationValidationErrors([]);
+    setSectionValidationErrors([]);
+    setFinalizationError('');
+    setShowHogaresPendientesFinalizacionModal(false);
+  };
+
+  const handleIrSeccionHogaresPendientes = () => {
+    persistLocalDraft({ currentSectionId: 'vivienda-hogares' });
+    setFinalizationValidationErrors([]);
+    setSectionValidationErrors([]);
+    setFinalizationError('');
+    setShowHogaresPendientesFinalizacionModal(false);
+    setCurrentSectionId('vivienda-hogares');
+    scrollToSectionStepper();
   };
 
   const resetRelevamiento = () => {
@@ -940,6 +980,12 @@ export function RelevamientoFlowPage() {
   const finalizarRelevamiento = async () => {
     setFinalizationError('');
 
+    if (hayHogaresNoEntrevistados(hogares)) {
+      persistLocalDraft();
+      setShowHogaresPendientesFinalizacionModal(true);
+      return;
+    }
+
     const validation = validateFinalizacionRelevamiento(
       buildBackendSnapshot('cierre-finalizacion'),
     );
@@ -992,6 +1038,15 @@ export function RelevamientoFlowPage() {
 
   const handleFinalizarRelevamiento = () => {
     if (isFinalizing) {
+      return;
+    }
+
+    if (hayHogaresNoEntrevistados(hogares)) {
+      persistLocalDraft();
+      setFinalizationValidationErrors([]);
+      setSectionValidationErrors([]);
+      setFinalizationError('');
+      setShowHogaresPendientesFinalizacionModal(true);
       return;
     }
 
@@ -1498,6 +1553,40 @@ export function RelevamientoFlowPage() {
         cuadrante={selectedCuadrante}
         onHide={() => setShowCuadranteImageModal(false)}
       />
+
+      <Modal
+        show={showHogaresPendientesFinalizacionModal}
+        onHide={handleGuardarBorradorHogaresPendientes}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="h5">Antes de finalizar</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Stack gap={3}>
+            <p className="mb-0 fw-semibold">
+              Antes de finalizar, revise los siguientes datos:
+            </p>
+
+            <Alert variant="warning" className="mb-0">
+              El relevamiento tiene hogares pendientes o no entrevistados.
+              <br />
+              La carga quedará guardada como borrador para retomarla luego.
+            </Alert>
+          </Stack>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="outline-secondary"
+            onClick={handleGuardarBorradorHogaresPendientes}
+          >
+            Guardar borrador
+          </Button>
+          <Button variant="primary" onClick={handleIrSeccionHogaresPendientes}>
+            Ir a la sección 2
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <Modal
         show={finalizacionCompletada}
