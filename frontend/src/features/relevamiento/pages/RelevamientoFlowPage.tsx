@@ -30,6 +30,7 @@ import {
   getRelevamientoFinalizationMode,
   guardarBorradorServidor,
   listarBorradoresServidorPendientes,
+  listarBorradoresServidorPorPredio,
 } from '../services/relevamientoBackendService';
 import {
   validateCierreRelevamiento,
@@ -283,6 +284,14 @@ export function RelevamientoFlowPage() {
   const [showServerDraftsModal, setShowServerDraftsModal] = useState(false);
   const [serverDraftToRetomar, setServerDraftToRetomar] =
     useState<BackendBorradorServidorItem | null>(null);
+  const [serverDraftsForSelectedPredio, setServerDraftsForSelectedPredio] = useState<
+    BackendBorradorServidorItem[]
+  >([]);
+  const [serverDraftForPredioError, setServerDraftForPredioError] = useState('');
+  const [showServerDraftForPredioModal, setShowServerDraftForPredioModal] = useState(false);
+  const [serverDraftRetomarReturnTo, setServerDraftRetomarReturnTo] = useState<
+    'general' | 'predio' | null
+  >(null);
   const [draftStatus, setDraftStatus] = useState<LocalDraftStatus>('SIN_BORRADOR');
   const [lastSavedAt, setLastSavedAt] = useState('');
   const [draftRecoveryChecked, setDraftRecoveryChecked] = useState(false);
@@ -378,6 +387,46 @@ export function RelevamientoFlowPage() {
       setServerDraftsError(message);
     } finally {
       setServerDraftsLoading(false);
+    }
+  };
+
+  const consultarBorradoresServidorPorPredio = async (
+    predioId: string,
+    predioDetalle: PredioDetalle | null,
+  ) => {
+    if (getRelevamientoFinalizationMode() !== 'backend') {
+      return;
+    }
+
+    if (!predioDetalle || predioDetalle.origen === 'manual') {
+      return;
+    }
+
+    const backendPredioId = predioDetalle.id || predioId;
+
+    if (!backendPredioId) {
+      return;
+    }
+
+    try {
+      const drafts = await listarBorradoresServidorPorPredio(backendPredioId);
+      const pendingDrafts = drafts.filter((draft) => !draft.completed);
+
+      setServerDraftsForSelectedPredio(pendingDrafts);
+      setServerDraftForPredioError('');
+
+      if (pendingDrafts.length > 0) {
+        setShowServerDraftForPredioModal(true);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'No se pudo consultar si hay borradores servidor para este predio.';
+
+      setServerDraftsForSelectedPredio([]);
+      setServerDraftForPredioError(message);
+      setShowServerDraftForPredioModal(true);
     }
   };
 
@@ -703,7 +752,9 @@ export function RelevamientoFlowPage() {
   };
 
   const requestRetomarServerDraft = (draftId: number) => {
-    const draft = serverDrafts.find((serverDraft) => serverDraft.id === draftId);
+    const draft = [...serverDrafts, ...serverDraftsForSelectedPredio].find(
+      (serverDraft) => serverDraft.id === draftId,
+    );
 
     if (!draft) {
       setServerDraftsError(
@@ -713,8 +764,10 @@ export function RelevamientoFlowPage() {
       return;
     }
 
+    setServerDraftRetomarReturnTo(showServerDraftForPredioModal ? 'predio' : 'general');
     setServerDraftToRetomar(draft);
     setShowServerDraftsModal(false);
+    setShowServerDraftForPredioModal(false);
   };
 
   const handleConfirmRetomarServerDraft = () => {
@@ -729,12 +782,27 @@ export function RelevamientoFlowPage() {
     setFinalizationError('');
     setServerDraftToRetomar(null);
     setShowServerDraftsModal(false);
+    setShowServerDraftForPredioModal(false);
+    setServerDraftRetomarReturnTo(null);
     void refreshServerDrafts();
   };
 
   const handleCancelRetomarServerDraft = () => {
     setServerDraftToRetomar(null);
-    setShowServerDraftsModal(true);
+
+    if (serverDraftRetomarReturnTo === 'predio') {
+      setShowServerDraftForPredioModal(true);
+    } else if (serverDraftRetomarReturnTo === 'general') {
+      setShowServerDraftsModal(true);
+    }
+
+    setServerDraftRetomarReturnTo(null);
+  };
+
+  const handleContinueWithoutServerDraftForPredio = () => {
+    setShowServerDraftForPredioModal(false);
+    setServerDraftsForSelectedPredio([]);
+    setServerDraftForPredioError('');
   };
 
   const handleRecoverSelectedPredioDraft = () => {
@@ -771,6 +839,7 @@ export function RelevamientoFlowPage() {
 
     if (isSamePredio) {
       markDraftPending();
+      void consultarBorradoresServidorPorPredio(predioId, predioDetalle);
       return;
     }
 
@@ -778,6 +847,7 @@ export function RelevamientoFlowPage() {
     resetViviendaHogares();
     setCurrentSectionId('inicio-predio-visita');
     markDraftPending();
+    void consultarBorradoresServidorPorPredio(predioId, predioDetalle);
   };
 
   const requestTerritorialChange = (applyChange: () => void) => {
@@ -994,8 +1064,12 @@ export function RelevamientoFlowPage() {
     setLocalDraftToRecover(null);
     setLocalDraftToRetomar(null);
     setServerDraftToRetomar(null);
+    setServerDraftsForSelectedPredio([]);
+    setServerDraftForPredioError('');
     setShowLocalDraftsModal(false);
     setShowServerDraftsModal(false);
+    setShowServerDraftForPredioModal(false);
+    setServerDraftRetomarReturnTo(null);
     setTerritorialSelectorKey((currentKey) => currentKey + 1);
     refreshLocalDraftsIndex();
     scrollToSectionStepper();
@@ -1534,6 +1608,44 @@ export function RelevamientoFlowPage() {
           </Button>
           <Button variant="outline-primary" onClick={() => void refreshServerDrafts()}>
             Actualizar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={showServerDraftForPredioModal}
+        onHide={handleContinueWithoutServerDraftForPredio}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Borrador servidor detectado para este predio</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Stack gap={3}>
+            <Alert variant="info" className="mb-0">
+              Hay un borrador servidor pendiente para este predio. Podés retomarlo o continuar
+              con la carga actual sin aplicar ese borrador.
+            </Alert>
+
+            {serverDraftForPredioError ? (
+              <Alert variant="warning" className="mb-0">
+                {serverDraftForPredioError}
+              </Alert>
+            ) : null}
+
+            {serverDraftForPredioError ? null : (
+              <BorradoresServidorList
+                drafts={serverDraftsForSelectedPredio}
+                isLoading={false}
+                onRetomar={requestRetomarServerDraft}
+              />
+            )}
+          </Stack>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={handleContinueWithoutServerDraftForPredio}>
+            Continuar sin retomar
           </Button>
         </Modal.Footer>
       </Modal>
