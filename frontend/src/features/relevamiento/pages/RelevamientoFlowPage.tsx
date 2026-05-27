@@ -730,6 +730,27 @@ export function RelevamientoFlowPage() {
     refreshLocalDraftsIndex();
   };
 
+  const hasUsefulLocalDraftRecoveryData = (draft: RelevamientoLocalDraft) =>
+    Boolean(
+      draft.currentSectionId !== 'inicio-predio-visita' ||
+        draft.resultadoVisita.resultado ||
+        draft.resultadoVisita.motivoNegativa ||
+        draft.resultadoVisita.referencia ||
+        draft.resultadoVisita.contacto ||
+        draft.resultadoVisita.horario ||
+        draft.resultadoVisita.observacion ||
+        draft.vivienda.cantidadHogaresDeclarada ||
+        draft.vivienda.vinculoEntreHogares ||
+        draft.vivienda.observacionesVivienda ||
+        draft.hogares.length > 0 ||
+        Object.keys(draft.personasContactosPorHogar).length > 0 ||
+        draft.cierre.observacionesGenerales ||
+        draft.cierre.latitud ||
+        draft.cierre.longitud ||
+        draft.cierre.horaCaptura ||
+        draft.serverDraftId,
+    );
+
   const maybeOfferLocalDraftRecovery = (
     nextSelectedPredioId: string,
     nextSelectedPredio: PredioDetalle | null,
@@ -750,6 +771,12 @@ export function RelevamientoFlowPage() {
     setLocalDraftsIndex(nextIndex);
 
     if (!existingDraft || activeLocalDraftKey === existingDraft.draftKey) {
+      return false;
+    }
+
+    const fullLocalDraft = getLocalDraftByKey(existingDraft.draftKey);
+
+    if (!fullLocalDraft || !hasUsefulLocalDraftRecoveryData(fullLocalDraft)) {
       return false;
     }
 
