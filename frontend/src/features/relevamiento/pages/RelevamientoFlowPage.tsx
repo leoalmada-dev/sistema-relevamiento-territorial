@@ -169,6 +169,8 @@ export function RelevamientoFlowPage() {
     useState<FinalizacionValidationError[]>([]);
   const [showHogaresPendientesFinalizacionModal, setShowHogaresPendientesFinalizacionModal] =
     useState(false);
+  const [pendingDraftSavedSuccessMessage, setPendingDraftSavedSuccessMessage] =
+    useState('');
   const [serverDraftId, setServerDraftId] = useState<number | null>(null);
   const [serverDraftVersion, setServerDraftVersion] = useState<number | null>(null);
   const [serverDraftLastSyncedAt, setServerDraftLastSyncedAt] = useState('');
@@ -787,12 +789,45 @@ export function RelevamientoFlowPage() {
     markDraftPending();
   };
 
-  const handleGuardarBorradorHogaresPendientes = () => {
-    persistLocalDraft();
+  const resetFormularioActivoSinEliminarSnapshots = () => {
+    clearLocalDraft();
+    setCurrentSectionId('inicio-predio-visita');
+    setSelectedPredioId('');
+    setSelectedPredio(null);
+    setSelectedCuadrante(null);
+    setShowCuadranteImageModal(false);
+    setResultadoVisita(resultadoVisitaInicial);
+    setVivienda(viviendaInicial);
+    setHogares([]);
+    setPersonasContactosPorHogar({});
+    setCierre(cierreRelevamientoInicial);
+    setPendingLocalDraft(null);
+    setLastSavedAt('');
+    setDraftStatus('SIN_BORRADOR');
+    setFinalizationError('');
     setFinalizationValidationErrors([]);
     setSectionValidationErrors([]);
-    setFinalizationError('');
+    setServerDraftId(null);
+    setServerDraftVersion(null);
+    setServerDraftLastSyncedAt('');
+    setServerDraftSyncStatus('SIN_BORRADOR_SERVIDOR');
+    setServerDraftSyncError('');
+    setPendingConfirmAction(null);
+    setLocalDraftToRecover(null);
+    setLocalDraftToRetomar(null);
+    setShowLocalDraftsModal(false);
+    setTerritorialSelectorKey((currentKey) => currentKey + 1);
+    refreshLocalDraftsIndex();
+    scrollToSectionStepper();
+  };
+
+  const handleGuardarBorradorHogaresPendientes = () => {
+    persistLocalDraft();
     setShowHogaresPendientesFinalizacionModal(false);
+    resetFormularioActivoSinEliminarSnapshots();
+    setPendingDraftSavedSuccessMessage(
+      'Borrador guardado correctamente. La carga quedó disponible en “Borradores locales de esta tablet” para retomarla luego.',
+    );
   };
 
   const handleIrSeccionHogaresPendientes = () => {
@@ -1206,6 +1241,12 @@ export function RelevamientoFlowPage() {
           </Row>
         </Card.Body>
       </Card>
+
+      {pendingDraftSavedSuccessMessage ? (
+        <Alert variant="success" className="mb-0 shadow-sm">
+          {pendingDraftSavedSuccessMessage}
+        </Alert>
+      ) : null}
 
       {pendingLocalDraft ? (
         <Alert variant="info" className="mb-0 shadow-sm">
