@@ -64,8 +64,9 @@ export function ServiciosSaludSection({
             <Row className="g-3">
               <Col md={4}>
                 <Form.Group controlId="tiene-luz-agua">
-                  <Form.Label>Tiene luz / agua</Form.Label>
+                  <Form.Label>Tiene luz / agua *</Form.Label>
                   <Form.Select
+                    required
                     value={servicios.tieneLuzAgua}
                     onChange={(event) =>
                       updateServiciosField('tieneLuzAgua', event.target.value)
@@ -81,8 +82,9 @@ export function ServiciosSaludSection({
 
               <Col md={4}>
                 <Form.Group controlId="tiene-convenio-luz-agua">
-                  <Form.Label>Tiene convenio de luz / agua</Form.Label>
+                  <Form.Label>Tiene convenio de luz / agua *</Form.Label>
                   <Form.Select
+                    required
                     value={servicios.tieneConvenioLuzAgua}
                     onChange={(event) =>
                       updateServiciosField('tieneConvenioLuzAgua', event.target.value)
@@ -117,8 +119,9 @@ export function ServiciosSaludSection({
             <Row className="g-3">
               <Col md={4}>
                 <Form.Group controlId="tiene-cable-internet">
-                  <Form.Label>Tiene cable / internet</Form.Label>
+                  <Form.Label>Tiene cable / internet *</Form.Label>
                   <Form.Select
+                    required
                     value={servicios.tieneCableInternet}
                     onChange={(event) =>
                       updateServiciosField('tieneCableInternet', event.target.value)
