@@ -1322,6 +1322,63 @@ export function RelevamientoFlowPage() {
     return buildSectionValidationResult(errors);
   };
 
+  const getSectionIdForValidationError = (
+    campo: string,
+  ): RelevamientoSectionId => {
+    const normalizedCampo = campo.toLowerCase();
+
+    if (
+      normalizedCampo.startsWith('cierre') ||
+      normalizedCampo.includes('coordenadas') ||
+      normalizedCampo.includes('latitud') ||
+      normalizedCampo.includes('longitud') ||
+      normalizedCampo.includes('horacaptura') ||
+      normalizedCampo.includes('observacionesgenerales')
+    ) {
+      return 'cierre-finalizacion';
+    }
+
+    if (
+      normalizedCampo.includes('personascontactosporhogar') ||
+      normalizedCampo.includes('personas') ||
+      normalizedCampo.includes('contactos') ||
+      normalizedCampo.includes('servicios') ||
+      normalizedCampo.includes('salud')
+    ) {
+      return 'datos-por-hogar';
+    }
+
+    if (
+      normalizedCampo.startsWith('vivienda') ||
+      normalizedCampo.includes('cantidadhogaresdeclarada') ||
+      normalizedCampo.includes('vinculoentrehogares') ||
+      normalizedCampo.includes('tiempovivebarrio') ||
+      normalizedCampo.includes('beneficiarioregularizacion') ||
+      normalizedCampo.includes('formaaccesovivienda') ||
+      normalizedCampo.startsWith('hogares')
+    ) {
+      return 'vivienda-hogares';
+    }
+
+    if (
+      normalizedCampo.includes('territorio') ||
+      normalizedCampo.includes('predio') ||
+      normalizedCampo.includes('zona') ||
+      normalizedCampo.includes('cuadrante') ||
+      normalizedCampo.includes('resultadovisita') ||
+      normalizedCampo.includes('visita')
+    ) {
+      return 'inicio-predio-visita';
+    }
+
+    return currentSection.id;
+  };
+
+  const handleIrASeccionValidacion = (error: FinalizacionValidationError) => {
+    setCurrentSectionId(getSectionIdForValidationError(error.campo));
+    scrollToSectionStepper();
+  };
+
   const finalizarRelevamiento = async () => {
     setFinalizationError('');
 
@@ -1943,7 +2000,20 @@ export function RelevamientoFlowPage() {
             </div>
             <ul className="mb-0">
               {sectionValidationErrors.map((error) => (
-                <li key={`${error.campo}-${error.mensaje}`}>{error.mensaje}</li>
+                <li key={`${error.campo}-${error.mensaje}`} className="mb-2">
+                  <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
+                    <span>{error.mensaje}</span>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="p-0 align-self-start"
+                      onClick={() => handleIrASeccionValidacion(error)}
+                    >
+                      Ir
+                    </Button>
+                  </div>
+                </li>
               ))}
             </ul>
           </Alert>
