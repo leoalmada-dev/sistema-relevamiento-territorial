@@ -25,6 +25,23 @@ export type BackendBorradorGetResponseData = {
   draft?: unknown;
 };
 
+export type BackendBorradorServidorDraftData = Record<string, unknown>;
+
+export type BackendBorradorServidorItem = {
+  id: number;
+  grupo_id?: number | null;
+  datos: BackendBorradorServidorDraftData;
+  current_section?: string | null;
+  draft_version?: number | null;
+  completed?: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+  predio_id?: number | string | null;
+};
+
+export type BackendBorradoresPorPredioResponse =
+  BackendApiResponse<BackendBorradorServidorItem[]>;
+
 export type BackendBorradorCreatePayload = {
   draft_version: number;
   current_section: string;

@@ -8,6 +8,7 @@ import type {
   BackendApiResponse,
   BackendBorradorCreateResponseData,
   BackendBorradorGetResponseData,
+  BackendBorradorServidorItem,
   BackendFinalizationMode,
   FinalizarRelevamientoBackendResult,
   GuardarBorradorServidorParams,
@@ -41,10 +42,10 @@ function getBackendErrorMessage(payload: unknown, fallback: string) {
   return fallback;
 }
 
-async function requestBackendJson<T>(
+async function requestBackendRawJson<T>(
   path: string,
   options: RequestInit = {},
-): Promise<BackendApiResponse<T>> {
+): Promise<T> {
   const apiBaseUrl = getApiBaseUrl();
 
   if (!apiBaseUrl) {
@@ -62,8 +63,8 @@ async function requestBackendJson<T>(
 
   const contentType = response.headers.get('content-type') ?? '';
   const payload = contentType.includes('application/json')
-    ? ((await response.json()) as BackendApiResponse<T>)
-    : ({ message: await response.text() } as BackendApiResponse<T>);
+    ? ((await response.json()) as T)
+    : ({ message: await response.text() } as T);
 
   if (!response.ok) {
     throw new Error(
@@ -77,6 +78,13 @@ async function requestBackendJson<T>(
   return payload;
 }
 
+async function requestBackendJson<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<BackendApiResponse<T>> {
+  return requestBackendRawJson<BackendApiResponse<T>>(path, options);
+}
+
 async function postBackendJson<T>(path: string, body: unknown) {
   return requestBackendJson<T>(path, {
     method: 'POST',
@@ -86,6 +94,10 @@ async function postBackendJson<T>(path: string, body: unknown) {
 
 async function getBackendJson<T>(path: string) {
   return requestBackendJson<T>(path);
+}
+
+async function getBackendRawJson<T>(path: string) {
+  return requestBackendRawJson<T>(path);
 }
 
 function extractBorradorId(response: BackendApiResponse<BackendBorradorCreateResponseData>) {
@@ -112,6 +124,28 @@ async function obtenerVersionBorradorServidor(serverDraftId: number) {
   );
 
   return extractDraftVersion(response.datos?.draft_version);
+}
+
+export async function listarBorradoresServidorPendientes() {
+  if (getRelevamientoFinalizationMode() === 'local') {
+    return [];
+  }
+
+  const response = await getBackendRawJson<BackendBorradorServidorItem[]>('/borrador/all');
+
+  return Array.isArray(response) ? response : [];
+}
+
+export async function listarBorradoresServidorPorPredio(predioId: string | number) {
+  if (getRelevamientoFinalizationMode() === 'local') {
+    return [];
+  }
+
+  const response = await getBackendJson<BackendBorradorServidorItem[]>(
+    `/borrador/predios/${encodeURIComponent(String(predioId))}`,
+  );
+
+  return Array.isArray(response.datos) ? response.datos : [];
 }
 
 export async function crearBorradorServidor(

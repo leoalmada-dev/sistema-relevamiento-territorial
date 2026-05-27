@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Card, Col, Modal, Row, Stack } from 'react-bootstrap';
 import { BorradoresLocalesList } from '../components/BorradoresLocalesList';
+import { BorradoresServidorList } from '../components/BorradoresServidorList';
 import { CierreRelevamientoSection } from '../components/CierreRelevamientoSection';
 import { CuadranteImageModal } from '../components/CuadranteImageModal';
 import { PersonasContactosSection } from '../components/PersonasContactosSection';
@@ -10,6 +11,7 @@ import { SectionStepper } from '../components/SectionStepper';
 import { TerritorialSelector } from '../components/TerritorialSelector';
 import { ViviendaHogaresSection } from '../components/ViviendaHogaresSection';
 import { ConfirmActionModal } from '../../../shared/components/ConfirmActionModal';
+import { buildLocalDraftFromServerDraft } from '../adapters/relevamientoServerDraftAdapter';
 import {
   buildLocalDraftKey,
   clearLocalDraft,
@@ -27,6 +29,7 @@ import {
   finalizarRelevamientoBackend,
   getRelevamientoFinalizationMode,
   guardarBorradorServidor,
+  listarBorradoresServidorPendientes,
 } from '../services/relevamientoBackendService';
 import {
   validateCierreRelevamiento,
@@ -42,6 +45,7 @@ import {
   type CierreRelevamientoFormState,
 } from '../types/cierreRelevamiento';
 import type { PersonasContactosPorHogarState } from '../types/personaContacto';
+import type { BackendBorradorServidorItem } from '../types/relevamientoBackend';
 import {
   localDraftStatusLabel,
   serverDraftSyncStatusLabel,
@@ -273,6 +277,12 @@ export function RelevamientoFlowPage() {
     useState<RelevamientoLocalDraftIndexItem | null>(null);
   const [localDraftToRetomar, setLocalDraftToRetomar] =
     useState<RelevamientoLocalDraftIndexItem | null>(null);
+  const [serverDrafts, setServerDrafts] = useState<BackendBorradorServidorItem[]>([]);
+  const [serverDraftsLoading, setServerDraftsLoading] = useState(false);
+  const [serverDraftsError, setServerDraftsError] = useState('');
+  const [showServerDraftsModal, setShowServerDraftsModal] = useState(false);
+  const [serverDraftToRetomar, setServerDraftToRetomar] =
+    useState<BackendBorradorServidorItem | null>(null);
   const [draftStatus, setDraftStatus] = useState<LocalDraftStatus>('SIN_BORRADOR');
   const [lastSavedAt, setLastSavedAt] = useState('');
   const [draftRecoveryChecked, setDraftRecoveryChecked] = useState(false);
@@ -347,6 +357,30 @@ export function RelevamientoFlowPage() {
     setLocalDraftsIndex(getLocalDraftsIndex());
   };
 
+  const refreshServerDrafts = async () => {
+    if (getRelevamientoFinalizationMode() !== 'backend') {
+      setServerDrafts([]);
+      setServerDraftsError('');
+      return;
+    }
+
+    setServerDraftsLoading(true);
+    setServerDraftsError('');
+
+    try {
+      const drafts = await listarBorradoresServidorPendientes();
+      setServerDrafts(drafts.filter((draft) => !draft.completed));
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'No se pudieron cargar los borradores servidor.';
+      setServerDraftsError(message);
+    } finally {
+      setServerDraftsLoading(false);
+    }
+  };
+
   const getSafeDraftSectionId = (sectionId: RelevamientoSectionId) =>
     sections.some((section) => section.id === sectionId)
       ? sectionId
@@ -354,6 +388,10 @@ export function RelevamientoFlowPage() {
 
   useEffect(() => {
     refreshLocalDraftsIndex();
+
+    if (getRelevamientoFinalizationMode() === 'backend') {
+      void refreshServerDrafts();
+    }
   }, []);
 
   const canGoBack = currentIndex > 0;
@@ -497,6 +535,11 @@ export function RelevamientoFlowPage() {
     setPersonasContactosPorHogar(draft.personasContactosPorHogar);
     setCierre(draft.cierre);
     setFinalizacionCompletada(draft.finalizacionSimulada);
+    setServerDraftId(draft.serverDraftId ?? null);
+    setServerDraftVersion(draft.serverDraftVersion ?? null);
+    setServerDraftLastSyncedAt(draft.serverDraftLastSyncedAt ?? '');
+    setServerDraftSyncStatus(draft.serverDraftSyncStatus ?? 'SIN_BORRADOR_SERVIDOR');
+    setServerDraftSyncError(draft.serverDraftSyncError ?? '');
     setLastSavedAt(draft.savedAt);
     setPendingLocalDraft(null);
     setDraftStatus('BORRADOR_RECUPERADO');
@@ -652,6 +695,46 @@ export function RelevamientoFlowPage() {
   const handleCancelRetomarLocalDraft = () => {
     setLocalDraftToRetomar(null);
     setShowLocalDraftsModal(true);
+  };
+
+  const handleOpenServerDraftsModal = () => {
+    setShowServerDraftsModal(true);
+    void refreshServerDrafts();
+  };
+
+  const requestRetomarServerDraft = (draftId: number) => {
+    const draft = serverDrafts.find((serverDraft) => serverDraft.id === draftId);
+
+    if (!draft) {
+      setServerDraftsError(
+        'No se encontró ese borrador servidor. Puede haber sido finalizado o eliminado.',
+      );
+      void refreshServerDrafts();
+      return;
+    }
+
+    setServerDraftToRetomar(draft);
+    setShowServerDraftsModal(false);
+  };
+
+  const handleConfirmRetomarServerDraft = () => {
+    if (!serverDraftToRetomar) {
+      return;
+    }
+
+    const draft = buildLocalDraftFromServerDraft(serverDraftToRetomar);
+    saveLocalDraft(draft);
+    applyLocalDraft(draft);
+    refreshLocalDraftsIndex();
+    setFinalizationError('');
+    setServerDraftToRetomar(null);
+    setShowServerDraftsModal(false);
+    void refreshServerDrafts();
+  };
+
+  const handleCancelRetomarServerDraft = () => {
+    setServerDraftToRetomar(null);
+    setShowServerDraftsModal(true);
   };
 
   const handleRecoverSelectedPredioDraft = () => {
@@ -910,7 +993,9 @@ export function RelevamientoFlowPage() {
     setPendingConfirmAction(null);
     setLocalDraftToRecover(null);
     setLocalDraftToRetomar(null);
+    setServerDraftToRetomar(null);
     setShowLocalDraftsModal(false);
+    setShowServerDraftsModal(false);
     setTerritorialSelectorKey((currentKey) => currentKey + 1);
     refreshLocalDraftsIndex();
     scrollToSectionStepper();
@@ -1365,6 +1450,31 @@ export function RelevamientoFlowPage() {
         </Alert>
       ) : null}
 
+      {getRelevamientoFinalizationMode() === 'backend' ? (
+        <Alert variant="light" className="border shadow-sm mb-0">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+              <strong>Borradores servidor pendientes.</strong>{' '}
+              <span className="text-secondary">
+                {serverDraftsLoading
+                  ? 'Consultando servidor...'
+                  : serverDrafts.length > 0
+                    ? `Hay ${serverDrafts.length} pendiente(s) para esta tablet.`
+                    : 'Consultá el respaldo servidor de cargas no finalizadas.'}
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="outline-secondary"
+              size="sm"
+              onClick={handleOpenServerDraftsModal}
+            >
+              Ver borradores servidor
+            </Button>
+          </div>
+        </Alert>
+      ) : null}
+
       <Modal
         show={showLocalDraftsModal}
         onHide={() => setShowLocalDraftsModal(false)}
@@ -1387,6 +1497,76 @@ export function RelevamientoFlowPage() {
             onDescartar={handleDescartarLocalDraftByKey}
           />
         </Modal.Body>
+      </Modal>
+
+      <Modal
+        show={showServerDraftsModal}
+        onHide={() => setShowServerDraftsModal(false)}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Borradores servidor pendientes</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Stack gap={3}>
+            <Alert variant="info" className="mb-0">
+              Esta recuperación usa el borrador guardado en servidor. Al retomarlo se conserva una
+              copia local en esta tablet para continuar la carga.
+            </Alert>
+
+            {serverDraftsError ? (
+              <Alert variant="warning" className="mb-0">
+                {serverDraftsError}
+              </Alert>
+            ) : null}
+
+            <BorradoresServidorList
+              drafts={serverDrafts}
+              isLoading={serverDraftsLoading}
+              onRetomar={requestRetomarServerDraft}
+            />
+          </Stack>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setShowServerDraftsModal(false)}>
+            Cerrar
+          </Button>
+          <Button variant="outline-primary" onClick={() => void refreshServerDrafts()}>
+            Actualizar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={Boolean(serverDraftToRetomar)}
+        onHide={handleCancelRetomarServerDraft}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Retomar borrador servidor</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Stack gap={3}>
+            <p className="mb-0">
+              Se cargará el borrador servidor #{serverDraftToRetomar?.id} y se reemplazará la
+              información que esté abierta actualmente en el formulario.
+            </p>
+
+            <Alert variant="warning" className="mb-0">
+              Si continuás, el formulario quedará asociado al mismo borrador servidor para seguir
+              sincronizando sobre ese identificador.
+            </Alert>
+          </Stack>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={handleCancelRetomarServerDraft}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={handleConfirmRetomarServerDraft}>
+            Retomar borrador servidor
+          </Button>
+        </Modal.Footer>
       </Modal>
 
       <Modal
