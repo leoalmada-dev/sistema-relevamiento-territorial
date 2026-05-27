@@ -13,6 +13,7 @@ import { ConfirmActionModal } from '../../../shared/components/ConfirmActionModa
 import {
   buildLocalDraftKey,
   clearLocalDraft,
+  LOCAL_DRAFT_STORAGE_KEY,
   findLocalDraftForSelectedPredio,
   getLocalDraft,
   getLocalDraftByKey,
@@ -64,6 +65,8 @@ import {
   type HogarFormState,
   type ViviendaFormState,
 } from '../types/viviendaHogar';
+
+const MAX_HOGARES_DECLARADOS = 5;
 
 const sections: RelevamientoSection[] = [
   {
@@ -169,8 +172,8 @@ export function RelevamientoFlowPage() {
     useState<FinalizacionValidationError[]>([]);
   const [showHogaresPendientesFinalizacionModal, setShowHogaresPendientesFinalizacionModal] =
     useState(false);
-  const [pendingDraftSavedSuccessMessage, setPendingDraftSavedSuccessMessage] =
-    useState('');
+  const [showBorradorPendienteGuardadoModal, setShowBorradorPendienteGuardadoModal] =
+    useState(false);
   const [serverDraftId, setServerDraftId] = useState<number | null>(null);
   const [serverDraftVersion, setServerDraftVersion] = useState<number | null>(null);
   const [serverDraftLastSyncedAt, setServerDraftLastSyncedAt] = useState('');
@@ -203,7 +206,9 @@ export function RelevamientoFlowPage() {
   const seccionInicialCompleta = Boolean(selectedPredio) && visitaPermiteContinuar;
   const cantidadHogaresDeclarada = Number(vivienda.cantidadHogaresDeclarada);
   const cantidadHogaresDeclaradaValida =
-    Number.isFinite(cantidadHogaresDeclarada) && cantidadHogaresDeclarada > 0;
+    Number.isInteger(cantidadHogaresDeclarada) &&
+    cantidadHogaresDeclarada > 0 &&
+    cantidadHogaresDeclarada <= MAX_HOGARES_DECLARADOS;
   const cantidadHogaresCoincide =
     cantidadHogaresDeclaradaValida && cantidadHogaresDeclarada === hogares.length;
 
@@ -322,6 +327,7 @@ export function RelevamientoFlowPage() {
     setFinalizacionCompletada(false);
     setFinalizationError('');
     setFinalizationValidationErrors([]);
+    setShowBorradorPendienteGuardadoModal(false);
     setDraftStatus('CAMBIOS_PENDIENTES');
   };
 
@@ -643,7 +649,10 @@ export function RelevamientoFlowPage() {
     setVivienda(nextVivienda);
 
     const cantidadDeclarada = Number(nextVivienda.cantidadHogaresDeclarada);
-    const debeCrearHogares = Number.isInteger(cantidadDeclarada) && cantidadDeclarada > 0;
+    const debeCrearHogares =
+      Number.isInteger(cantidadDeclarada) &&
+      cantidadDeclarada > 0 &&
+      cantidadDeclarada <= MAX_HOGARES_DECLARADOS;
 
     if (debeCrearHogares) {
       setHogares((currentHogares) => {
@@ -790,7 +799,7 @@ export function RelevamientoFlowPage() {
   };
 
   const resetFormularioActivoSinEliminarSnapshots = () => {
-    clearLocalDraft();
+    window.localStorage.removeItem(LOCAL_DRAFT_STORAGE_KEY);
     setCurrentSectionId('inicio-predio-visita');
     setSelectedPredioId('');
     setSelectedPredio(null);
@@ -825,9 +834,7 @@ export function RelevamientoFlowPage() {
     persistLocalDraft();
     setShowHogaresPendientesFinalizacionModal(false);
     resetFormularioActivoSinEliminarSnapshots();
-    setPendingDraftSavedSuccessMessage(
-      'Borrador guardado correctamente. La carga quedó disponible en “Borradores locales de esta tablet” para retomarla luego.',
-    );
+    setShowBorradorPendienteGuardadoModal(true);
   };
 
   const handleIrSeccionHogaresPendientes = () => {
@@ -1242,12 +1249,6 @@ export function RelevamientoFlowPage() {
         </Card.Body>
       </Card>
 
-      {pendingDraftSavedSuccessMessage ? (
-        <Alert variant="success" className="mb-0 shadow-sm">
-          {pendingDraftSavedSuccessMessage}
-        </Alert>
-      ) : null}
-
       {pendingLocalDraft ? (
         <Alert variant="info" className="mb-0 shadow-sm">
           <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
@@ -1625,6 +1626,32 @@ export function RelevamientoFlowPage() {
           </Button>
           <Button variant="primary" onClick={handleIrSeccionHogaresPendientes}>
             Ir a la sección 2
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={showBorradorPendienteGuardadoModal}
+        onHide={() => setShowBorradorPendienteGuardadoModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="h5">Borrador guardado</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          <p className="mb-2">Borrador guardado correctamente.</p>
+          <p className="mb-0">
+            La carga quedó disponible en “Borradores locales de esta tablet” para retomarla luego.
+          </p>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button
+            variant="primary"
+            onClick={() => setShowBorradorPendienteGuardadoModal(false)}
+          >
+            Aceptar
           </Button>
         </Modal.Footer>
       </Modal>

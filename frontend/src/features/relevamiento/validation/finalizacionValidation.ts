@@ -31,6 +31,8 @@ export type FinalizacionValidationInput = {
   cierre: CierreRelevamientoFormState;
 };
 
+const MAX_HOGARES_DECLARADOS = 5;
+
 const HOGARES_NO_ENTREVISTADOS_FINALIZACION_MESSAGE =
   'El relevamiento tiene hogares pendientes o no entrevistados. La carga quedará guardada como borrador para retomarla luego. No se puede finalizar hasta completar esos hogares o hasta que backend acepte hogares pendientes.';
 
@@ -186,6 +188,16 @@ function validateViviendaHogaresFields(
         'vivienda.cantidadHogaresDeclarada',
         'La cantidad de hogares declarada debe ser mayor a 0.',
       );
+      return;
+    }
+
+    if (cantidadDeclarada > MAX_HOGARES_DECLARADOS) {
+      addError(
+        errors,
+        'vivienda.cantidadHogaresDeclarada',
+        'La cantidad de hogares declarada no puede ser mayor a 5 en esta versión.',
+      );
+      return;
     }
 
     if (cantidadDeclarada !== input.hogares.length) {
