@@ -1289,13 +1289,10 @@ export function RelevamientoFlowPage() {
         <Card.Body className="p-4">
           <Row className="align-items-center g-3">
             <Col lg={8}>
-              <p className="text-uppercase text-secondary fw-semibold small mb-2">
-                Guardado automáticamente
-              </p>
               <h1 className="h2 mb-2">Formulario de relevamiento</h1>
               <p className="text-secondary mb-0">
-                Complete el relevamiento por secciones. La información se guarda automáticamente
-                en este dispositivo durante la carga.
+                Complete el relevamiento por secciones. La carga conserva un borrador local en
+                esta tablet durante el uso del formulario.
               </p>
             </Col>
 
@@ -1306,7 +1303,7 @@ export function RelevamientoFlowPage() {
                     Sección actual: <strong>{currentSection.order}</strong>
                   </span>
                   <span>
-                    Estado: <strong>{localDraftStatusLabel[draftStatus]}</strong>
+                    Guardado local: <strong>{localDraftStatusLabel[draftStatus]}</strong>
                   </span>
                   {getRelevamientoFinalizationMode() === 'backend' ? (
                     <span>
