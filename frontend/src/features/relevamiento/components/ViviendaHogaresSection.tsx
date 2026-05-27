@@ -2,6 +2,8 @@ import { Alert, Badge, Button, Card, Col, Form, Row, Stack } from 'react-bootstr
 import { HogarFormCard } from './HogarFormCard';
 import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
 
+const MAX_HOGARES_DECLARADOS = 5;
+
 type ViviendaHogaresSectionProps = {
   vivienda: ViviendaFormState;
   hogares: HogarFormState[];
@@ -33,6 +35,8 @@ export function ViviendaHogaresSection({
   const tieneCantidadDeclarada = Number.isFinite(cantidadDeclarada) && cantidadDeclarada > 0;
   const cantidadCoincide =
     tieneCantidadDeclarada && cantidadDeclarada === hogares.length;
+  const cantidadExcedeMaximo =
+    tieneCantidadDeclarada && cantidadDeclarada > MAX_HOGARES_DECLARADOS;
   const hogaresPendientes = Math.max(cantidadDeclarada - hogares.length, 0);
   const hogaresExcedidos = Math.max(hogares.length - cantidadDeclarada, 0);
 
@@ -57,7 +61,8 @@ export function ViviendaHogaresSection({
                   <Form.Label>Cantidad de hogares declarada</Form.Label>
                   <Form.Control
                     type="number"
-                    min="0"
+                    min="1"
+                    max={MAX_HOGARES_DECLARADOS}
                     value={vivienda.cantidadHogaresDeclarada}
                     onChange={(event) =>
                       updateViviendaField('cantidadHogaresDeclarada', event.target.value)
@@ -130,6 +135,12 @@ export function ViviendaHogaresSection({
             {!tieneCantidadDeclarada ? (
               <Alert variant="secondary" className="mb-0">
                 Indicá la cantidad declarada y agregá los hogares correspondientes.
+              </Alert>
+            ) : cantidadExcedeMaximo ? (
+              <Alert variant="warning" className="mb-0">
+                Para el MVP se permite cargar hasta <strong>{MAX_HOGARES_DECLARADOS}</strong>{' '}
+                hogares por predio. Si encontrás un caso mayor, dejalo registrado en
+                observaciones y consultá antes de continuar.
               </Alert>
             ) : cantidadCoincide ? (
               <Alert variant="success" className="mb-0">
