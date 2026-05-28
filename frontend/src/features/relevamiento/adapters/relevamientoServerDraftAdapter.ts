@@ -12,8 +12,8 @@ import type {
   BackendBorradorServidorDraftData,
 } from '../types/relevamientoBackend';
 import type { RelevamientoLocalDraft } from '../types/relevamientoDraft';
-import type { PredioDetalle } from '../types/territorio';
-import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
+import type { CuadranteOption, PredioDetalle } from '../types/territorio';
+import type { EstadoHogarMvp, HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -29,6 +29,13 @@ const resultadoVisitaValues: ResultadoVisita[] = [
   'ENTREVISTA_REALIZADA',
   'SE_NIEGA',
   'NO_SE_ENCUENTRA',
+];
+
+const estadoHogarValues: EstadoHogarMvp[] = [
+  'ENTREVISTADO',
+  'PENDIENTE',
+  'NO_SE_ENCUENTRA',
+  'SE_NIEGA',
 ];
 
 function asRecord(value: unknown): UnknownRecord {
@@ -67,6 +74,12 @@ function normalizeResultadoVisita(value: unknown): ResultadoVisita {
   const stringValue = asString(value) as ResultadoVisita;
 
   return resultadoVisitaValues.includes(stringValue) ? stringValue : '';
+}
+
+function normalizeEstadoHogar(value: unknown): EstadoHogarMvp {
+  const stringValue = asString(value) as EstadoHogarMvp;
+
+  return estadoHogarValues.includes(stringValue) ? stringValue : 'ENTREVISTADO';
 }
 
 function fromBackendSectionId(value: unknown): RelevamientoSectionId {
@@ -114,6 +127,26 @@ function buildSelectedPredio(
     manzana: asString(predio.manzana),
     lote: asString(predio.lote),
     nombreCuadrante: asString(predio.nombre_cuadrante) || undefined,
+  };
+}
+
+function buildSelectedCuadrante(
+  data: BackendBorradorServidorDraftData,
+  selectedPredio: PredioDetalle | null,
+): CuadranteOption | null {
+  const territorio = asRecord(data.territorio);
+  const cuadranteId = asString(territorio.cuadrante_id);
+  const zonaId = asString(territorio.zona_id);
+
+  if (!cuadranteId || !zonaId) {
+    return null;
+  }
+
+  return {
+    id: cuadranteId,
+    zonaId,
+    letra: cuadranteId,
+    nombre: selectedPredio?.nombreCuadrante || `Cuadrante ${cuadranteId}`,
   };
 }
 
@@ -208,8 +241,12 @@ function buildHogares(data: BackendBorradorServidorDraftData) {
     return {
       id: hogarId,
       numeroHogar: asString(hogar.numero_hogar || index + 1),
-      estadoHogar: 'ENTREVISTADO',
-      observacionEstadoHogar: asString(hogar.observacion_estado_hogar),
+      estadoHogar: normalizeEstadoHogar(
+        hogar.estado_hogar || hogar.estadoHogar || hogar.estado,
+      ),
+      observacionEstadoHogar: asString(
+        hogar.observacion_estado_hogar || hogar.observacionEstadoHogar,
+      ),
       tiempoViveBarrio: asString(hogar.tiempo_vive_barrio),
       beneficiarioRegularizacion: asString(hogar.beneficiario_regularizacion),
       formaAccesoVivienda: asString(hogar.forma_acceso_vivienda),
@@ -242,6 +279,7 @@ export function buildLocalDraftFromServerDraft(
   const data = asRecord(item.datos) as BackendBorradorServidorDraftData;
   const territorio = asRecord(data.territorio);
   const predioId = asString(item.predio_id || territorio.predio_id);
+  const selectedPredio = buildSelectedPredio(data, predioId);
   const { hogares, personasContactosPorHogar } = buildHogares(data);
   const savedAt = asString(item.updated_at || item.created_at) || new Date().toISOString();
 
@@ -250,8 +288,8 @@ export function buildLocalDraftFromServerDraft(
     savedAt,
     currentSectionId: fromBackendSectionId(item.current_section),
     selectedPredioId: predioId,
-    selectedPredio: buildSelectedPredio(data, predioId),
-    selectedCuadrante: null,
+    selectedPredio,
+    selectedCuadrante: buildSelectedCuadrante(data, selectedPredio),
     resultadoVisita: buildResultadoVisita(data),
     vivienda: buildVivienda(data),
     hogares,
