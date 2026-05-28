@@ -23,6 +23,7 @@ import {
 type PersonasContactosSectionProps = {
   hogares: HogarFormState[];
   personasContactosPorHogar: PersonasContactosPorHogarState;
+  validationFocusRequest?: { campo: string; requestId: number } | null;
   onChange: (nextState: PersonasContactosPorHogarState) => void;
 };
 
@@ -87,6 +88,7 @@ function normalizeAccordionEventKey(eventKey: unknown): string[] {
 export function PersonasContactosSection({
   hogares,
   personasContactosPorHogar,
+  validationFocusRequest,
   onChange,
 }: PersonasContactosSectionProps) {
   const [activeHogarIds, setActiveHogarIds] = useState<string[]>(
@@ -111,6 +113,31 @@ export function PersonasContactosSection({
       return nextActiveIds;
     });
   }, [hogares]);
+
+  useEffect(() => {
+    if (!validationFocusRequest) {
+      return;
+    }
+
+    const match = validationFocusRequest.campo.match(/^hogares\.(\d+)\./);
+
+    if (!match) {
+      return;
+    }
+
+    const hogarIndex = Number(match[1]);
+    const hogar = hogares[hogarIndex];
+
+    if (!hogar) {
+      return;
+    }
+
+    setActiveHogarIds((currentActiveIds) =>
+      currentActiveIds.includes(hogar.id)
+        ? currentActiveIds
+        : [...currentActiveIds, hogar.id],
+    );
+  }, [hogares, validationFocusRequest]);
 
   const getDatosHogarById = (hogarId: string): PersonasContactosHogarState =>
     personasContactosPorHogar[hogarId] ?? crearPersonasContactosHogarInicial();
@@ -327,6 +354,7 @@ export function PersonasContactosSection({
                 ref={(element) => {
                   hogarItemRefs.current[hogar.id] = element;
                 }}
+                data-validation-hogar={`hogares.${index}`}
               >
                 <Accordion.Item
                   eventKey={hogar.id}
