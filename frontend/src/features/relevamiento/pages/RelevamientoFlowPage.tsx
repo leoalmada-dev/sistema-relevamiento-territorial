@@ -26,6 +26,7 @@ import {
   saveLocalDraft,
 } from '../services/draftStorageService';
 import {
+  BackendValidationError,
   finalizarRelevamientoBackend,
   getRelevamientoFinalizationMode,
   guardarBorradorServidor,
@@ -159,6 +160,17 @@ type ValidationFocusTarget = {
   fallbackSelector?: string;
   hogarIndex?: number;
 };
+
+function buildBackendValidationErrors(error: unknown): FinalizacionValidationError[] {
+  if (!(error instanceof BackendValidationError)) {
+    return [];
+  }
+
+  return error.validationErrors.map((validationError) => ({
+    campo: validationError.frontendPath,
+    mensaje: validationError.message,
+  }));
+}
 
 function getPredioActualLabel(
   selectedPredio: PredioDetalle | null,
@@ -1277,6 +1289,14 @@ export function RelevamientoFlowPage() {
         setShowPredioYaRelevadoModal(true);
       }
 
+      const backendValidationErrors = buildBackendValidationErrors(error);
+
+      if (backendValidationErrors.length > 0) {
+        setSectionValidationErrors(backendValidationErrors);
+        setFinalizationValidationErrors([]);
+        scrollToSectionValidationAlert();
+      }
+
       setServerDraftSyncStatus('ERROR_SINCRONIZACION');
       setServerDraftSyncError(message);
 
@@ -1341,6 +1361,20 @@ export function RelevamientoFlowPage() {
 
       if (isPredioConCargaExistenteError(error)) {
         setShowPredioYaRelevadoModal(true);
+        return false;
+      }
+
+      const backendValidationErrors = buildBackendValidationErrors(error);
+
+      if (backendValidationErrors.length > 0) {
+        setSectionValidationErrors(backendValidationErrors);
+        setFinalizationValidationErrors([]);
+        scrollToSectionValidationAlert();
+        persistServerMetadataLocally({
+          currentSectionId: targetSectionId,
+          serverDraftSyncStatus: 'ERROR_SINCRONIZACION',
+          serverDraftSyncError: message,
+        });
         return false;
       }
 
@@ -1777,11 +1811,26 @@ export function RelevamientoFlowPage() {
         error instanceof Error && error.message
           ? error.message
           : 'No se pudo guardar la información en el servidor. Verifique la conexión e intente nuevamente.';
+      const backendValidationErrors = buildBackendValidationErrors(error);
+
+      if (backendValidationErrors.length > 0) {
+        setFinalizationValidationErrors(backendValidationErrors);
+        setSectionValidationErrors([]);
+        setFinalizationError('');
+        setServerDraftSyncStatus('ERROR_SINCRONIZACION');
+        setServerDraftSyncError(message);
+        saveLocalDraft(
+          buildLocalDraft({
+            serverDraftSyncStatus: 'ERROR_SINCRONIZACION',
+            serverDraftSyncError: message,
+          }),
+        );
+        return;
+      }
 
       setFinalizationError(message);
       setServerDraftSyncStatus('ERROR_SINCRONIZACION');
       setServerDraftSyncError(message);
-
       saveLocalDraft(
         buildLocalDraft({
           serverDraftSyncStatus: 'ERROR_SINCRONIZACION',
@@ -2418,16 +2467,31 @@ export function RelevamientoFlowPage() {
           </div>
           <ul className="mb-0">
             {finalizationValidationErrors.map((error) => (
-              <li key={`${error.campo}-${error.mensaje}`}>{error.mensaje}</li>
-            ))}
+                      <li key={`${error.campo}-${error.mensaje}`} className="mb-2">
+                        <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
+                          <span>{error.mensaje}</span>
+                          {error.campo !== 'backend' ? (
+                            <Button
+                              type="button"
+                              variant="link"
+                              size="sm"
+                              className="p-0 align-self-start"
+                              onClick={() => handleIrASeccionValidacion(error)}
+                            >
+                              Ir
+                            </Button>
+                          ) : null}
+                        </div>
+                      </li>
+                    ))}
           </ul>
         </Alert>
       ) : null}
 
       {finalizationError ? (
         <Alert variant="danger" className="mb-0">
-          No se pudo guardar la información. Verifique la conexión e intente nuevamente.
-        </Alert>
+              {finalizationError}
+            </Alert>
       ) : null}
 
       {currentSection.id === 'vivienda-hogares' && !cantidadHogaresCoincide ? (
