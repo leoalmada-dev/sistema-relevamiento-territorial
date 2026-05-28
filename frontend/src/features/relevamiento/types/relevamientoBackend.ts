@@ -134,6 +134,8 @@ export type BackendHogarPayload = {
   servicios: BackendServiciosPayload;
   salud: BackendSaludPayload;
   observaciones: string;
+  estado_hogar?: string;
+  observacion_estado_hogar?: string;
 };
 
 export type BackendPersonaPayload = {

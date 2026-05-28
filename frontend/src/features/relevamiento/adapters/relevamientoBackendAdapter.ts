@@ -27,6 +27,10 @@ export type RelevamientoBackendSnapshot = {
   cierre: CierreRelevamientoFormState;
 };
 
+type BuildBackendRelevamientoDraftOptions = {
+  includeServerDraftRecoveryFields?: boolean;
+};
+
 function asString(value: unknown, fallback = DEFAULT_EMPTY_TEXT) {
   if (value === null || value === undefined) {
     return fallback;
@@ -158,7 +162,10 @@ function buildBackendContactos(contactos: PersonasContactosPorHogarState[string]
   }));
 }
 
-function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
+function buildBackendHogares(
+  snapshot: RelevamientoBackendSnapshot,
+  options: BuildBackendRelevamientoDraftOptions = {},
+) {
   if (esCorteTemprano(snapshot.resultadoVisita.resultado)) {
     return [];
   }
@@ -217,12 +224,19 @@ function buildBackendHogares(snapshot: RelevamientoBackendSnapshot) {
         observaciones: personasContactos?.salud.observacionesSalud ?? '',
       },
       observaciones: 'Sin observaciones',
+      ...(options.includeServerDraftRecoveryFields
+        ? {
+            estado_hogar: hogar.estadoHogar ?? 'ENTREVISTADO',
+            observacion_estado_hogar: hogar.observacionEstadoHogar ?? '',
+          }
+        : {}),
     };
   });
 }
 
 export function buildBackendRelevamientoDraft(
   snapshot: RelevamientoBackendSnapshot,
+  options: BuildBackendRelevamientoDraftOptions = {},
 ): BackendRelevamientoDraftPayload {
   const vinculoEntreHogares =
     snapshot.hogares.length === 1
@@ -243,7 +257,7 @@ export function buildBackendRelevamientoDraft(
     territorio: buildBackendTerritorio(snapshot),
     visita: buildBackendVisita(snapshot.resultadoVisita),
     vivienda,
-    hogares: buildBackendHogares(snapshot),
+    hogares: buildBackendHogares(snapshot, options),
     observaciones_generales: snapshot.cierre.observacionesGenerales,
     coordenadas: {
       latitud: parseNumberOrNull(snapshot.cierre.latitud),
@@ -261,7 +275,9 @@ export function buildBackendBorradorCreatePayload(
     current_section: toBackendSectionId(snapshot.currentSectionId),
     saved_at_client: new Date().toISOString(),
     finalized_at_client: null,
-    draft: buildBackendRelevamientoDraft(snapshot),
+    draft: buildBackendRelevamientoDraft(snapshot, {
+      includeServerDraftRecoveryFields: true,
+    }),
   };
 }
 
@@ -277,7 +293,9 @@ export function buildBackendBorradorSyncPayload(
     saved_at_client: new Date().toISOString(),
     finalized_at_client: null,
     draft: {
-      ...buildBackendRelevamientoDraft(snapshot),
+      ...buildBackendRelevamientoDraft(snapshot, {
+        includeServerDraftRecoveryFields: true,
+      }),
       id: serverDraftId,
     },
   };
