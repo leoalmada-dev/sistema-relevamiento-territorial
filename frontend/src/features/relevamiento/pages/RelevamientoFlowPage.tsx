@@ -1345,6 +1345,12 @@ export function RelevamientoFlowPage() {
   const buildDataValidationHogarSelector = (hogarIndex: number) =>
     `[data-validation-hogar="hogares.${hogarIndex}"]`;
 
+  const buildDataValidationCardSelector = (campo: string) =>
+    `[data-validation-card="${escapeSelectorValue(campo)}"]`;
+
+  const buildHogarCardSelector = (hogarIndex: number, card: string) =>
+    buildDataValidationCardSelector(`hogares.${hogarIndex}.${card}`);
+
   const buildHogarScopedIdSelector = (hogarIndex: number, id: string) =>
     `${buildDataValidationHogarSelector(hogarIndex)} ${buildIdSelector(id)}`;
 
@@ -1439,13 +1445,14 @@ export function RelevamientoFlowPage() {
             tieneCableInternet: 'tiene-cable-internet',
           };
           const field = parts[3] ?? '';
+          const serviciosCardSelector = buildHogarCardSelector(hogarIndex, 'servicios');
 
           return {
             sectionId: 'datos-por-hogar',
             selector: serviciosIdByCampo[field]
               ? buildHogarScopedIdSelector(hogarIndex, serviciosIdByCampo[field])
-              : hogarFallbackSelector,
-            fallbackSelector: hogarFallbackSelector,
+              : serviciosCardSelector,
+            fallbackSelector: serviciosCardSelector,
             hogarIndex,
           };
         }
@@ -1456,22 +1463,26 @@ export function RelevamientoFlowPage() {
             tieneEmergenciaMovil: 'tiene-emergencia-movil',
           };
           const field = parts[3] ?? '';
+          const saludCardSelector = buildHogarCardSelector(hogarIndex, 'salud');
 
           return {
             sectionId: 'datos-por-hogar',
             selector: saludIdByCampo[field]
               ? buildHogarScopedIdSelector(hogarIndex, saludIdByCampo[field])
-              : hogarFallbackSelector,
-            fallbackSelector: hogarFallbackSelector,
+              : saludCardSelector,
+            fallbackSelector: saludCardSelector,
             hogarIndex,
           };
         }
 
         if (fieldGroup === 'personas') {
+          const personasCardSelector = buildHogarCardSelector(hogarIndex, 'personas');
+
           if (parts.length === 3) {
             return {
               sectionId: 'datos-por-hogar',
-              selector: hogarFallbackSelector,
+              selector: personasCardSelector,
+              fallbackSelector: hogarFallbackSelector,
               hogarIndex,
             };
           }
@@ -1485,8 +1496,8 @@ export function RelevamientoFlowPage() {
               sectionId: 'datos-por-hogar',
               selector: firstPersona
                 ? buildIdSelector(`referente-persona-${firstPersona.id}`)
-                : hogarFallbackSelector,
-              fallbackSelector: hogarFallbackSelector,
+                : personasCardSelector,
+              fallbackSelector: personasCardSelector,
               hogarIndex,
             };
           }
@@ -1513,12 +1524,23 @@ export function RelevamientoFlowPage() {
               persona && personaFieldIdPrefixByCampo[personaField]
                 ? buildIdSelector(`${personaFieldIdPrefixByCampo[personaField]}-${persona.id}`)
                 : hogarFallbackSelector,
-            fallbackSelector: hogarFallbackSelector,
+            fallbackSelector: personasCardSelector,
             hogarIndex,
           };
         }
 
         if (fieldGroup === 'contactos') {
+          const contactosCardSelector = buildHogarCardSelector(hogarIndex, 'contactos');
+
+          if (parts.length === 3) {
+            return {
+              sectionId: 'datos-por-hogar',
+              selector: contactosCardSelector,
+              fallbackSelector: hogarFallbackSelector,
+              hogarIndex,
+            };
+          }
+
           const contactoIndex = Number(parts[3]);
           const contactoField = parts[4];
           const datosHogar = getDatosHogarByIndex(hogarIndex);
@@ -1531,8 +1553,8 @@ export function RelevamientoFlowPage() {
             selector:
               contacto && contactoField === 'telefono'
                 ? buildIdSelector(`telefono-contacto-${contacto.id}`)
-                : hogarFallbackSelector,
-            fallbackSelector: hogarFallbackSelector,
+                : contactosCardSelector,
+            fallbackSelector: contactosCardSelector,
             hogarIndex,
           };
         }
@@ -1544,8 +1566,9 @@ export function RelevamientoFlowPage() {
         sectionId: 'datos-por-hogar',
         selector:
           hogares.length > 0
-            ? buildDataValidationHogarSelector(0)
-            : buildIdSelector('cantidad-hogares-declarada'),
+            ? buildHogarCardSelector(0, 'personas')
+            : buildDataValidationCardSelector('datos-por-hogar'),
+        fallbackSelector: hogares.length > 0 ? buildDataValidationHogarSelector(0) : undefined,
         hogarIndex: hogares.length > 0 ? 0 : undefined,
       };
     }
@@ -1568,7 +1591,7 @@ export function RelevamientoFlowPage() {
 
     return {
       sectionId: currentSection.id,
-      selector: buildIdSelector('cantidad-hogares-declarada'),
+      selector: buildDataValidationCardSelector(campo),
     };
   };
 

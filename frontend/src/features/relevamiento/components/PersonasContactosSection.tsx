@@ -410,12 +410,12 @@ export function PersonasContactosSection({
                       </Stack>
                     ) : (
                       <Stack gap={4}>
-                        <Card className="border-0 bg-light">
-                          <Card.Body>
-                            <Stack gap={3}>
-                              <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-                                <div>
-                                  <h4 className="h6 mb-1">Personas</h4>
+                        <Card className="border-0 bg-light" data-validation-card={`hogares.${index}.personas`}>
+                      <Card.Body>
+                        <Stack gap={3}>
+                          <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                            <div>
+                              <h4 className="h6 mb-1">Personas</h4>
                                   <p className="text-secondary mb-0">
                                     Integrantes cargados para el {hogarLabel}.
                                   </p>
@@ -453,12 +453,12 @@ export function PersonasContactosSection({
                           </Card.Body>
                         </Card>
 
-                        <Card className="border-0 bg-light">
-                          <Card.Body>
-                            <Stack gap={3}>
-                              <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-                                <div>
-                                  <h4 className="h6 mb-1">Contactos</h4>
+                        <Card className="border-0 bg-light" data-validation-card={`hogares.${index}.contactos`}>
+                      <Card.Body>
+                        <Stack gap={3}>
+                          <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                            <div>
+                              <h4 className="h6 mb-1">Contactos</h4>
                                   <p className="text-secondary mb-0">
                                     Contactos cargados para el {hogarLabel}. Objetivo inicial:
                                     hasta dos contactos.
@@ -511,11 +511,11 @@ export function PersonasContactosSection({
                           </Card.Body>
                         </Card>
 
-                        <Card className="border-0 bg-light">
-                          <Card.Body>
-                            <Stack gap={3}>
-                              <div>
-                                <h4 className="h6 mb-1">Servicios y salud</h4>
+                        <Card className="border-0 bg-light" data-validation-card={`hogares.${index}.servicios`}>
+                      <Card.Body>
+                        <Stack gap={3}>
+                          <div data-validation-card={`hogares.${index}.salud`}>
+                            <h4 className="h6 mb-1">Servicios y salud</h4>
                                 <p className="text-secondary mb-0">
                                   Datos asociados al {hogarLabel}.
                                 </p>
