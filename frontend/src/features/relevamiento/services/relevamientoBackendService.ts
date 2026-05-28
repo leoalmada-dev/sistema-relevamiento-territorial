@@ -17,6 +17,24 @@ import type {
 
 const DEFAULT_FINALIZATION_MODE: BackendFinalizationMode = 'local';
 
+export type BackendValidationErrorItem = {
+  backendPath: string;
+  frontendPath: string;
+  message: string;
+};
+
+export class BackendValidationError extends Error {
+  validationErrors: BackendValidationErrorItem[];
+
+  constructor(validationErrors: BackendValidationErrorItem[]) {
+    super('El backend rechazó la carga por errores de validación.');
+    this.name = 'BackendValidationError';
+    this.validationErrors = validationErrors;
+    Object.setPrototypeOf(this, BackendValidationError.prototype);
+  }
+}
+
+
 function getApiBaseUrl() {
   return String(import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
 }
@@ -47,9 +65,14 @@ function shouldTreatBackendApiPayloadAsError(payload: unknown) {
     return false;
   }
 
-  const code = (payload as Record<string, unknown>).code;
+  const record = payload as Record<string, unknown>;
+  const code = record.code;
+  const status = record.status;
 
-  return typeof code === 'number' && code >= 400;
+  return (
+    (typeof code === 'number' && code >= 400) ||
+    status === 'error_validacion'
+  );
 }
 
 function normalizeBackendMessage(message: string) {
@@ -57,6 +80,94 @@ function normalizeBackendMessage(message: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
+}
+
+function isBackendValidationErrorPayload(payload: unknown) {
+  if (!payload || typeof payload !== 'object') {
+    return false;
+  }
+
+  return (payload as Record<string, unknown>).status === 'error_validacion';
+}
+
+function mapBackendValidationPathToFrontend(backendPath: string) {
+  return backendPath
+    .replace(/^draft\./, '')
+    .replace(/\.beneficiario_regularizacion\b/g, '.beneficiarioRegularizacion')
+    .replace(/\.documento\b/g, '.cedula');
+}
+
+function getBackendValidationUserMessage(backendPath: string, message: string) {
+  const normalizedMessage = normalizeBackendMessage(message);
+  const normalizedPath = normalizeBackendMessage(backendPath);
+
+  if (
+    normalizedPath.includes('.personas.') &&
+    normalizedPath.endsWith('.documento') &&
+    normalizedMessage.includes('ya ha sido registrado')
+  ) {
+    return 'La cédula ingresada ya figura registrada en el sistema. Revisá el dato de la persona indicada antes de finalizar.';
+  }
+
+  if (
+    normalizedPath.includes('.personas.') &&
+    normalizedPath.endsWith('.edad') &&
+    normalizedMessage.includes('mayor que 120')
+  ) {
+    return 'La edad no debe ser mayor que 120.';
+  }
+
+  return message;
+}
+
+function extractBackendValidationErrors(payload: unknown): BackendValidationErrorItem[] {
+  if (!payload || typeof payload !== 'object') {
+    return [];
+  }
+
+  const errors = (payload as Record<string, unknown>).errors;
+
+  if (!errors || typeof errors !== 'object' || Array.isArray(errors)) {
+    return [];
+  }
+
+  return Object.entries(errors as Record<string, unknown>).flatMap(
+    ([backendPath, rawMessages]) => {
+      const messages = Array.isArray(rawMessages) ? rawMessages : [rawMessages];
+
+      return messages
+        .map((rawMessage) => String(rawMessage ?? '').trim())
+        .filter(Boolean)
+        .map((message) => ({
+          backendPath,
+          frontendPath: mapBackendValidationPathToFrontend(backendPath),
+          message: getBackendValidationUserMessage(backendPath, message),
+        }));
+    },
+  );
+}
+
+function buildBackendValidationError(payload: unknown) {
+  if (!isBackendValidationErrorPayload(payload)) {
+    return null;
+  }
+
+  const validationErrors = extractBackendValidationErrors(payload);
+
+  if (validationErrors.length > 0) {
+    return new BackendValidationError(validationErrors);
+  }
+
+  return new BackendValidationError([
+    {
+      backendPath: 'backend',
+      frontendPath: 'backend',
+      message: getBackendErrorMessage(
+        payload,
+        'El backend rechazó la carga por errores de validación.',
+      ),
+    },
+  ]);
 }
 
 export function isPredioConCargaExistenteError(error: unknown) {
@@ -99,6 +210,12 @@ async function requestBackendRawJson<T>(
     ? ((await response.json()) as T)
     : ({ message: await response.text() } as T);
 
+  const backendValidationError = buildBackendValidationError(payload);
+
+  if (backendValidationError) {
+    throw backendValidationError;
+  }
+
   if (!response.ok) {
     throw new Error(
       getBackendErrorMessage(
@@ -116,6 +233,11 @@ async function requestBackendJson<T>(
   options: RequestInit = {},
 ): Promise<BackendApiResponse<T>> {
   const payload = await requestBackendRawJson<BackendApiResponse<T>>(path, options);
+  const backendValidationError = buildBackendValidationError(payload);
+
+  if (backendValidationError) {
+    throw backendValidationError;
+  }
 
   if (shouldTreatBackendApiPayloadAsError(payload)) {
     throw new Error(

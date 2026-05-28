@@ -393,6 +393,12 @@ function validatePersonasContactosFields(
           `hogares.${hogarIndex}.personas.${personaIndex}.edad`,
           `${personaLabel}: complete una edad válida.`,
         );
+      } else if ((parseNumber(persona.edad) ?? 0) > 120) {
+        addError(
+          errors,
+          `hogares.${hogarIndex}.personas.${personaIndex}.edad`,
+          `${personaLabel}: la edad no debe ser mayor que 120.`,
+        );
       }
 
       if (isBlank(persona.sexo)) {
