@@ -360,7 +360,7 @@ export function PersonasContactosSection({
                   eventKey={hogar.id}
                   className="border rounded-3 overflow-hidden"
                 >
-                  <Accordion.Header>
+                  <Accordion.Header data-validation-hogar-header={`hogares.${index}`}>
                     <div className="d-flex flex-column gap-1 text-start">
                       <span className="fw-semibold">{hogarLabel}</span>
                       <span className="text-secondary small">

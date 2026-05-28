@@ -1345,6 +1345,9 @@ export function RelevamientoFlowPage() {
   const buildDataValidationHogarSelector = (hogarIndex: number) =>
     `[data-validation-hogar="hogares.${hogarIndex}"]`;
 
+  const buildDataValidationHogarHeaderSelector = (hogarIndex: number) =>
+    `[data-validation-hogar-header="hogares.${hogarIndex}"]`;
+
   const buildDataValidationCardSelector = (campo: string) =>
     `[data-validation-card="${escapeSelectorValue(campo)}"]`;
 
@@ -1481,8 +1484,8 @@ export function RelevamientoFlowPage() {
           if (parts.length === 3) {
             return {
               sectionId: 'datos-por-hogar',
-              selector: hogarFallbackSelector,
-              fallbackSelector: personasCardSelector,
+              selector: buildDataValidationHogarHeaderSelector(hogarIndex),
+              fallbackSelector: hogarFallbackSelector,
               hogarIndex,
             };
           }
