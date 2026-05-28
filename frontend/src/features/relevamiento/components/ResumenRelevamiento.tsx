@@ -139,6 +139,12 @@ export function ResumenRelevamiento({
                 const personasConVinculoBarrio = personas.filter(
                   (persona) => persona.vinculoBarrioFamilia,
                 );
+                const personasConDatosComplementarios = personas.filter(
+                  (persona) =>
+                    persona.ascendenciaEtnicoRacial ||
+                    persona.presentaDiscapacidad ||
+                    persona.tipoDiscapacidad,
+                );
   const estadoHogar = getEstadoHogar(hogar);
   const estaEntrevistado = hogarEstaEntrevistado(hogar);
 
@@ -217,6 +223,41 @@ export function ResumenRelevamiento({
                           </ul>
                         </div>
                       ) : null}
+
+                      {personasConDatosComplementarios.length > 0 ? (
+                        <div className="border-top pt-3 mt-3">
+                          <strong>Ascendencia étnico-racial y discapacidad:</strong>
+                          <ul className="mb-0 mt-2">
+                            {personasConDatosComplementarios.map((persona) => {
+                              const nombrePersona =
+                                [persona.nombre, persona.apellido].filter(Boolean).join(' ') ||
+                                'Persona sin nombre';
+                              const discapacidad =
+                                persona.presentaDiscapacidad === 'SI'
+                                  ? 'SI'
+                                  : persona.presentaDiscapacidad === 'NO'
+                                    ? 'NO'
+                                    : '';
+                              const datos = [
+                                persona.ascendenciaEtnicoRacial
+                                  ? `Ascendencia étnico-racial: ${persona.ascendenciaEtnicoRacial}`
+                                  : '',
+                                discapacidad ? `Discapacidad: ${discapacidad}` : '',
+                                persona.tipoDiscapacidad
+                                  ? `Tipo de discapacidad: ${persona.tipoDiscapacidad}`
+                                  : '',
+                              ].filter(Boolean);
+
+                              return (
+                                <li key={persona.id}>
+                                  {nombrePersona}: {datos.join(' · ')}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      ) : null}
+
                     </Card.Body>
                   </Card>
                 );

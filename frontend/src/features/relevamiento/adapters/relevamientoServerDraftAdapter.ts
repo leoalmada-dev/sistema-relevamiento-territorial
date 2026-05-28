@@ -183,7 +183,14 @@ function buildPersona(value: unknown, index: number): PersonaFormState {
     cedula: asString(persona.documento),
     edad: asString(persona.edad),
     sexo: fromBackendSexo(persona.sexo),
+    ascendenciaEtnicoRacial: asString(
+      persona.ascendencia_etnico_racial || persona.ascendenciaEtnicoRacial,
+    ),
     ocupacion: asString(persona.ocupacion),
+    presentaDiscapacidad: asString(
+      persona.presenta_discapacidad || persona.presentaDiscapacidad,
+    ),
+    tipoDiscapacidad: asString(persona.tipo_discapacidad || persona.tipoDiscapacidad),
     esReferente: Boolean(persona.es_referente),
     parentescoConReferente: asString(persona.parentesco_con_referente),
     vinculoBarrioFamilia: asString(persona.vinculo_barrio_familia || persona.vinculo_barrio),

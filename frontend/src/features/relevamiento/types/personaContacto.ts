@@ -12,7 +12,10 @@ export type PersonaFormState = {
   cedula: string;
   edad: string;
   sexo: string;
+  ascendenciaEtnicoRacial: string;
   ocupacion: string;
+  presentaDiscapacidad: string;
+  tipoDiscapacidad: string;
   esReferente: boolean;
   parentescoConReferente: string;
   vinculoBarrioFamilia: string;
@@ -44,7 +47,10 @@ export function crearPersonaInicial(numeroPersona: number): PersonaFormState {
     cedula: '',
     edad: '',
     sexo: '',
+    ascendenciaEtnicoRacial: '',
     ocupacion: '',
+    presentaDiscapacidad: '',
+    tipoDiscapacidad: '',
     esReferente: false,
     parentescoConReferente: '',
     vinculoBarrioFamilia: '',
