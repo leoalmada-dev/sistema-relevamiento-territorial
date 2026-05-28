@@ -23,6 +23,7 @@ import {
 type PersonasContactosSectionProps = {
   hogares: HogarFormState[];
   personasContactosPorHogar: PersonasContactosPorHogarState;
+  validationFocusRequest?: { campo: string; requestId: number } | null;
   onChange: (nextState: PersonasContactosPorHogarState) => void;
 };
 
@@ -87,6 +88,7 @@ function normalizeAccordionEventKey(eventKey: unknown): string[] {
 export function PersonasContactosSection({
   hogares,
   personasContactosPorHogar,
+  validationFocusRequest,
   onChange,
 }: PersonasContactosSectionProps) {
   const [activeHogarIds, setActiveHogarIds] = useState<string[]>(
@@ -111,6 +113,31 @@ export function PersonasContactosSection({
       return nextActiveIds;
     });
   }, [hogares]);
+
+  useEffect(() => {
+    if (!validationFocusRequest) {
+      return;
+    }
+
+    const match = validationFocusRequest.campo.match(/^hogares\.(\d+)\./);
+
+    if (!match) {
+      return;
+    }
+
+    const hogarIndex = Number(match[1]);
+    const hogar = hogares[hogarIndex];
+
+    if (!hogar) {
+      return;
+    }
+
+    setActiveHogarIds((currentActiveIds) =>
+      currentActiveIds.includes(hogar.id)
+        ? currentActiveIds
+        : [...currentActiveIds, hogar.id],
+    );
+  }, [hogares, validationFocusRequest]);
 
   const getDatosHogarById = (hogarId: string): PersonasContactosHogarState =>
     personasContactosPorHogar[hogarId] ?? crearPersonasContactosHogarInicial();
@@ -327,12 +354,13 @@ export function PersonasContactosSection({
                 ref={(element) => {
                   hogarItemRefs.current[hogar.id] = element;
                 }}
+                data-validation-hogar={`hogares.${index}`}
               >
                 <Accordion.Item
                   eventKey={hogar.id}
                   className="border rounded-3 overflow-hidden"
                 >
-                  <Accordion.Header>
+                  <Accordion.Header data-validation-hogar-header={`hogares.${index}`}>
                     <div className="d-flex flex-column gap-1 text-start">
                       <span className="fw-semibold">{hogarLabel}</span>
                       <span className="text-secondary small">
@@ -382,12 +410,12 @@ export function PersonasContactosSection({
                       </Stack>
                     ) : (
                       <Stack gap={4}>
-                        <Card className="border-0 bg-light">
-                          <Card.Body>
-                            <Stack gap={3}>
-                              <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-                                <div>
-                                  <h4 className="h6 mb-1">Personas</h4>
+                        <Card className="border-0 bg-light" data-validation-card={`hogares.${index}.personas`}>
+                      <Card.Body>
+                        <Stack gap={3}>
+                          <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                            <div>
+                              <h4 className="h6 mb-1">Personas</h4>
                                   <p className="text-secondary mb-0">
                                     Integrantes cargados para el {hogarLabel}.
                                   </p>
@@ -425,12 +453,12 @@ export function PersonasContactosSection({
                           </Card.Body>
                         </Card>
 
-                        <Card className="border-0 bg-light">
-                          <Card.Body>
-                            <Stack gap={3}>
-                              <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
-                                <div>
-                                  <h4 className="h6 mb-1">Contactos</h4>
+                        <Card className="border-0 bg-light" data-validation-card={`hogares.${index}.contactos`}>
+                      <Card.Body>
+                        <Stack gap={3}>
+                          <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+                            <div>
+                              <h4 className="h6 mb-1">Contactos</h4>
                                   <p className="text-secondary mb-0">
                                     Contactos cargados para el {hogarLabel}. Objetivo inicial:
                                     hasta dos contactos.
@@ -483,11 +511,11 @@ export function PersonasContactosSection({
                           </Card.Body>
                         </Card>
 
-                        <Card className="border-0 bg-light">
-                          <Card.Body>
-                            <Stack gap={3}>
-                              <div>
-                                <h4 className="h6 mb-1">Servicios y salud</h4>
+                        <Card className="border-0 bg-light" data-validation-card={`hogares.${index}.servicios`}>
+                      <Card.Body>
+                        <Stack gap={3}>
+                          <div data-validation-card={`hogares.${index}.salud`}>
+                            <h4 className="h6 mb-1">Servicios y salud</h4>
                                 <p className="text-secondary mb-0">
                                   Datos asociados al {hogarLabel}.
                                 </p>

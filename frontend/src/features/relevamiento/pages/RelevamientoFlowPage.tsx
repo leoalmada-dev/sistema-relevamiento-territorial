@@ -66,6 +66,7 @@ import type { CuadranteOption, PredioDetalle } from '../types/territorio';
 import {
   crearHogarInicial,
   hayHogaresNoEntrevistados,
+  hogarEstaEntrevistado,
   viviendaInicial,
   type HogarFormState,
   type ViviendaFormState,
@@ -145,6 +146,18 @@ type FlowConfirmAction =
   | { type: 'change-territorial-selection'; applyChange: () => void }
   | { type: 'change-resultado-corte-temprano'; nextResultado: ResultadoVisitaFormState }
   | { type: 'finalize-relevamiento' };
+
+type ValidationFocusRequest = {
+  campo: string;
+  requestId: number;
+};
+
+type ValidationFocusTarget = {
+  sectionId: RelevamientoSectionId;
+  selector: string;
+  fallbackSelector?: string;
+  hogarIndex?: number;
+};
 
 function getPredioActualLabel(
   selectedPredio: PredioDetalle | null,
@@ -258,6 +271,8 @@ export function RelevamientoFlowPage() {
     useState<FinalizacionValidationError[]>([]);
   const [sectionValidationErrors, setSectionValidationErrors] =
     useState<FinalizacionValidationError[]>([]);
+  const [validationFocusRequest, setValidationFocusRequest] =
+    useState<ValidationFocusRequest | null>(null);
   const [showHogaresPendientesFinalizacionModal, setShowHogaresPendientesFinalizacionModal] =
     useState(false);
   const [showBorradorPendienteGuardadoModal, setShowBorradorPendienteGuardadoModal] =
@@ -1322,6 +1337,315 @@ export function RelevamientoFlowPage() {
     return buildSectionValidationResult(errors);
   };
 
+  const escapeSelectorValue = (value: string) =>
+    value.replace(/\\/g, '\\\\').replace(/"/g, '\\\"');
+
+  const buildIdSelector = (id: string) => `[id="${escapeSelectorValue(id)}"]`;
+
+  const buildDataValidationHogarSelector = (hogarIndex: number) =>
+    `[data-validation-hogar="hogares.${hogarIndex}"]`;
+
+  const buildDataValidationHogarHeaderSelector = (hogarIndex: number) =>
+    `[data-validation-hogar-header="hogares.${hogarIndex}"]`;
+
+  const buildDataValidationCardSelector = (campo: string) =>
+    `[data-validation-card="${escapeSelectorValue(campo)}"]`;
+
+  const buildHogarCardSelector = (hogarIndex: number, card: string) =>
+    buildDataValidationCardSelector(`hogares.${hogarIndex}.${card}`);
+
+  const buildHogarScopedIdSelector = (hogarIndex: number, id: string) =>
+    `${buildDataValidationHogarSelector(hogarIndex)} ${buildIdSelector(id)}`;
+
+  const getIndexedHogar = (hogarIndex: number) => hogares[hogarIndex] ?? null;
+
+  const getDatosHogarByIndex = (hogarIndex: number) => {
+    const hogar = getIndexedHogar(hogarIndex);
+    return hogar ? personasContactosPorHogar[hogar.id] : undefined;
+  };
+
+  const getValidationFocusTarget = (campo: string): ValidationFocusTarget => {
+    const parts = campo.split('.');
+    const normalizedCampo = campo.toLowerCase();
+
+    if (campo === 'predio') {
+      return { sectionId: 'inicio-predio-visita', selector: buildIdSelector('predio') };
+    }
+
+    if (campo === 'territorio.cuadrante' || normalizedCampo.includes('cuadrante')) {
+      return { sectionId: 'inicio-predio-visita', selector: buildIdSelector('cuadrante') };
+    }
+
+    if (normalizedCampo.includes('zona')) {
+      return { sectionId: 'inicio-predio-visita', selector: buildIdSelector('zona') };
+    }
+
+    if (normalizedCampo.includes('resultadovisita') || normalizedCampo.includes('visita')) {
+      return {
+        sectionId: 'inicio-predio-visita',
+        selector: '[name="resultado-visita"]',
+        fallbackSelector: buildIdSelector('resultado-entrevista-realizada'),
+      };
+    }
+
+    if (campo === 'vivienda.cantidadHogaresDeclarada' || campo === 'hogares') {
+      return {
+        sectionId: 'vivienda-hogares',
+        selector: buildIdSelector('cantidad-hogares-declarada'),
+      };
+    }
+
+    if (campo === 'vivienda.vinculoEntreHogares') {
+      return {
+        sectionId: 'vivienda-hogares',
+        selector: buildIdSelector('vinculo-entre-hogares'),
+      };
+    }
+
+    if (campo === 'hogares.estadoHogar') {
+      const hogarIndex = hogares.findIndex((hogar) => !hogarEstaEntrevistado(hogar));
+      const hogar = hogarIndex >= 0 ? hogares[hogarIndex] : hogares[0];
+
+      return {
+        sectionId: 'vivienda-hogares',
+        selector: hogar
+          ? buildIdSelector(`estado-hogar-${hogar.id}`)
+          : buildIdSelector('cantidad-hogares-declarada'),
+      };
+    }
+
+    if (parts[0] === 'hogares' && parts.length >= 3) {
+      const hogarIndex = Number(parts[1]);
+      const fieldGroup = parts[2];
+
+      if (Number.isInteger(hogarIndex)) {
+        const hogar = getIndexedHogar(hogarIndex);
+        const hogarFallbackSelector = buildDataValidationHogarSelector(hogarIndex);
+
+        if (
+          fieldGroup === 'tiempoViveBarrio' ||
+          fieldGroup === 'beneficiarioRegularizacion' ||
+          fieldGroup === 'formaAccesoVivienda'
+        ) {
+          const fieldIdPrefixByCampo: Record<string, string> = {
+            tiempoViveBarrio: 'tiempo-vive-barrio',
+            beneficiarioRegularizacion: 'beneficiario-regularizacion',
+            formaAccesoVivienda: 'forma-acceso-vivienda',
+          };
+
+          return {
+            sectionId: 'vivienda-hogares',
+            selector: hogar
+              ? buildIdSelector(`${fieldIdPrefixByCampo[fieldGroup]}-${hogar.id}`)
+              : buildIdSelector('cantidad-hogares-declarada'),
+          };
+        }
+
+        if (fieldGroup === 'servicios') {
+          const serviciosIdByCampo: Record<string, string> = {
+            tieneLuzAgua: 'tiene-luz-agua',
+            tieneConvenioLuzAgua: 'tiene-convenio-luz-agua',
+            tieneCableInternet: 'tiene-cable-internet',
+          };
+          const field = parts[3] ?? '';
+          const serviciosCardSelector = buildHogarCardSelector(hogarIndex, 'servicios');
+
+          return {
+            sectionId: 'datos-por-hogar',
+            selector: serviciosIdByCampo[field]
+              ? buildHogarScopedIdSelector(hogarIndex, serviciosIdByCampo[field])
+              : serviciosCardSelector,
+            fallbackSelector: serviciosCardSelector,
+            hogarIndex,
+          };
+        }
+
+        if (fieldGroup === 'salud') {
+          const saludIdByCampo: Record<string, string> = {
+            servicioAtencionMedica: 'servicio-atencion-medica',
+            tieneEmergenciaMovil: 'tiene-emergencia-movil',
+          };
+          const field = parts[3] ?? '';
+          const saludCardSelector = buildHogarCardSelector(hogarIndex, 'salud');
+
+          return {
+            sectionId: 'datos-por-hogar',
+            selector: saludIdByCampo[field]
+              ? buildHogarScopedIdSelector(hogarIndex, saludIdByCampo[field])
+              : saludCardSelector,
+            fallbackSelector: saludCardSelector,
+            hogarIndex,
+          };
+        }
+
+        if (fieldGroup === 'personas') {
+          const personasCardSelector = buildHogarCardSelector(hogarIndex, 'personas');
+
+          if (parts.length === 3) {
+            return {
+              sectionId: 'datos-por-hogar',
+              selector: buildDataValidationHogarHeaderSelector(hogarIndex),
+              fallbackSelector: hogarFallbackSelector,
+              hogarIndex,
+            };
+          }
+
+          const datosHogar = getDatosHogarByIndex(hogarIndex);
+
+          if (parts[3] === 'referente') {
+            const firstPersona = datosHogar?.personas[0];
+
+            return {
+              sectionId: 'datos-por-hogar',
+              selector: firstPersona
+                ? buildIdSelector(`referente-persona-${firstPersona.id}`)
+                : personasCardSelector,
+              fallbackSelector: personasCardSelector,
+              hogarIndex,
+            };
+          }
+
+          const personaIndex = Number(parts[3]);
+          const personaField = parts[4];
+          const persona = Number.isInteger(personaIndex)
+            ? datosHogar?.personas[personaIndex]
+            : null;
+
+          const personaFieldIdPrefixByCampo: Record<string, string> = {
+            nombre: 'nombre-persona',
+            apellido: 'apellido-persona',
+            cedula: 'cedula-persona',
+            edad: 'edad-persona',
+            sexo: 'sexo-persona',
+            ocupacion: 'ocupacion-persona',
+            parentescoConReferente: 'parentesco-persona',
+          };
+
+          return {
+            sectionId: 'datos-por-hogar',
+            selector:
+              persona && personaFieldIdPrefixByCampo[personaField]
+                ? buildIdSelector(`${personaFieldIdPrefixByCampo[personaField]}-${persona.id}`)
+                : hogarFallbackSelector,
+            fallbackSelector: personasCardSelector,
+            hogarIndex,
+          };
+        }
+
+        if (fieldGroup === 'contactos') {
+          const contactosCardSelector = buildHogarCardSelector(hogarIndex, 'contactos');
+
+          if (parts.length === 3) {
+            return {
+              sectionId: 'datos-por-hogar',
+              selector: contactosCardSelector,
+              fallbackSelector: hogarFallbackSelector,
+              hogarIndex,
+            };
+          }
+
+          const contactoIndex = Number(parts[3]);
+          const contactoField = parts[4];
+          const datosHogar = getDatosHogarByIndex(hogarIndex);
+          const contacto = Number.isInteger(contactoIndex)
+            ? datosHogar?.contactos[contactoIndex]
+            : null;
+
+          return {
+            sectionId: 'datos-por-hogar',
+            selector:
+              contacto && contactoField === 'telefono'
+                ? buildIdSelector(`telefono-contacto-${contacto.id}`)
+                : contactosCardSelector,
+            fallbackSelector: contactosCardSelector,
+            hogarIndex,
+          };
+        }
+      }
+    }
+
+    if (campo === 'personas.documentosDuplicados') {
+      return {
+        sectionId: 'datos-por-hogar',
+        selector:
+          hogares.length > 0
+            ? buildHogarCardSelector(0, 'personas')
+            : buildDataValidationCardSelector('datos-por-hogar'),
+        fallbackSelector: hogares.length > 0 ? buildDataValidationHogarSelector(0) : undefined,
+        hogarIndex: hogares.length > 0 ? 0 : undefined,
+      };
+    }
+
+    if (campo === 'cierre.latitud') {
+      return { sectionId: 'cierre-finalizacion', selector: buildIdSelector('latitud-a-confirmar') };
+    }
+
+    if (campo === 'cierre.longitud') {
+      return { sectionId: 'cierre-finalizacion', selector: buildIdSelector('longitud-a-confirmar') };
+    }
+
+    if (campo === 'cierre.horaCaptura') {
+      return { sectionId: 'cierre-finalizacion', selector: buildIdSelector('hora-captura-a-confirmar') };
+    }
+
+    if (normalizedCampo.startsWith('cierre')) {
+      return { sectionId: 'cierre-finalizacion', selector: buildIdSelector('observaciones-generales') };
+    }
+
+    return {
+      sectionId: currentSection.id,
+      selector: buildDataValidationCardSelector(campo),
+    };
+  };
+
+  const focusValidationTarget = (target: ValidationFocusTarget) => {
+    const delay =
+      typeof target.hogarIndex === 'number'
+        ? 360
+        : target.sectionId === currentSection.id
+          ? 120
+          : 300;
+
+    window.setTimeout(() => {
+      const targetElement =
+        document.querySelector<HTMLElement>(target.selector) ??
+        (target.fallbackSelector
+          ? document.querySelector<HTMLElement>(target.fallbackSelector)
+          : null);
+
+      if (!targetElement) {
+        scrollToSectionStepper();
+        return;
+      }
+
+      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      const focusableElement = targetElement.matches(
+        'input, select, textarea, button, [tabindex]',
+      )
+        ? targetElement
+        : targetElement.querySelector<HTMLElement>(
+            'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          );
+
+      focusableElement?.focus({ preventScroll: true });
+    }, delay);
+  };
+
+  const handleIrASeccionValidacion = (error: FinalizacionValidationError) => {
+    const target = getValidationFocusTarget(error.campo);
+
+    if (typeof target.hogarIndex === 'number') {
+      setValidationFocusRequest({
+        campo: error.campo,
+        requestId: Date.now(),
+      });
+    }
+
+    setCurrentSectionId(target.sectionId);
+    focusValidationTarget(target);
+  };
+
   const finalizarRelevamiento = async () => {
     setFinalizationError('');
 
@@ -1908,10 +2232,11 @@ export function RelevamientoFlowPage() {
 
         {currentSection.id === 'datos-por-hogar' ? (
           <PersonasContactosSection
-            hogares={hogares}
-            personasContactosPorHogar={personasContactosPorHogar}
-            onChange={handlePersonasContactosChange}
-          />
+              hogares={hogares}
+              personasContactosPorHogar={personasContactosPorHogar}
+              validationFocusRequest={validationFocusRequest}
+              onChange={handlePersonasContactosChange}
+            />
         ) : null}
 
         {currentSection.id === 'cierre-finalizacion' ? (
@@ -1943,7 +2268,20 @@ export function RelevamientoFlowPage() {
             </div>
             <ul className="mb-0">
               {sectionValidationErrors.map((error) => (
-                <li key={`${error.campo}-${error.mensaje}`}>{error.mensaje}</li>
+                <li key={`${error.campo}-${error.mensaje}`} className="mb-2">
+                  <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
+                    <span>{error.mensaje}</span>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="p-0 align-self-start"
+                      onClick={() => handleIrASeccionValidacion(error)}
+                    >
+                      Ir
+                    </Button>
+                  </div>
+                </li>
               ))}
             </ul>
           </Alert>
