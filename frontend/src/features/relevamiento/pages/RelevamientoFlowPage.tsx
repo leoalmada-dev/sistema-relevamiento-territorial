@@ -29,6 +29,7 @@ import {
   finalizarRelevamientoBackend,
   getRelevamientoFinalizationMode,
   guardarBorradorServidor,
+  isPredioConCargaExistenteError,
   listarBorradoresServidorPendientes,
   listarBorradoresServidorPorPredio,
 } from '../services/relevamientoBackendService';
@@ -307,6 +308,9 @@ export function RelevamientoFlowPage() {
   >(null);
   const [serverDraftForPredioError, setServerDraftForPredioError] = useState('');
   const [showServerDraftForPredioModal, setShowServerDraftForPredioModal] = useState(false);
+  const [showPredioYaRelevadoModal, setShowPredioYaRelevadoModal] = useState(false);
+  const [isCheckingServerDraftBeforeAdvance, setIsCheckingServerDraftBeforeAdvance] =
+    useState(false);
   const [serverDraftRetomarReturnTo, setServerDraftRetomarReturnTo] = useState<
     'general' | 'predio' | null
   >(null);
@@ -942,8 +946,12 @@ export function RelevamientoFlowPage() {
   };
 
   const handleResultadoVisitaChange = (nextResultado: ResultadoVisitaFormState) => {
-    const requiresCutoffConfirmation =
-      !permiteContinuarFormulario(nextResultado.resultado) && hasPostVisitData;
+    const resultadoChanged = nextResultado.resultado !== resultadoVisita.resultado;
+    const enteringCutoff =
+      resultadoChanged &&
+      permiteContinuarFormulario(resultadoVisita.resultado) &&
+      !permiteContinuarFormulario(nextResultado.resultado);
+    const requiresCutoffConfirmation = enteringCutoff && hasPostVisitData;
 
     if (requiresCutoffConfirmation) {
       setPendingConfirmAction({
@@ -1142,10 +1150,16 @@ export function RelevamientoFlowPage() {
     setShowLocalDraftsModal(false);
     setShowServerDraftsModal(false);
     setShowServerDraftForPredioModal(false);
+    setShowPredioYaRelevadoModal(false);
     setServerDraftRetomarReturnTo(null);
     setTerritorialSelectorKey((currentKey) => currentKey + 1);
     refreshLocalDraftsIndex();
     scrollToSectionStepper();
+  };
+
+  const handleLimpiarPredioYaRelevado = () => {
+    setShowPredioYaRelevadoModal(false);
+    resetFormularioActivoSinEliminarSnapshots();
   };
 
   const handleGuardarBorradorHogaresPendientes = () => {
@@ -1259,6 +1273,10 @@ export function RelevamientoFlowPage() {
           ? error.message
           : 'No se pudo sincronizar con el servidor.';
 
+      if (isPredioConCargaExistenteError(error)) {
+        setShowPredioYaRelevadoModal(true);
+      }
+
       setServerDraftSyncStatus('ERROR_SINCRONIZACION');
       setServerDraftSyncError(message);
 
@@ -1267,6 +1285,74 @@ export function RelevamientoFlowPage() {
         serverDraftSyncStatus: 'ERROR_SINCRONIZACION',
         serverDraftSyncError: message,
       });
+    }
+  };
+
+  const shouldValidateServerDraftBeforeLeavingInitialSection = () =>
+    getRelevamientoFinalizationMode() === 'backend' &&
+    currentSection.id === 'inicio-predio-visita' &&
+    Boolean(selectedPredio) &&
+    selectedPredio?.origen !== 'manual' &&
+    !serverDraftId;
+
+  const ensureServerDraftBeforeLeavingInitialSection = async (
+    targetSectionId: RelevamientoSectionId,
+  ) => {
+    if (!shouldValidateServerDraftBeforeLeavingInitialSection()) {
+      return true;
+    }
+
+    setIsCheckingServerDraftBeforeAdvance(true);
+    setServerDraftSyncStatus('SINCRONIZANDO');
+    setServerDraftSyncError('');
+
+    try {
+      const result = await guardarBorradorServidor({
+        snapshot: buildBackendSnapshot(targetSectionId),
+        serverDraftId,
+        serverDraftVersion,
+      });
+      const syncedAt = new Date().toISOString();
+
+      setServerDraftId(result.borradorId);
+      setServerDraftVersion(result.draftVersion);
+      setServerDraftLastSyncedAt(syncedAt);
+      setServerDraftSyncStatus('SINCRONIZADO');
+      setServerDraftSyncError('');
+
+      persistServerMetadataLocally({
+        currentSectionId: targetSectionId,
+        serverDraftId: result.borradorId,
+        serverDraftVersion: result.draftVersion,
+        serverDraftLastSyncedAt: syncedAt,
+        serverDraftSyncStatus: 'SINCRONIZADO',
+        serverDraftSyncError: '',
+      });
+
+      return true;
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'No se pudo sincronizar con el servidor.';
+
+      setServerDraftSyncStatus('ERROR_SINCRONIZACION');
+      setServerDraftSyncError(message);
+
+      if (isPredioConCargaExistenteError(error)) {
+        setShowPredioYaRelevadoModal(true);
+        return false;
+      }
+
+      persistServerMetadataLocally({
+        currentSectionId: targetSectionId,
+        serverDraftSyncStatus: 'ERROR_SINCRONIZACION',
+        serverDraftSyncError: message,
+      });
+
+      return true;
+    } finally {
+      setIsCheckingServerDraftBeforeAdvance(false);
     }
   };
 
@@ -1705,8 +1791,8 @@ export function RelevamientoFlowPage() {
     }
   };
 
-  const handleFinalizarRelevamiento = () => {
-    if (isFinalizing) {
+  const handleFinalizarRelevamiento = async () => {
+    if (isFinalizing || isCheckingServerDraftBeforeAdvance) {
       return;
     }
 
@@ -1732,6 +1818,14 @@ export function RelevamientoFlowPage() {
         persistLocalDraft();
       }
 
+      return;
+    }
+
+    const canFinalize = await ensureServerDraftBeforeLeavingInitialSection(
+      'cierre-finalizacion',
+    );
+
+    if (!canFinalize) {
       return;
     }
 
@@ -1799,8 +1893,8 @@ export function RelevamientoFlowPage() {
     markDraftPending();
   };
 
-  const goForward = () => {
-    if (!canGoForward) {
+  const goForward = async () => {
+    if (!canGoForward || isCheckingServerDraftBeforeAdvance) {
       return;
     }
 
@@ -1817,10 +1911,22 @@ export function RelevamientoFlowPage() {
     setSectionValidationErrors([]);
 
     const nextSectionId = sections[currentIndex + 1].id;
+    const shouldRunBlockingServerDraftValidation =
+      shouldValidateServerDraftBeforeLeavingInitialSection();
+    const canAdvance = await ensureServerDraftBeforeLeavingInitialSection(nextSectionId);
+
+    if (!canAdvance) {
+      return;
+    }
+
     persistLocalDraft({ currentSectionId: nextSectionId });
     setCurrentSectionId(nextSectionId);
     setFinalizacionCompletada(false);
-    void syncServerDraftNoBloqueante(buildBackendSnapshot(nextSectionId));
+
+    if (!shouldRunBlockingServerDraftValidation) {
+      void syncServerDraftNoBloqueante(buildBackendSnapshot(nextSectionId));
+    }
+
     scrollToSectionStepper();
   };
 
@@ -2155,6 +2261,23 @@ export function RelevamientoFlowPage() {
           isSectionDisabled={isSectionDisabled}
         />
       </div>
+
+      <Modal show={showPredioYaRelevadoModal} backdrop="static" centered>
+        <Modal.Header>
+          <Modal.Title>Este predio ya fue relevado</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="mb-0">
+            No se puede iniciar una nueva carga para este predio porque el sistema informó
+            que ya existe una carga asociada.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={handleLimpiarPredioYaRelevado}>
+            Limpiar formulario
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <SectionPlaceholder section={currentSection}>
         {currentSection.id === 'inicio-predio-visita' ? (

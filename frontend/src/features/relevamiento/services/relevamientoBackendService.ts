@@ -42,6 +42,39 @@ function getBackendErrorMessage(payload: unknown, fallback: string) {
   return fallback;
 }
 
+function shouldTreatBackendApiPayloadAsError(payload: unknown) {
+  if (!payload || typeof payload !== 'object') {
+    return false;
+  }
+
+  const code = (payload as Record<string, unknown>).code;
+
+  return typeof code === 'number' && code >= 400;
+}
+
+function normalizeBackendMessage(message: string) {
+  return message
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+export function isPredioConCargaExistenteError(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : '';
+
+  const normalizedMessage = normalizeBackendMessage(message);
+
+  return (
+    normalizedMessage.includes('ya existe un borrador') &&
+    (normalizedMessage.includes('prdio') || normalizedMessage.includes('predio'))
+  );
+}
+
 async function requestBackendRawJson<T>(
   path: string,
   options: RequestInit = {},
@@ -82,7 +115,18 @@ async function requestBackendJson<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<BackendApiResponse<T>> {
-  return requestBackendRawJson<BackendApiResponse<T>>(path, options);
+  const payload = await requestBackendRawJson<BackendApiResponse<T>>(path, options);
+
+  if (shouldTreatBackendApiPayloadAsError(payload)) {
+    throw new Error(
+      getBackendErrorMessage(
+        payload,
+        'No se pudo guardar la información. Verifique la conexión e intente nuevamente.',
+      ),
+    );
+  }
+
+  return payload;
 }
 
 async function postBackendJson<T>(path: string, body: unknown) {
