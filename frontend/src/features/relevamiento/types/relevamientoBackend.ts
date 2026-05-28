@@ -145,7 +145,10 @@ export type BackendPersonaPayload = {
   documento: string;
   edad: number;
   sexo: string;
+  ascendencia_etnico_racial: string;
   ocupacion: string;
+  presenta_discapacidad: string;
+  tipo_discapacidad: string;
   es_referente: boolean;
   parentesco_con_referente: string;
   vinculo_barrio: string;

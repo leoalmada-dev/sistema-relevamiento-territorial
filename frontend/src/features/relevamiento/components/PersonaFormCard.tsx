@@ -24,6 +24,14 @@ export function PersonaFormCard({
     });
   };
 
+  const updatePresentaDiscapacidad = (value: string) => {
+    onChange({
+      ...persona,
+      presentaDiscapacidad: value,
+      tipoDiscapacidad: value === 'SI' ? (persona.tipoDiscapacidad ?? '') : '',
+    });
+  };
+
   return (
     <Card>
       <Card.Header className="bg-white">
@@ -128,6 +136,65 @@ export function PersonaFormCard({
                   <option value="ESTUDIANTE">Estudiante</option>
                   <option value="OTRO">Otro</option>
                 </Form.Select>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          <Row className="g-3">
+            <Col md={4}>
+              <Form.Group controlId={`ascendencia-etnico-racial-persona-${persona.id}`}>
+                <Form.Label>Ascendencia étnico-racial</Form.Label>
+                <Form.Select
+                  value={persona.ascendenciaEtnicoRacial ?? ''}
+                  onChange={(event) =>
+                    updateField('ascendenciaEtnicoRacial', event.target.value)
+                  }
+                >
+                  <option value="">Seleccionar</option>
+                  <option value="AFRO_NEGRA">Afro o negra</option>
+                  <option value="ASIATICA">Asiática</option>
+                  <option value="BLANCA">Blanca</option>
+                  <option value="INDIGENA">Indígena</option>
+                  <option value="OTRA">Otra</option>
+                </Form.Select>
+              </Form.Group>
+            </Col>
+
+            <Col md={4}>
+              <Form.Group controlId={`presenta-discapacidad-persona-${persona.id}`}>
+                <Form.Label>¿Presenta alguna discapacidad?</Form.Label>
+                <Form.Select
+                  value={persona.presentaDiscapacidad ?? ''}
+                  onChange={(event) => updatePresentaDiscapacidad(event.target.value)}
+                >
+                  <option value="">Seleccionar</option>
+                  <option value="SI">SI</option>
+                  <option value="NO">NO</option>
+                </Form.Select>
+              </Form.Group>
+            </Col>
+
+            <Col md={4}>
+              <Form.Group controlId={`tipo-discapacidad-persona-${persona.id}`}>
+                <Form.Label>Tipo de discapacidad</Form.Label>
+                <Form.Select
+                  value={persona.tipoDiscapacidad ?? ''}
+                  onChange={(event) => updateField('tipoDiscapacidad', event.target.value)}
+                  disabled={persona.presentaDiscapacidad !== 'SI'}
+                >
+                  <option value="">Seleccionar</option>
+                  <option value="VISION">Visión</option>
+                  <option value="AUDICION">Audición</option>
+                  <option value="MOVILIDAD">Movilidad</option>
+                  <option value="COGNICION">Cognición</option>
+                  <option value="AUTOCUIDADO">Autocuidado</option>
+                  <option value="COMUNICACION">Comunicación</option>
+                </Form.Select>
+                {persona.presentaDiscapacidad === 'SI' ? null : (
+                  <Form.Text className="text-secondary">
+                    Se habilita si la persona presenta alguna discapacidad.
+                  </Form.Text>
+                )}
               </Form.Group>
             </Col>
           </Row>
