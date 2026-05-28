@@ -1481,8 +1481,8 @@ export function RelevamientoFlowPage() {
           if (parts.length === 3) {
             return {
               sectionId: 'datos-por-hogar',
-              selector: personasCardSelector,
-              fallbackSelector: hogarFallbackSelector,
+              selector: hogarFallbackSelector,
+              fallbackSelector: personasCardSelector,
               hogarIndex,
             };
           }
