@@ -115,6 +115,27 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
           {estaEntrevistado ? (
             <>
               <Row className="g-3">
+
+          <Col md={6}>
+            <Form.Group controlId={`cantidad-personas-declaradas-${hogar.id}`}>
+              <Form.Label>Nro de personas declarado</Form.Label>
+              <Form.Control
+                type="number"
+                min="0"
+                step="1"
+                value={hogar.cantidadPersonasDeclaradas}
+                onChange={(event) =>
+                  updateField('cantidadPersonasDeclaradas', event.target.value)
+                }
+                placeholder="Ej: 5"
+              />
+              <Form.Text className="text-secondary">
+                Puede ser mayor que la cantidad de personas cargadas si no se pudo
+                relevar a todas.
+              </Form.Text>
+            </Form.Group>
+          </Col>
+
                 <Col md={6}>
                   <Form.Group controlId={`tiempo-vive-barrio-${hogar.id}`}>
                     <Form.Label>Tiempo que vive en el barrio *</Form.Label>

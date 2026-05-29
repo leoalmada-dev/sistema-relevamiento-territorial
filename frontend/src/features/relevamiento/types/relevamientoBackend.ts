@@ -123,6 +123,7 @@ export type BackendViviendaPayload = {
 export type BackendHogarPayload = {
   temp_id: string;
   numero_hogar: number;
+  cantidad_personas_declaradas: number | null;
   tiempo_vive_barrio: number;
   beneficiario_regularizacion: string;
   forma_acceso_vivienda: string;

@@ -248,6 +248,10 @@ function buildHogares(data: BackendBorradorServidorDraftData) {
     return {
       id: hogarId,
       numeroHogar: asString(hogar.numero_hogar || index + 1),
+      cantidadPersonasDeclaradas: asString(
+        (hogar as { cantidad_personas_declaradas?: unknown; cantidadPersonasDeclaradas?: unknown; }).cantidad_personas_declaradas ??
+          (hogar as { cantidadPersonasDeclaradas?: unknown }).cantidadPersonasDeclaradas,
+      ),
       estadoHogar: normalizeEstadoHogar(
         hogar.estado_hogar || hogar.estadoHogar || hogar.estado,
       ),

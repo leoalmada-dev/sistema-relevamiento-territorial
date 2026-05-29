@@ -172,8 +172,12 @@ export function ResumenRelevamiento({
 
                         <Col md={4}>
                           <p className="mb-1">
-                            <strong>Personas:</strong> {personas.length}
-                          </p>
+                  <strong>Personas declaradas:</strong>{' '}
+                  {hogar.cantidadPersonasDeclaradas || 'Sin dato'}
+                </p>
+                <p className="mb-1">
+                  <strong>Personas cargadas:</strong> {personas.length}
+                </p>
                           <p className="mb-1">
                             <strong>Contactos:</strong> {contactos.length}
                           </p>
