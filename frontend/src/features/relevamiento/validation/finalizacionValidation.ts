@@ -100,17 +100,7 @@ function getHogaresRealesConIndice(input: FinalizacionValidationInput) {
 function getHogaresEntrevistadosAValidarConIndice(input: FinalizacionValidationInput) {
   return input.hogares
     .map((hogar, index) => ({ hogar, index }))
-    .filter(({ hogar, index }) => {
-      if (!hogarEstaEntrevistado(hogar)) {
-        return false;
-      }
-
-      if (index === 0) {
-        return true;
-      }
-
-      return hogarTieneDatosOperativosReales(input, hogar);
-    });
+    .filter(({ hogar }) => hogarEstaEntrevistado(hogar));
 }
 
 function parseNumber(value: string) {
@@ -269,7 +259,7 @@ function validateViviendaHogaresFields(
 
   }
 
-  if (getHogaresRealesConIndice(input).length > 1 && isBlank(input.vivienda.vinculoEntreHogares)) {
+  if (input.hogares.length > 1 && isBlank(input.vivienda.vinculoEntreHogares)) {
     addError(
       errors,
       'vivienda.vinculoEntreHogares',
