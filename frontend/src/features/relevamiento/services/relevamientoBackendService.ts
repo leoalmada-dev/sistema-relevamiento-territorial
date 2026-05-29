@@ -200,6 +200,27 @@ export function isPredioConCargaExistenteError(error: unknown) {
   );
 }
 
+export function isBorradorServidorNoExisteError(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : '';
+
+  const normalizedMessage = normalizeBackendMessage(message);
+
+  return (
+    (normalizedMessage.includes('no query results for model') &&
+      normalizedMessage.includes('borrador')) ||
+    (normalizedMessage.includes('borrador') &&
+      (normalizedMessage.includes('no existe') ||
+        normalizedMessage.includes('not found') ||
+        normalizedMessage.includes('no encontrado') ||
+        normalizedMessage.includes('no encontrada')))
+  );
+}
+
 async function requestBackendRawJson<T>(
   path: string,
   options: RequestInit = {},
