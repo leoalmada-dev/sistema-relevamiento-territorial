@@ -101,7 +101,9 @@ function hogarTieneDatosOperativosReales(
   hogar: HogarFormState,
   personasContactos?: PersonasContactosPorHogarState[string],
 ) {
-  if (!hogarEstaEntrevistado(hogar)) {
+  const estadoHogar = getEstadoHogar(hogar);
+
+  if (estadoHogar === 'PENDIENTE') {
     return true;
   }
 
