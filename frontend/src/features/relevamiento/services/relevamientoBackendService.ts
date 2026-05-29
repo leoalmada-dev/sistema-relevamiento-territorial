@@ -365,11 +365,26 @@ export async function consultarPersonaPorDocumento(documento: string) {
     return false;
   }
 
+  const apiBaseUrl = getApiBaseUrl();
+
+  if (!apiBaseUrl) {
+    return false;
+  }
+
   try {
-    const payload = await requestBackendRawJson<unknown>('/relevamiento/persona/consulta', {
-      method: 'POST',
-      body: JSON.stringify({ documento: documentoNormalizado }),
-    });
+    const response = await fetch(
+      `${apiBaseUrl}/relevamiento/persona/consulta/${encodeURIComponent(documentoNormalizado)}`,
+      {
+        headers: {
+          Accept: 'application/json',
+        },
+      },
+    );
+
+    const contentType = response.headers.get('content-type') ?? '';
+    const payload = contentType.includes('application/json')
+      ? ((await response.json()) as unknown)
+      : ({ message: await response.text() } as unknown);
 
     return personaConsultaPayloadIndicaExistencia(payload);
   } catch {
