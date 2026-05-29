@@ -27,6 +27,8 @@ import {
 } from '../services/draftStorageService';
 import {
   BackendValidationError,
+  DOCUMENTO_REGISTRADO_MESSAGE,
+  consultarPersonaPorDocumento,
   finalizarRelevamientoBackend,
   getRelevamientoFinalizationMode,
   guardarBorradorServidor,
@@ -1766,6 +1768,44 @@ export function RelevamientoFlowPage() {
     focusValidationTarget(target);
   };
 
+  const validateDocumentosRegistradosBackend = async (): Promise<FinalizacionValidationError[]> => {
+    if (getRelevamientoFinalizationMode() !== 'backend') {
+      return [];
+    }
+
+    const errors: FinalizacionValidationError[] = [];
+    const documentosConsultados = new Map<string, boolean>();
+
+    for (const [hogarIndex, hogar] of hogares.entries()) {
+      const personas = personasContactosPorHogar[hogar.id]?.personas ?? [];
+
+      for (const [personaIndex, persona] of personas.entries()) {
+        const documento = persona.cedula.trim();
+
+        if (!documento) {
+          continue;
+        }
+
+        const documentoKey = documento.toLowerCase();
+        let documentoRegistrado = documentosConsultados.get(documentoKey);
+
+        if (documentoRegistrado === undefined) {
+          documentoRegistrado = await consultarPersonaPorDocumento(documento);
+          documentosConsultados.set(documentoKey, documentoRegistrado);
+        }
+
+        if (documentoRegistrado) {
+          errors.push({
+            campo: `hogares.${hogarIndex}.personas.${personaIndex}.cedula`,
+            mensaje: DOCUMENTO_REGISTRADO_MESSAGE,
+          });
+        }
+      }
+    }
+
+    return errors;
+  };
+
   const finalizarRelevamiento = async () => {
     setFinalizationError('');
 
@@ -1782,6 +1822,15 @@ export function RelevamientoFlowPage() {
     if (!validation.valid) {
       setFinalizationValidationErrors(validation.errors);
       setSectionValidationErrors([]);
+      return;
+    }
+
+    const documentosRegistradosBackendErrors = await validateDocumentosRegistradosBackend();
+
+    if (documentosRegistradosBackendErrors.length > 0) {
+      setFinalizationValidationErrors(documentosRegistradosBackendErrors);
+      setSectionValidationErrors([]);
+      persistLocalDraft();
       return;
     }
 
