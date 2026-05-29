@@ -22,6 +22,7 @@ import {
   getLocalDraftPredioDisplayLabel,
   getLocalDraftPredioDoorNumber,
   getLocalDraftsIndex,
+  localDraftMatchesSelectedPredio,
   removeLocalDraftByKey,
   saveLocalDraft,
 } from '../services/draftStorageService';
@@ -30,8 +31,11 @@ import {
   DOCUMENTO_REGISTRADO_MESSAGE,
   consultarPersonaPorDocumento,
   finalizarRelevamientoBackend,
+  getRelevamientoApiBaseUrl,
+  getRelevamientoEnvironmentKey,
   getRelevamientoFinalizationMode,
   guardarBorradorServidor,
+  isBorradorServidorNoExisteError,
   isPredioConCargaExistenteError,
   listarBorradoresServidorPendientes,
   listarBorradoresServidorPorPredio,
@@ -264,6 +268,32 @@ function formatCurrentTimeForInput(date = new Date()) {
   return `${hours}:${minutes}`;
 }
 
+const BORRADOR_PREDIO_MISMATCH_MESSAGE =
+  'La carga pendiente encontrada pertenece a otro predio y no se aplicó para evitar cargar datos en el predio incorrecto.';
+
+const BORRADOR_SERVIDOR_INEXISTENTE_MESSAGE =
+  'La referencia al borrador servidor ya no existe en este entorno. Conservamos la carga local y limpiamos la vinculación anterior. Intentá guardar o finalizar nuevamente.';
+
+function normalizePredioReference(value: unknown) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function getServerDraftPredioReferences(draft: BackendBorradorServidorItem | null) {
+  const datos = asRecord(draft?.datos);
+  const territorio = asRecord(datos.territorio);
+  const predio = asRecord(territorio.predio);
+
+  return [draft?.predio_id, territorio.predio_id, predio.id]
+    .map(normalizePredioReference)
+    .filter(Boolean);
+}
+
 export function RelevamientoFlowPage() {
   const [currentSectionId, setCurrentSectionId] =
     useState<RelevamientoSectionId>('inicio-predio-visita');
@@ -358,6 +388,8 @@ export function RelevamientoFlowPage() {
 
   const predioActualLabel = getPredioActualLabel(selectedPredio, selectedPredioId);
   const cuadranteActualLabel = getCuadranteActualLabel(selectedCuadrante, selectedPredio);
+  const currentEnvironmentKey = getRelevamientoEnvironmentKey();
+  const currentApiBaseUrl = getRelevamientoApiBaseUrl();
 
   const hasStartedDraft = Boolean(
     selectedPredioId ||
@@ -538,6 +570,8 @@ export function RelevamientoFlowPage() {
     personasContactosPorHogar,
     cierre,
     finalizacionSimulada: finalizacionCompletada,
+    environmentKey: currentEnvironmentKey,
+    apiBaseUrl: currentApiBaseUrl,
     serverDraftId,
     serverDraftVersion,
     serverDraftLastSyncedAt,
@@ -561,6 +595,67 @@ export function RelevamientoFlowPage() {
     setServerDraftSyncStatus('SIN_BORRADOR_SERVIDOR');
     setServerDraftSyncError('');
   };
+
+  const sanitizeDraftForCurrentEnvironment = (
+    draft: RelevamientoLocalDraft,
+  ): RelevamientoLocalDraft => {
+    const sameEnvironment = draft.environmentKey === currentEnvironmentKey;
+
+    if (sameEnvironment) {
+      return {
+        ...draft,
+        apiBaseUrl: currentApiBaseUrl,
+      };
+    }
+
+    return {
+      ...draft,
+      environmentKey: currentEnvironmentKey,
+      apiBaseUrl: currentApiBaseUrl,
+      serverDraftId: null,
+      serverDraftVersion: null,
+      serverDraftLastSyncedAt: '',
+      serverDraftSyncStatus: 'SIN_BORRADOR_SERVIDOR',
+      serverDraftSyncError: draft.environmentKey ? BORRADOR_SERVIDOR_INEXISTENTE_MESSAGE : '',
+    };
+  };
+
+  const clearInvalidServerDraftBinding = (message = BORRADOR_SERVIDOR_INEXISTENTE_MESSAGE) => {
+    clearServerDraftBinding();
+    setFinalizationError(message);
+    saveLocalDraft(
+      buildLocalDraft({
+        serverDraftId: null,
+        serverDraftVersion: null,
+        serverDraftLastSyncedAt: '',
+        serverDraftSyncStatus: 'SIN_BORRADOR_SERVIDOR',
+        serverDraftSyncError: message,
+      }),
+    );
+    refreshLocalDraftsIndex();
+  };
+
+  const selectedPredioReference = () => ({
+    selectedPredioId,
+    selectedPredio,
+    selectedCuadrante,
+  });
+
+  const serverDraftMatchesSelectedPredio = (draft: BackendBorradorServidorItem | null) => {
+    const draftPredioIds = getServerDraftPredioReferences(draft);
+    const selectedPredioIds = [selectedPredioId, selectedPredio?.id]
+      .map(normalizePredioReference)
+      .filter(Boolean);
+
+    if (draftPredioIds.length === 0 || selectedPredioIds.length === 0) {
+      return false;
+    }
+
+    return draftPredioIds.some((draftPredioId) => selectedPredioIds.includes(draftPredioId));
+  };
+
+  const ensureLocalDraftMatchesSelectedPredio = (draft: RelevamientoLocalDraft) =>
+    localDraftMatchesSelectedPredio(draft, selectedPredioReference());
 
   useEffect(() => {
     const shouldPrefillCaptureTime =
@@ -590,8 +685,10 @@ export function RelevamientoFlowPage() {
     const existingDraft = getLocalDraft();
 
     if (existingDraft) {
-      setPendingLocalDraft(existingDraft);
-      setLastSavedAt(existingDraft.savedAt);
+      const safeDraft = sanitizeDraftForCurrentEnvironment(existingDraft);
+      saveLocalDraft(safeDraft);
+      setPendingLocalDraft(safeDraft);
+      setLastSavedAt(safeDraft.savedAt);
       setDraftStatus('SIN_BORRADOR');
     }
 
@@ -631,23 +728,25 @@ export function RelevamientoFlowPage() {
   ]);
 
   const applyLocalDraft = (draft: RelevamientoLocalDraft) => {
-    setCurrentSectionId(getSafeDraftSectionId(draft.currentSectionId));
-    setSelectedPredioId(draft.selectedPredioId);
-    setSelectedPredio(draft.selectedPredio);
-    setSelectedCuadrante(draft.selectedCuadrante ?? null);
+    const draftToApply = sanitizeDraftForCurrentEnvironment(draft);
+
+    setCurrentSectionId(getSafeDraftSectionId(draftToApply.currentSectionId));
+    setSelectedPredioId(draftToApply.selectedPredioId);
+    setSelectedPredio(draftToApply.selectedPredio);
+    setSelectedCuadrante(draftToApply.selectedCuadrante ?? null);
     setShowCuadranteImageModal(false);
-    setResultadoVisita(draft.resultadoVisita);
-    setVivienda(draft.vivienda);
-    setHogares(draft.hogares);
-    setPersonasContactosPorHogar(draft.personasContactosPorHogar);
-    setCierre(draft.cierre);
-    setFinalizacionCompletada(draft.finalizacionSimulada);
-    setServerDraftId(draft.serverDraftId ?? null);
-    setServerDraftVersion(draft.serverDraftVersion ?? null);
-    setServerDraftLastSyncedAt(draft.serverDraftLastSyncedAt ?? '');
-    setServerDraftSyncStatus(draft.serverDraftSyncStatus ?? 'SIN_BORRADOR_SERVIDOR');
-    setServerDraftSyncError(draft.serverDraftSyncError ?? '');
-    setLastSavedAt(draft.savedAt);
+    setResultadoVisita(draftToApply.resultadoVisita);
+    setVivienda(draftToApply.vivienda);
+    setHogares(draftToApply.hogares);
+    setPersonasContactosPorHogar(draftToApply.personasContactosPorHogar);
+    setCierre(draftToApply.cierre);
+    setFinalizacionCompletada(draftToApply.finalizacionSimulada);
+    setServerDraftId(draftToApply.serverDraftId ?? null);
+    setServerDraftVersion(draftToApply.serverDraftVersion ?? null);
+    setServerDraftLastSyncedAt(draftToApply.serverDraftLastSyncedAt ?? '');
+    setServerDraftSyncStatus(draftToApply.serverDraftSyncStatus ?? 'SIN_BORRADOR_SERVIDOR');
+    setServerDraftSyncError(draftToApply.serverDraftSyncError ?? '');
+    setLastSavedAt(draftToApply.savedAt);
     setPendingLocalDraft(null);
     setDraftStatus('BORRADOR_RECUPERADO');
     scrollToSectionStepper();
@@ -713,8 +812,9 @@ export function RelevamientoFlowPage() {
       return;
     }
 
-    saveLocalDraft(draft);
-    applyLocalDraft(draft);
+    const safeDraft = sanitizeDraftForCurrentEnvironment(draft);
+    saveLocalDraft(safeDraft);
+    applyLocalDraft(safeDraft);
     refreshLocalDraftsIndex();
     setFinalizationError('');
   };
@@ -780,8 +880,7 @@ export function RelevamientoFlowPage() {
         draft.cierre.observacionesGenerales ||
         draft.cierre.latitud ||
         draft.cierre.longitud ||
-        draft.cierre.horaCaptura ||
-        draft.serverDraftId,
+        draft.cierre.horaCaptura,
     );
 
   const maybeOfferLocalDraftRecovery = (
@@ -854,6 +953,12 @@ export function RelevamientoFlowPage() {
       return;
     }
 
+    if (showServerDraftForPredioModal && !serverDraftMatchesSelectedPredio(draft)) {
+      setServerDraftForPredioError(BORRADOR_PREDIO_MISMATCH_MESSAGE);
+      setPendingDraftSourceForPredio(null);
+      return;
+    }
+
     setServerDraftRetomarReturnTo(showServerDraftForPredioModal ? 'predio' : 'general');
     setServerDraftToRetomar(draft);
     setShowServerDraftsModal(false);
@@ -866,9 +971,26 @@ export function RelevamientoFlowPage() {
       return;
     }
 
+    if (
+      serverDraftRetomarReturnTo === 'predio' &&
+      !serverDraftMatchesSelectedPredio(serverDraftToRetomar)
+    ) {
+      setFinalizationError(BORRADOR_PREDIO_MISMATCH_MESSAGE);
+      setServerDraftToRetomar(null);
+      setServerDraftRetomarReturnTo(null);
+      setPendingDraftSourceForPredio(null);
+      return;
+    }
+
     const draft = buildLocalDraftFromServerDraft(serverDraftToRetomar);
-    saveLocalDraft(draft);
-    applyLocalDraft(draft);
+    const draftForCurrentEnvironment = {
+      ...draft,
+      environmentKey: currentEnvironmentKey,
+      apiBaseUrl: currentApiBaseUrl,
+    };
+
+    saveLocalDraft(draftForCurrentEnvironment);
+    applyLocalDraft(draftForCurrentEnvironment);
     refreshLocalDraftsIndex();
     setFinalizationError('');
     setServerDraftToRetomar(null);
@@ -897,7 +1019,29 @@ export function RelevamientoFlowPage() {
       return;
     }
 
-    handleRetomarLocalDraftByKey(localDraftFallbackForSelectedPredio.draftKey);
+    const draft = getLocalDraftByKey(localDraftFallbackForSelectedPredio.draftKey);
+
+    if (!draft) {
+      refreshLocalDraftsIndex();
+      setServerDraftForPredioError(
+        'No se pudo recuperar ese borrador local. Puede haber sido descartado o eliminado del navegador.',
+      );
+      return;
+    }
+
+    const safeDraft = sanitizeDraftForCurrentEnvironment(draft);
+
+    if (!ensureLocalDraftMatchesSelectedPredio(safeDraft)) {
+      setFinalizationError(BORRADOR_PREDIO_MISMATCH_MESSAGE);
+      setLocalDraftFallbackForSelectedPredio(null);
+      setPendingDraftSourceForPredio(null);
+      setShowServerDraftForPredioModal(false);
+      return;
+    }
+
+    saveLocalDraft(safeDraft);
+    applyLocalDraft(safeDraft);
+    refreshLocalDraftsIndex();
     setLocalDraftFallbackForSelectedPredio(null);
     setPendingDraftSourceForPredio(null);
     setServerDraftForPredioError('');
@@ -1291,6 +1435,11 @@ export function RelevamientoFlowPage() {
         setShowPredioYaRelevadoModal(true);
       }
 
+      if (isBorradorServidorNoExisteError(error)) {
+        clearInvalidServerDraftBinding();
+        return;
+      }
+
       const backendValidationErrors = buildBackendValidationErrors(error);
 
       if (backendValidationErrors.length > 0) {
@@ -1363,6 +1512,11 @@ export function RelevamientoFlowPage() {
 
       if (isPredioConCargaExistenteError(error)) {
         setShowPredioYaRelevadoModal(true);
+        return false;
+      }
+
+      if (isBorradorServidorNoExisteError(error)) {
+        clearInvalidServerDraftBinding();
         return false;
       }
 
@@ -1879,6 +2033,11 @@ export function RelevamientoFlowPage() {
         error instanceof Error && error.message
           ? error.message
           : 'No se pudo guardar la información en el servidor. Verifique la conexión e intente nuevamente.';
+      if (isBorradorServidorNoExisteError(error)) {
+        clearInvalidServerDraftBinding();
+        return;
+      }
+
       const backendValidationErrors = buildBackendValidationErrors(error);
 
       if (backendValidationErrors.length > 0) {

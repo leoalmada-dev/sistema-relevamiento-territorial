@@ -41,6 +41,17 @@ function getApiBaseUrl() {
   return String(import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
 }
 
+export function getRelevamientoApiBaseUrl() {
+  return getApiBaseUrl();
+}
+
+export function getRelevamientoEnvironmentKey() {
+  const apiBaseUrl = getApiBaseUrl();
+  const finalizationMode = getRelevamientoFinalizationMode();
+
+  return `${finalizationMode}:${apiBaseUrl || 'sin-api-base-url'}`;
+}
+
 export function getRelevamientoFinalizationMode(): BackendFinalizationMode {
   return import.meta.env.VITE_RELEVAMIENTO_FINALIZATION_MODE === 'backend'
     ? 'backend'
@@ -186,6 +197,27 @@ export function isPredioConCargaExistenteError(error: unknown) {
   return (
     normalizedMessage.includes('ya existe un borrador') &&
     (normalizedMessage.includes('prdio') || normalizedMessage.includes('predio'))
+  );
+}
+
+export function isBorradorServidorNoExisteError(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : '';
+
+  const normalizedMessage = normalizeBackendMessage(message);
+
+  return (
+    (normalizedMessage.includes('no query results for model') &&
+      normalizedMessage.includes('borrador')) ||
+    (normalizedMessage.includes('borrador') &&
+      (normalizedMessage.includes('no existe') ||
+        normalizedMessage.includes('not found') ||
+        normalizedMessage.includes('no encontrado') ||
+        normalizedMessage.includes('no encontrada')))
   );
 }
 

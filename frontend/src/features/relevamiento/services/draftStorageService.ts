@@ -429,6 +429,8 @@ export function saveLocalDraftSnapshot(draft: RelevamientoLocalDraft): boolean {
       currentSectionId: draft.currentSectionId,
       savedAt,
       cantidadHogares: draft.hogares.length,
+      environmentKey: draft.environmentKey ?? '',
+      apiBaseUrl: draft.apiBaseUrl ?? '',
       serverDraftId: draft.serverDraftId ?? null,
       serverDraftVersion: draft.serverDraftVersion ?? null,
     };
