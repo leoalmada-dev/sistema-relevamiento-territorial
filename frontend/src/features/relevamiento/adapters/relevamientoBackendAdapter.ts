@@ -178,6 +178,9 @@ function buildBackendHogares(
     return {
       temp_id: hogar.id,
       numero_hogar: parseIntegerOrZero(hogar.numeroHogar),
+      cantidad_personas_declaradas: hogar.cantidadPersonasDeclaradas.trim()
+        ? parseIntegerOrZero(hogar.cantidadPersonasDeclaradas)
+        : null,
       tiempo_vive_barrio: parseIntegerOrZero(hogar.tiempoViveBarrio),
       beneficiario_regularizacion: hogar.beneficiarioRegularizacion,
       forma_acceso_vivienda: hogar.formaAccesoVivienda,

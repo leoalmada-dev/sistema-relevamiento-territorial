@@ -343,6 +343,7 @@ export function PersonasContactosSection({
             const estaEntrevistado = hogarEstaEntrevistado(hogar);
             const datosHogar = getDatosHogarById(hogar.id);
             const cantidadPersonas = datosHogar.personas.length;
+              const cantidadPersonasDeclaradas = hogar.cantidadPersonasDeclaradas.trim();
             const cantidadContactos = datosHogar.contactos.length;
             const tieneReferente = datosHogar.personas.some((persona) => persona.esReferente);
             const serviciosSaludResumen = getServiciosSaludResumen(datosHogar);
@@ -369,7 +370,7 @@ export function PersonasContactosSection({
 
                       {estaEntrevistado ? (
                         <span className="text-secondary small">
-                          Personas: {cantidadPersonas} · Referente:{' '}
+                          {cantidadPersonasDeclaradas ? `Personas declaradas: ${cantidadPersonasDeclaradas} · Personas cargadas: ${cantidadPersonas}` : `Personas cargadas: ${cantidadPersonas}`} · Referente:{' '}
                           {tieneReferente ? 'Sí' : 'No'} · Contactos: {cantidadContactos} ·
                           Servicios y salud: {serviciosSaludResumen}
                         </span>

@@ -20,6 +20,7 @@ export const estadoHogarLabels: Record<EstadoHogarMvp, string> = {
 export type HogarFormState = {
   id: string;
   numeroHogar: string;
+  cantidadPersonasDeclaradas: string;
   estadoHogar?: EstadoHogarMvp;
   observacionEstadoHogar?: string;
   tiempoViveBarrio: string;
@@ -56,6 +57,7 @@ export function crearHogarInicial(numeroHogar: number): HogarFormState {
   return {
     id: `hogar-${numeroHogar}-${Date.now()}`,
     numeroHogar: String(numeroHogar),
+    cantidadPersonasDeclaradas: '',
     estadoHogar: 'ENTREVISTADO',
     observacionEstadoHogar: '',
     tiempoViveBarrio: '',
