@@ -27,27 +27,22 @@ function isAbsoluteImageUrl(imageValue: string) {
   return /^https?:\/\//i.test(imageValue);
 }
 
-function getCuadranteImageFile(cuadrante: CuadranteOption | null) {
-  const imageValue = getCuadranteImageValue(cuadrante).trim();
+function buildCuadranteImageUrl(baseUrl: string, imageValue: string) {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+  const normalizedImageValue = imageValue.replace(/^\/+/, '');
 
-  if (!imageValue || isAbsoluteImageUrl(imageValue)) {
-    return imageValue;
-  }
-
-  const imagePathParts = imageValue.replace(/^\/+/, '').split('/').filter(Boolean);
-
-  return imagePathParts[imagePathParts.length - 1] ?? '';
+  return `${normalizedBaseUrl}/${normalizedImageValue}`;
 }
 
 function getCuadranteImageUrl(cuadrante: CuadranteOption | null) {
-  const imageFile = getCuadranteImageFile(cuadrante);
+  const imageValue = getCuadranteImageValue(cuadrante).trim();
 
-  if (!imageFile) {
+  if (!imageValue) {
     return '';
   }
 
-  if (isAbsoluteImageUrl(imageFile)) {
-    return imageFile;
+  if (isAbsoluteImageUrl(imageValue)) {
+    return imageValue;
   }
 
   const baseUrl = getCuadranteImageBaseUrl();
@@ -56,7 +51,7 @@ function getCuadranteImageUrl(cuadrante: CuadranteOption | null) {
     return '';
   }
 
-  return `${baseUrl}/${imageFile}`;
+  return buildCuadranteImageUrl(baseUrl, imageValue);
 }
 
 export function CuadranteImageModal({

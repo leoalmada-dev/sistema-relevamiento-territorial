@@ -365,6 +365,7 @@ export function RelevamientoFlowPage() {
     useState<FlowConfirmAction | null>(null);
   const sectionStepperRef = useRef<HTMLDivElement | null>(null);
   const sectionValidationAlertRef = useRef<HTMLDivElement | null>(null);
+  const finalizationInProgressRef = useRef(false);
 
   const currentIndex = sections.findIndex((section) => section.id === currentSectionId);
   const currentSection = sections[currentIndex] ?? sections[0];
@@ -1699,11 +1700,13 @@ export function RelevamientoFlowPage() {
         const hogarFallbackSelector = buildDataValidationHogarSelector(hogarIndex);
 
         if (
+          fieldGroup === 'cantidadPersonasDeclaradas' ||
           fieldGroup === 'tiempoViveBarrio' ||
           fieldGroup === 'beneficiarioRegularizacion' ||
           fieldGroup === 'formaAccesoVivienda'
         ) {
           const fieldIdPrefixByCampo: Record<string, string> = {
+            cantidadPersonasDeclaradas: 'cantidad-personas-declaradas',
             tiempoViveBarrio: 'tiempo-vive-barrio',
             beneficiarioRegularizacion: 'beneficiario-regularizacion',
             formaAccesoVivienda: 'forma-acceso-vivienda',
@@ -1980,70 +1983,89 @@ export function RelevamientoFlowPage() {
   };
 
   const finalizarRelevamiento = async () => {
+    if (finalizationInProgressRef.current) {
+      return;
+    }
+
+    finalizationInProgressRef.current = true;
+    setIsFinalizing(true);
     setFinalizationError('');
 
-    if (hayHogaresPendientesReales()) {
-      persistLocalDraft();
-      setShowHogaresPendientesFinalizacionModal(true);
-      return;
-    }
-
-    const validation = validateFinalizacionRelevamiento(
-      buildBackendSnapshot('cierre-finalizacion'),
-    );
-
-    if (!validation.valid) {
-      setFinalizationValidationErrors(validation.errors);
-      setSectionValidationErrors([]);
-      return;
-    }
-
-    const documentosRegistradosBackendErrors = await validateDocumentosRegistradosBackend();
-
-    if (documentosRegistradosBackendErrors.length > 0) {
-      setFinalizationValidationErrors(documentosRegistradosBackendErrors);
-      setSectionValidationErrors([]);
-      persistLocalDraft();
-      return;
-    }
-
-    setFinalizationValidationErrors([]);
-    setSectionValidationErrors([]);
-    persistLocalDraft();
-
     try {
-      const result = await finalizarRelevamientoBackend(
-        buildBackendSnapshot('cierre-finalizacion'),
-        serverDraftId,
-        serverDraftVersion,
-      );
-
-      if (result.mode === 'backend') {
-        setServerDraftId(result.borradorId ?? null);
-        setServerDraftVersion(result.draftVersion ?? null);
-        setServerDraftLastSyncedAt(new Date().toISOString());
-        setServerDraftSyncStatus('SINCRONIZADO');
-        setServerDraftSyncError('');
-      }
-
-      resetRelevamiento();
-      setFinalizacionCompletada(true);
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : 'No se pudo guardar la información en el servidor. Verifique la conexión e intente nuevamente.';
-      if (isBorradorServidorNoExisteError(error)) {
-        clearInvalidServerDraftBinding();
+      if (hayHogaresPendientesReales()) {
+        persistLocalDraft();
+        setShowHogaresPendientesFinalizacionModal(true);
         return;
       }
 
-      const backendValidationErrors = buildBackendValidationErrors(error);
+      const validation = validateFinalizacionRelevamiento(
+        buildBackendSnapshot('cierre-finalizacion'),
+      );
 
-      if (backendValidationErrors.length > 0) {
-        setFinalizationValidationErrors(backendValidationErrors);
+      if (!validation.valid) {
+        setFinalizationValidationErrors(validation.errors);
         setSectionValidationErrors([]);
-        setFinalizationError('');
+        return;
+      }
+
+      const documentosRegistradosBackendErrors = await validateDocumentosRegistradosBackend();
+
+      if (documentosRegistradosBackendErrors.length > 0) {
+        setFinalizationValidationErrors(documentosRegistradosBackendErrors);
+        setSectionValidationErrors([]);
+        persistLocalDraft();
+        return;
+      }
+
+      setFinalizationValidationErrors([]);
+      setSectionValidationErrors([]);
+      persistLocalDraft();
+
+      try {
+        const result = await finalizarRelevamientoBackend(
+          buildBackendSnapshot('cierre-finalizacion'),
+          serverDraftId,
+          serverDraftVersion,
+        );
+
+        if (result.mode === 'backend') {
+          setServerDraftId(result.borradorId ?? null);
+          setServerDraftVersion(result.draftVersion ?? null);
+          setServerDraftLastSyncedAt(new Date().toISOString());
+          setServerDraftSyncStatus('SINCRONIZADO');
+          setServerDraftSyncError('');
+        }
+
+        resetRelevamiento();
+        setFinalizacionCompletada(true);
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : 'No se pudo guardar la información en el servidor. Verifique la conexión e intente nuevamente.';
+        if (isBorradorServidorNoExisteError(error)) {
+          clearInvalidServerDraftBinding();
+          return;
+        }
+
+        const backendValidationErrors = buildBackendValidationErrors(error);
+
+        if (backendValidationErrors.length > 0) {
+          setFinalizationValidationErrors(backendValidationErrors);
+          setSectionValidationErrors([]);
+          setFinalizationError('');
+          setServerDraftSyncStatus('ERROR_SINCRONIZACION');
+          setServerDraftSyncError(message);
+          saveLocalDraft(
+            buildLocalDraft({
+              serverDraftSyncStatus: 'ERROR_SINCRONIZACION',
+              serverDraftSyncError: message,
+            }),
+          );
+          return;
+        }
+
+        setFinalizationError(message);
         setServerDraftSyncStatus('ERROR_SINCRONIZACION');
         setServerDraftSyncError(message);
         saveLocalDraft(
@@ -2052,18 +2074,10 @@ export function RelevamientoFlowPage() {
             serverDraftSyncError: message,
           }),
         );
-        return;
       }
-
-      setFinalizationError(message);
-      setServerDraftSyncStatus('ERROR_SINCRONIZACION');
-      setServerDraftSyncError(message);
-      saveLocalDraft(
-        buildLocalDraft({
-          serverDraftSyncStatus: 'ERROR_SINCRONIZACION',
-          serverDraftSyncError: message,
-        }),
-      );
+    } finally {
+      finalizationInProgressRef.current = false;
+      setIsFinalizing(false);
     }
   };
 
@@ -2621,6 +2635,7 @@ export function RelevamientoFlowPage() {
                     hogares={hogares}
                     personasContactosPorHogar={personasContactosPorHogar}
                     finalizacionCompletada={finalizacionCompletada}
+                    isFinalizing={isFinalizing}
                     onCierreChange={handleCierreChange}
                     onFinalizarRelevamiento={handleFinalizarRelevamiento}
                   />
@@ -2663,6 +2678,7 @@ export function RelevamientoFlowPage() {
             hogares={hogares}
             personasContactosPorHogar={personasContactosPorHogar}
             finalizacionCompletada={finalizacionCompletada}
+            isFinalizing={isFinalizing}
             onCierreChange={handleCierreChange}
             onFinalizarRelevamiento={handleFinalizarRelevamiento}
           />
