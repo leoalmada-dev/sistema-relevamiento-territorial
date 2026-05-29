@@ -33,3 +33,9 @@ export type PredioDetalle = {
   nombreCuadrante?: string;
   origen?: 'manual';
 };
+
+export type CrearPredioInput = {
+  calle: string;
+  nroPuerta: string;
+  idCuadrante: string;
+};
