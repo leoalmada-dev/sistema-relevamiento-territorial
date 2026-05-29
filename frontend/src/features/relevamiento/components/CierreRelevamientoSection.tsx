@@ -19,6 +19,7 @@ type CierreRelevamientoSectionProps = {
   hogares: HogarFormState[];
   personasContactosPorHogar: PersonasContactosPorHogarState;
   finalizacionCompletada: boolean;
+  isFinalizing?: boolean;
   modo?: CierreRelevamientoModo;
   onCierreChange: (cierre: CierreRelevamientoFormState) => void;
   onFinalizarRelevamiento: () => void;
@@ -59,6 +60,7 @@ export function CierreRelevamientoSection({
   hogares,
   personasContactosPorHogar,
   finalizacionCompletada,
+  isFinalizing = false,
   modo = 'completo',
   onCierreChange,
   onFinalizarRelevamiento,
@@ -275,8 +277,19 @@ export function CierreRelevamientoSection({
                 : 'Revise la información antes de finalizar el relevamiento.'}
             </Alert>
 
-            <Button variant="success" onClick={onFinalizarRelevamiento}>
-              Finalizar relevamiento
+            <Button
+              variant="success"
+              onClick={onFinalizarRelevamiento}
+              disabled={isFinalizing}
+            >
+              {isFinalizing ? (
+                <>
+                  <Spinner size="sm" className="me-2" />
+                  Finalizando...
+                </>
+              ) : (
+                'Finalizar relevamiento'
+              )}
             </Button>
 
             {finalizacionCompletada ? (

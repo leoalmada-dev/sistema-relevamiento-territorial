@@ -121,6 +121,12 @@ function isNonNegativeInteger(value: string) {
   return parsedValue !== null && Number.isInteger(parsedValue) && parsedValue >= 0;
 }
 
+function isPositiveInteger(value: string) {
+  const parsedValue = parseNumber(value);
+
+  return parsedValue !== null && Number.isInteger(parsedValue) && parsedValue >= 1;
+}
+
 function isValidLatitude(value: string) {
   const parsedValue = parseNumber(value);
 
@@ -269,6 +275,20 @@ function validateViviendaHogaresFields(
 
   getHogaresEntrevistadosAValidarConIndice(input).forEach(({ hogar, index: hogarIndex }) => {
     const hogarLabel = `Hogar ${hogarIndex + 1}`;
+
+    if (isBlank(hogar.cantidadPersonasDeclaradas)) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.cantidadPersonasDeclaradas`,
+        `${hogarLabel}: complete cuántas personas viven en el hogar.`,
+      );
+    } else if (!isPositiveInteger(hogar.cantidadPersonasDeclaradas)) {
+      addError(
+        errors,
+        `hogares.${hogarIndex}.cantidadPersonasDeclaradas`,
+        `${hogarLabel}: la cantidad de personas del hogar debe ser un número entero mayor o igual a 1.`,
+      );
+    }
 
     if (isBlank(hogar.tiempoViveBarrio)) {
       addError(

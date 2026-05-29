@@ -118,10 +118,10 @@ export function HogarFormCard({ hogar, index, onChange, onRemove }: HogarFormCar
 
           <Col md={6}>
             <Form.Group controlId={`cantidad-personas-declaradas-${hogar.id}`}>
-              <Form.Label>¿Cuántas personas viven en el hogar?</Form.Label>
+              <Form.Label>¿Cuántas personas viven en el hogar? *</Form.Label>
               <Form.Control
                 type="number"
-                min="0"
+                min="1"
                 step="1"
                 value={hogar.cantidadPersonasDeclaradas}
                 onChange={(event) =>
