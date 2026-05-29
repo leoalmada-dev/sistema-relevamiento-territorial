@@ -194,53 +194,6 @@ export function TerritorialSelector({
     applyChange();
   };
 
-  const buildManualPredioDetalle = (
-    calle: string,
-    numeroPuertaTeorico: string,
-    referencia: string,
-  ): PredioDetalle | null => {
-    const calleNormalizada = calle.trim();
-    const numeroNormalizado = numeroPuertaTeorico.trim();
-
-    if (
-      !selectedCuadranteInterno ||
-      !selectedCuadranteId ||
-      !calleNormalizada ||
-      !numeroNormalizado
-    ) {
-      return null;
-    }
-
-    return {
-      id: buildManualPredioId(selectedCuadranteId),
-      cuadranteId: selectedCuadranteId,
-      calle: calleNormalizada,
-      numeroPuertaTeorico: numeroNormalizado,
-      padron: '',
-      manzana: '',
-      lote: '',
-      referencia: referencia.trim() || 'Predio ingresado manualmente',
-      nombreCuadrante: selectedCuadranteInterno.nombre,
-      origen: 'manual',
-    };
-  };
-
-  const updateManualPredio = (
-    calle: string,
-    numeroPuertaTeorico: string,
-    referencia: string,
-  ) => {
-    const manualPredioId = buildManualPredioId(selectedCuadranteId);
-    const nextPredioDetalle = buildManualPredioDetalle(
-      calle,
-      numeroPuertaTeorico,
-      referencia,
-    );
-
-    setPredioDetalle(nextPredioDetalle);
-    onPredioSelected(manualPredioId, nextPredioDetalle);
-  };
-
   const handleZonaChange = (zonaId: string) => {
     runTerritorialChange(() => {
       setSelectedZonaId(zonaId);
@@ -315,19 +268,13 @@ export function TerritorialSelector({
       }
 
       if (predioId === MANUAL_PREDIO_OPTION_VALUE) {
-        const manualPredioId = buildManualPredioId(selectedCuadranteId);
-        const nextPredioDetalle = buildManualPredioDetalle(
-          manualPredioCalle,
-          manualPredioNumero,
-          manualPredioReferencia,
-        );
-
-        setPredioDetalle(nextPredioDetalle);
-        onPredioSelected(manualPredioId, nextPredioDetalle);
-        return;
-      }
-
-      resetManualPredio();
+      const manualPredioId = buildManualPredioId(selectedCuadranteId);
+      setPredioDetalle(null);
+      setCreatePredioError('');
+      onPredioSelected(manualPredioId, null);
+      return;
+    }
+    resetManualPredio();
       onPredioSelected(predioId, null);
 
       setLoading(true);
@@ -353,19 +300,16 @@ export function TerritorialSelector({
   const handleManualPredioCalleChange = (calle: string) => {
     setManualPredioCalle(calle);
     setCreatePredioError('');
-    updateManualPredio(calle, manualPredioNumero, manualPredioReferencia);
   };
 
   const handleManualPredioNumeroChange = (numeroPuertaTeorico: string) => {
     setManualPredioNumero(numeroPuertaTeorico);
     setCreatePredioError('');
-    updateManualPredio(manualPredioCalle, numeroPuertaTeorico, manualPredioReferencia);
   };
 
   const handleManualPredioReferenciaChange = (referencia: string) => {
     setManualPredioReferencia(referencia);
     setCreatePredioError('');
-    updateManualPredio(manualPredioCalle, manualPredioNumero, referencia);
   };
 
   const handleCrearPredio = async () => {
@@ -545,71 +489,84 @@ export function TerritorialSelector({
           </Row>
 
           {isManualPredioSelected ? (
-            <Card className="border">
-              <Card.Header className="bg-white">
-                <strong>Predio ingresado manualmente</strong>
-              </Card.Header>
-              <Card.Body>
-                <Stack gap={3}>                <Alert variant="warning" className="mb-0">
-                  Complete calle y número, y luego cree el predio para registrarlo en el sistema central.
-                  Hasta crearlo, este dato se mantiene como predio no listado.
+          <Card className="border">
+            <Card.Header className="bg-white">
+              <strong>Predio no listado</strong>
+            </Card.Header>
+            <Card.Body className="py-3">
+              <Stack gap={3}>
+                <Alert variant="warning" className="mb-0">
+                  Para continuar, creá el predio en el sistema con el botón “Crear predio”.
                 </Alert>
+
                 {createPredioError ? (
                   <Alert variant="danger" className="mb-0">
                     {createPredioError}
                   </Alert>
                 ) : null}
 
-                  <Row className="g-3">
-                    <Col md={5}>
-                      <Form.Group controlId="predio-manual-calle">
-                    <Form.Label>Calle</Form.Label>
-                    <Form.Control
-                      value={manualPredioCalle}
-                      onChange={(event) => handleManualPredioCalleChange(event.target.value)}
-                      placeholder="Ingrese calle"
-                      list="predio-manual-calles"
-                    />
-                    {callesDisponiblesPredioManual.length > 0 ? (
-                      <datalist id="predio-manual-calles">
-                        {callesDisponiblesPredioManual.map((calle) => (
-                          <option key={calle} value={calle} />
-                        ))}
-                      </datalist>
-                    ) : null}
-                  </Form.Group>
-                    </Col>
+                <Row className="g-3 align-items-end">
+                  <Col md={5}>
+                    <Form.Group controlId="predio-manual-calle">
+                      <Form.Label>Calle</Form.Label>
+                      <Form.Control
+                        value={manualPredioCalle}
+                        onChange={(event) => handleManualPredioCalleChange(event.target.value)}
+                        placeholder="Ingrese calle"
+                        list="predio-manual-calles"
+                      />
+                      {callesDisponiblesPredioManual.length > 0 ? (
+                        <datalist id="predio-manual-calles">
+                          {callesDisponiblesPredioManual.map((calle) => (
+                            <option key={calle} value={calle} />
+                          ))}
+                        </datalist>
+                      ) : null}
+                    </Form.Group>
+                  </Col>
 
-                    <Col md={3}>
-                      <Form.Group controlId="predio-manual-numero">
-                        <Form.Label>Número</Form.Label>
-                        <Form.Control
-                          value={manualPredioNumero}
-                          onChange={(event) => handleManualPredioNumeroChange(event.target.value)}
-                          placeholder="Ingrese número"
-                        />
-                      </Form.Group>
-                    </Col>
+                  <Col md={3}>
+                    <Form.Group controlId="predio-manual-numero">
+                      <Form.Label>Número</Form.Label>
+                      <Form.Control
+                        value={manualPredioNumero}
+                        onChange={(event) => handleManualPredioNumeroChange(event.target.value)}
+                        placeholder="Ingrese número"
+                      />
+                    </Form.Group>
+                  </Col>
 
-                    <Col md={4}>
-                      <Form.Group controlId="predio-manual-referencia">
-                        <Form.Label>Referencia</Form.Label>
-                        <Form.Control
-                          value={manualPredioReferencia}
-                          onChange={(event) =>
-                            handleManualPredioReferenciaChange(event.target.value)
-                          }
-                          placeholder="Opcional"
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                </Stack>
-              </Card.Body>
-            </Card>
-          ) : null}
+                  <Col md={4}>
+                    <Form.Group controlId="predio-manual-referencia">
+                      <Form.Label>Referencia</Form.Label>
+                      <Form.Control
+                        value={manualPredioReferencia}
+                        onChange={(event) =>
+                          handleManualPredioReferenciaChange(event.target.value)
+                        }
+                        placeholder="Opcional"
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
 
-          {selectedZona || selectedCuadranteInterno ? (
+                <div className="d-flex flex-column flex-md-row justify-content-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="px-4 py-2"
+                    onClick={handleCrearPredio}
+                    disabled={creatingPredio}
+                  >
+                    {creatingPredio ? 'Creando predio...' : 'Crear predio'}
+                  </Button>
+                </div>
+              </Stack>
+            </Card.Body>
+          </Card>
+        ) : null}
+
+        {selectedZona || selectedCuadranteInterno ? (
             <Alert variant="secondary" className="mb-0">
               {selectedZona ? (
                 <>
@@ -651,16 +608,6 @@ export function TerritorialSelector({
                   </Col>
                 </Row>
 
-                <div className="d-flex flex-column flex-md-row justify-content-end gap-2">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={handleCrearPredio}
-                    disabled={creatingPredio}
-                  >
-                    {creatingPredio ? 'Creando predio...' : 'Crear predio'}
-                  </Button>
-                </div>
               </Card.Body>
             </Card>
           ) : null}
