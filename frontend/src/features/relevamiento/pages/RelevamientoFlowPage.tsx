@@ -1806,6 +1806,22 @@ export function RelevamientoFlowPage() {
     return errors;
   };
 
+  const ensureDocumentosRegistradosBeforeClosure = async () => {
+    const documentosRegistradosBackendErrors = await validateDocumentosRegistradosBackend();
+
+    if (documentosRegistradosBackendErrors.length === 0) {
+      return true;
+    }
+
+    setSectionValidationErrors(documentosRegistradosBackendErrors);
+    setFinalizationValidationErrors([]);
+    setFinalizationError('');
+    persistLocalDraft();
+    scrollToSectionValidationAlert();
+
+    return false;
+  };
+
   const finalizarRelevamiento = async () => {
     setFinalizationError('');
 
@@ -1934,7 +1950,7 @@ export function RelevamientoFlowPage() {
 
   const isSectionDisabled = () => false;
 
-  const selectSection = (sectionId: RelevamientoSectionId) => {
+  const selectSection = async (sectionId: RelevamientoSectionId) => {
     const nextSection = sections.find((section) => section.id === sectionId);
 
     if (!nextSection) {
@@ -1956,6 +1972,14 @@ export function RelevamientoFlowPage() {
       setFinalizationError('');
       scrollToSectionValidationAlert();
       return;
+    }
+
+    if (sectionId === 'cierre-finalizacion') {
+      const canEnterClosure = await ensureDocumentosRegistradosBeforeClosure();
+
+      if (!canEnterClosure) {
+        return;
+      }
     }
 
     setSectionValidationErrors([]);
@@ -2015,6 +2039,14 @@ export function RelevamientoFlowPage() {
 
     if (!canAdvance) {
       return;
+    }
+
+    if (nextSectionId === 'cierre-finalizacion') {
+      const canEnterClosure = await ensureDocumentosRegistradosBeforeClosure();
+
+      if (!canEnterClosure) {
+        return;
+      }
     }
 
     persistLocalDraft({ currentSectionId: nextSectionId });

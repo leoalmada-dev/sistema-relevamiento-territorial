@@ -17,7 +17,7 @@ import type {
 
 const DEFAULT_FINALIZATION_MODE: BackendFinalizationMode = 'local';
 
-export const DOCUMENTO_REGISTRADO_MESSAGE = 'La cédula ingresada ya figura registrada en el sistema. Revisá el dato de la persona indicada antes de finalizar.';
+export const DOCUMENTO_REGISTRADO_MESSAGE = 'La cédula ingresada ya figura registrada en el sistema. Revisá el dato de la persona indicada antes de continuar.';
 
 export type BackendValidationErrorItem = {
   backendPath: string;
@@ -366,8 +366,10 @@ export async function consultarPersonaPorDocumento(documento: string) {
   }
 
   try {
-    const query = new URLSearchParams({ documento: documentoNormalizado }).toString();
-    const payload = await getBackendRawJson<unknown>(`/relevamiento/persona/consulta?${query}`);
+    const payload = await requestBackendRawJson<unknown>('/relevamiento/persona/consulta', {
+      method: 'POST',
+      body: JSON.stringify({ documento: documentoNormalizado }),
+    });
 
     return personaConsultaPayloadIndicaExistencia(payload);
   } catch {
