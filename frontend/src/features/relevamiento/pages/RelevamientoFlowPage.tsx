@@ -22,6 +22,7 @@ import {
   getLocalDraftPredioDisplayLabel,
   getLocalDraftPredioDoorNumber,
   getLocalDraftsIndex,
+  localDraftMatchesSelectedPredio,
   removeLocalDraftByKey,
   saveLocalDraft,
 } from '../services/draftStorageService';
@@ -266,8 +267,31 @@ function formatCurrentTimeForInput(date = new Date()) {
   return `${hours}:${minutes}`;
 }
 
+const BORRADOR_PREDIO_MISMATCH_MESSAGE =
+  'La carga pendiente encontrada pertenece a otro predio y no se aplicó para evitar cargar datos en el predio incorrecto.';
+
 const BORRADOR_SERVIDOR_INEXISTENTE_MESSAGE =
   'La referencia al borrador servidor ya no existe en este entorno. Conservamos la carga local y limpiamos la vinculación anterior. Intentá guardar o finalizar nuevamente.';
+
+function normalizePredioReference(value: unknown) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function getServerDraftPredioReferences(draft: BackendBorradorServidorItem | null) {
+  const datos = asRecord(draft?.datos);
+  const territorio = asRecord(datos.territorio);
+  const predio = asRecord(territorio.predio);
+
+  return [draft?.predio_id, territorio.predio_id, predio.id]
+    .map(normalizePredioReference)
+    .filter(Boolean);
+}
 
 export function RelevamientoFlowPage() {
   const [currentSectionId, setCurrentSectionId] =
@@ -595,6 +619,28 @@ export function RelevamientoFlowPage() {
     };
   };
 
+  const selectedPredioReference = () => ({
+    selectedPredioId,
+    selectedPredio,
+    selectedCuadrante,
+  });
+
+  const serverDraftMatchesSelectedPredio = (draft: BackendBorradorServidorItem | null) => {
+    const draftPredioIds = getServerDraftPredioReferences(draft);
+    const selectedPredioIds = [selectedPredioId, selectedPredio?.id]
+      .map(normalizePredioReference)
+      .filter(Boolean);
+
+    if (draftPredioIds.length === 0 || selectedPredioIds.length === 0) {
+      return false;
+    }
+
+    return draftPredioIds.some((draftPredioId) => selectedPredioIds.includes(draftPredioId));
+  };
+
+  const ensureLocalDraftMatchesSelectedPredio = (draft: RelevamientoLocalDraft) =>
+    localDraftMatchesSelectedPredio(draft, selectedPredioReference());
+
   useEffect(() => {
     const shouldPrefillCaptureTime =
       (currentSection.id === 'cierre-finalizacion' ||
@@ -891,6 +937,12 @@ export function RelevamientoFlowPage() {
       return;
     }
 
+    if (showServerDraftForPredioModal && !serverDraftMatchesSelectedPredio(draft)) {
+      setServerDraftForPredioError(BORRADOR_PREDIO_MISMATCH_MESSAGE);
+      setPendingDraftSourceForPredio(null);
+      return;
+    }
+
     setServerDraftRetomarReturnTo(showServerDraftForPredioModal ? 'predio' : 'general');
     setServerDraftToRetomar(draft);
     setShowServerDraftsModal(false);
@@ -903,9 +955,26 @@ export function RelevamientoFlowPage() {
       return;
     }
 
+    if (
+      serverDraftRetomarReturnTo === 'predio' &&
+      !serverDraftMatchesSelectedPredio(serverDraftToRetomar)
+    ) {
+      setFinalizationError(BORRADOR_PREDIO_MISMATCH_MESSAGE);
+      setServerDraftToRetomar(null);
+      setServerDraftRetomarReturnTo(null);
+      setPendingDraftSourceForPredio(null);
+      return;
+    }
+
     const draft = buildLocalDraftFromServerDraft(serverDraftToRetomar);
-    saveLocalDraft(draft);
-    applyLocalDraft(draft);
+    const draftForCurrentEnvironment = {
+      ...draft,
+      environmentKey: currentEnvironmentKey,
+      apiBaseUrl: currentApiBaseUrl,
+    };
+
+    saveLocalDraft(draftForCurrentEnvironment);
+    applyLocalDraft(draftForCurrentEnvironment);
     refreshLocalDraftsIndex();
     setFinalizationError('');
     setServerDraftToRetomar(null);
@@ -934,7 +1003,29 @@ export function RelevamientoFlowPage() {
       return;
     }
 
-    handleRetomarLocalDraftByKey(localDraftFallbackForSelectedPredio.draftKey);
+    const draft = getLocalDraftByKey(localDraftFallbackForSelectedPredio.draftKey);
+
+    if (!draft) {
+      refreshLocalDraftsIndex();
+      setServerDraftForPredioError(
+        'No se pudo recuperar ese borrador local. Puede haber sido descartado o eliminado del navegador.',
+      );
+      return;
+    }
+
+    const safeDraft = sanitizeDraftForCurrentEnvironment(draft);
+
+    if (!ensureLocalDraftMatchesSelectedPredio(safeDraft)) {
+      setFinalizationError(BORRADOR_PREDIO_MISMATCH_MESSAGE);
+      setLocalDraftFallbackForSelectedPredio(null);
+      setPendingDraftSourceForPredio(null);
+      setShowServerDraftForPredioModal(false);
+      return;
+    }
+
+    saveLocalDraft(safeDraft);
+    applyLocalDraft(safeDraft);
+    refreshLocalDraftsIndex();
     setLocalDraftFallbackForSelectedPredio(null);
     setPendingDraftSourceForPredio(null);
     setServerDraftForPredioError('');
