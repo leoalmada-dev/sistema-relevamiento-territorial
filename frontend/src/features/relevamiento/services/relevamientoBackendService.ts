@@ -17,6 +17,8 @@ import type {
 
 const DEFAULT_FINALIZATION_MODE: BackendFinalizationMode = 'local';
 
+export const DOCUMENTO_REGISTRADO_MESSAGE = 'La cédula ingresada ya figura registrada en el sistema. Revisá el dato de la persona indicada antes de continuar.';
+
 export type BackendValidationErrorItem = {
   backendPath: string;
   frontendPath: string;
@@ -104,9 +106,10 @@ function getBackendValidationUserMessage(backendPath: string, message: string) {
   if (
     normalizedPath.includes('.personas.') &&
     normalizedPath.endsWith('.documento') &&
-    normalizedMessage.includes('ya ha sido registrado')
+    (normalizedMessage.includes('ya ha sido registrado') ||
+      normalizedMessage.includes('has already been taken'))
   ) {
-    return 'La cédula ingresada ya figura registrada en el sistema. Revisá el dato de la persona indicada antes de finalizar.';
+    return DOCUMENTO_REGISTRADO_MESSAGE;
   }
 
   if (
@@ -264,6 +267,146 @@ async function getBackendJson<T>(path: string) {
 
 async function getBackendRawJson<T>(path: string) {
   return requestBackendRawJson<T>(path);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizedText(value: unknown) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function truthyExistenceValue(value: unknown) {
+  if (value === true || value === 1) {
+    return true;
+  }
+
+  const normalizedValue = normalizedText(value);
+
+  return ['1', 'true', 'si', 'existe', 'exists', 'registrado', 'encontrado', 'found'].includes(
+    normalizedValue,
+  );
+}
+
+function personaConsultaPayloadIndicaExistencia(value: unknown, depth = 0): boolean {
+  if (depth > 2) {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const code = value.code;
+  const message = normalizedText(value.message);
+
+  if (
+    (code === 404 || normalizedText(code) === '404') &&
+    (message.includes('fue registrada') ||
+      message.includes('registrada') ||
+      message.includes('ya existe') ||
+      message.includes('has already been taken'))
+  ) {
+    return true;
+  }
+
+  if ((code === 200 || normalizedText(code) === '200') && message.includes('no existe')) {
+    return false;
+  }
+
+  const existenceBooleanKeys = [
+    'existe',
+    'exists',
+    'registrado',
+    'registrada',
+    'encontrado',
+    'found',
+    'personaExiste',
+    'documentoRegistrado',
+  ];
+
+  if (existenceBooleanKeys.some((key) => truthyExistenceValue(value[key]))) {
+    return true;
+  }
+
+  const status = normalizedText(value.status ?? value.estado ?? value.resultado);
+
+  if (
+    [
+      'existe',
+      'exists',
+      'registrado',
+      'registrada',
+      'encontrado',
+      'found',
+      'taken',
+      'duplicado',
+      'documento_registrado',
+    ].includes(status)
+  ) {
+    return true;
+  }
+
+  const personaEvidenceKeys = ['id', 'persona_id', 'documento', 'cedula', 'nombre', 'apellido'];
+
+  if (
+    personaEvidenceKeys.some((key) => {
+      const fieldValue = value[key];
+      return (
+        (typeof fieldValue === 'string' && fieldValue.trim()) ||
+        (typeof fieldValue === 'number' && Number.isFinite(fieldValue))
+      );
+    })
+  ) {
+    return true;
+  }
+
+  return ['datos', 'data', 'persona', 'person', 'resultado', 'result'].some((key) =>
+    personaConsultaPayloadIndicaExistencia(value[key], depth + 1),
+  );
+}
+
+export async function consultarPersonaPorDocumento(documento: string) {
+  const documentoNormalizado = documento.trim();
+
+  if (!documentoNormalizado || getRelevamientoFinalizationMode() !== 'backend') {
+    return false;
+  }
+
+  const apiBaseUrl = getApiBaseUrl();
+
+  if (!apiBaseUrl) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(
+      `${apiBaseUrl}/relevamiento/persona/consulta/${encodeURIComponent(documentoNormalizado)}`,
+      {
+        headers: {
+          Accept: 'application/json',
+        },
+      },
+    );
+
+    const contentType = response.headers.get('content-type') ?? '';
+    const payload = contentType.includes('application/json')
+      ? ((await response.json()) as unknown)
+      : ({ message: await response.text() } as unknown);
+
+    return personaConsultaPayloadIndicaExistencia(payload);
+  } catch {
+    return false;
+  }
 }
 
 function extractBorradorId(response: BackendApiResponse<BackendBorradorCreateResponseData>) {
