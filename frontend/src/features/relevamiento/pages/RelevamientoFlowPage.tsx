@@ -69,7 +69,7 @@ import type { RelevamientoSection, RelevamientoSectionId } from '../types/releva
 import type { CuadranteOption, PredioDetalle } from '../types/territorio';
 import {
   crearHogarInicial,
-  hayHogaresNoEntrevistados,
+  getEstadoHogar,
   hogarEstaEntrevistado,
   viviendaInicial,
   type HogarFormState,
@@ -1768,6 +1768,9 @@ export function RelevamientoFlowPage() {
     focusValidationTarget(target);
   };
 
+  const hayHogaresPendientesReales = () =>
+    hogares.some((hogar) => getEstadoHogar(hogar) === 'PENDIENTE');
+
   const validateDocumentosRegistradosBackend = async (): Promise<FinalizacionValidationError[]> => {
     if (getRelevamientoFinalizationMode() !== 'backend') {
       return [];
@@ -1825,7 +1828,7 @@ export function RelevamientoFlowPage() {
   const finalizarRelevamiento = async () => {
     setFinalizationError('');
 
-    if (hayHogaresNoEntrevistados(hogares)) {
+    if (hayHogaresPendientesReales()) {
       persistLocalDraft();
       setShowHogaresPendientesFinalizacionModal(true);
       return;
@@ -1910,7 +1913,7 @@ export function RelevamientoFlowPage() {
       return;
     }
 
-    if (hayHogaresNoEntrevistados(hogares)) {
+    if (hayHogaresPendientesReales()) {
       persistLocalDraft();
       setFinalizationValidationErrors([]);
       setSectionValidationErrors([]);
@@ -1928,7 +1931,7 @@ export function RelevamientoFlowPage() {
       setSectionValidationErrors([]);
       setFinalizationError('');
 
-      if (hayHogaresNoEntrevistados(hogares)) {
+      if (hayHogaresPendientesReales()) {
         persistLocalDraft();
       }
 

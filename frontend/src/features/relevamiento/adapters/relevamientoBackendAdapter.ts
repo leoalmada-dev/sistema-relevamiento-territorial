@@ -4,7 +4,12 @@ import type { ResultadoVisitaFormState } from '../types/resultadoVisita';
 import { esCorteTemprano } from '../types/resultadoVisita';
 import type { RelevamientoSectionId } from '../types/relevamientoFlow';
 import type { CuadranteOption, PredioDetalle } from '../types/territorio';
-import type { HogarFormState, ViviendaFormState } from '../types/viviendaHogar';
+import {
+  getEstadoHogar,
+  hogarEstaEntrevistado,
+  type HogarFormState,
+  type ViviendaFormState,
+} from '../types/viviendaHogar';
 import type {
   BackendBorradorCreatePayload,
   BackendBorradorSyncPayload,
@@ -29,6 +34,8 @@ export type RelevamientoBackendSnapshot = {
 
 type BuildBackendRelevamientoDraftOptions = {
   includeServerDraftRecoveryFields?: boolean;
+  filterEmptyHouseholdsForFinalPayload?: boolean;
+  includeHouseholdStatusFields?: boolean;
 };
 
 function asString(value: unknown, fallback = DEFAULT_EMPTY_TEXT) {
@@ -76,6 +83,48 @@ function parseNumericId(value: string | number | undefined | null) {
 
   const parsedValue = Number.parseInt(String(value), 10);
   return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
+function hasCompletedValue(value: unknown): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value);
+  }
+
+  return String(value ?? '').trim().length > 0;
+}
+
+function hogarTieneDatosOperativosReales(
+  hogar: HogarFormState,
+  personasContactos?: PersonasContactosPorHogarState[string],
+) {
+  const estadoHogar = getEstadoHogar(hogar);
+
+  if (estadoHogar === 'PENDIENTE') {
+    return true;
+  }
+
+  const camposBasicos = [
+    hogar.observacionEstadoHogar,
+    hogar.tiempoViveBarrio,
+    hogar.beneficiarioRegularizacion,
+    hogar.formaAccesoVivienda,
+    hogar.formaAccesoOtro,
+    hogar.titularVivienda,
+    hogar.conformeCaracteristicas,
+    hogar.cantidadPersonasDeclaradas,
+  ];
+
+  return Boolean(
+    camposBasicos.some(hasCompletedValue) ||
+      (personasContactos?.personas.length ?? 0) > 0 ||
+      (personasContactos?.contactos.length ?? 0) > 0 ||
+      Object.values(personasContactos?.servicios ?? {}).some(hasCompletedValue) ||
+      Object.values(personasContactos?.salud ?? {}).some(hasCompletedValue),
+  );
 }
 
 function toBackendSectionId(sectionId: RelevamientoSectionId) {
@@ -170,10 +219,23 @@ function buildBackendHogares(
     return [];
   }
 
-  return snapshot.hogares.map((hogar) => {
+  const hogares = options.filterEmptyHouseholdsForFinalPayload
+    ? snapshot.hogares.filter(
+        (hogar) =>
+          getEstadoHogar(hogar) === 'ENTREVISTADO' &&
+          hogarTieneDatosOperativosReales(
+            hogar,
+            snapshot.personasContactosPorHogar[hogar.id],
+          ),
+      )
+    : snapshot.hogares;
+
+  return hogares.map((hogar) => {
     const personasContactos = snapshot.personasContactosPorHogar[hogar.id];
     const personas = personasContactos?.personas ?? [];
     const contactos = personasContactos?.contactos ?? [];
+    const includeHouseholdStatusFields =
+      options.includeServerDraftRecoveryFields || options.includeHouseholdStatusFields;
 
     return {
       temp_id: hogar.id,
@@ -230,15 +292,16 @@ function buildBackendHogares(
         observaciones: personasContactos?.salud.observacionesSalud ?? '',
       },
       observaciones: 'Sin observaciones',
-      ...(options.includeServerDraftRecoveryFields
+      ...(includeHouseholdStatusFields
         ? {
-            estado_hogar: hogar.estadoHogar ?? 'ENTREVISTADO',
+            estado_hogar: getEstadoHogar(hogar),
             observacion_estado_hogar: hogar.observacionEstadoHogar ?? '',
           }
         : {}),
     };
   });
 }
+
 
 export function buildBackendRelevamientoDraft(
   snapshot: RelevamientoBackendSnapshot,
@@ -317,7 +380,10 @@ export function buildBackendRelevamientoCreatePayload(
     current_section: toBackendSectionId(snapshot.currentSectionId),
     finalized_at_client: new Date().toISOString(),
     draft: {
-      ...buildBackendRelevamientoDraft(snapshot),
+      ...buildBackendRelevamientoDraft(snapshot, {
+        filterEmptyHouseholdsForFinalPayload: true,
+        includeHouseholdStatusFields: true,
+      }),
       id: serverDraftId,
     },
   };
