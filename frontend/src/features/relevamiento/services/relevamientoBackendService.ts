@@ -41,6 +41,17 @@ function getApiBaseUrl() {
   return String(import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
 }
 
+export function getRelevamientoApiBaseUrl() {
+  return getApiBaseUrl();
+}
+
+export function getRelevamientoEnvironmentKey() {
+  const apiBaseUrl = getApiBaseUrl();
+  const finalizationMode = getRelevamientoFinalizationMode();
+
+  return `${finalizationMode}:${apiBaseUrl || 'sin-api-base-url'}`;
+}
+
 export function getRelevamientoFinalizationMode(): BackendFinalizationMode {
   return import.meta.env.VITE_RELEVAMIENTO_FINALIZATION_MODE === 'backend'
     ? 'backend'

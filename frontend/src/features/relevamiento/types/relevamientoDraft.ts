@@ -33,6 +33,8 @@ export type RelevamientoLocalDraft = {
   personasContactosPorHogar: PersonasContactosPorHogarState;
   cierre: CierreRelevamientoFormState;
   finalizacionSimulada: boolean;
+  environmentKey?: string;
+  apiBaseUrl?: string;
   serverDraftId?: number | null;
   serverDraftVersion?: number | null;
   serverDraftLastSyncedAt?: string;
@@ -49,6 +51,8 @@ export type RelevamientoLocalDraftIndexItem = {
   currentSectionId: RelevamientoSectionId;
   savedAt: string;
   cantidadHogares: number;
+  environmentKey?: string;
+  apiBaseUrl?: string;
   serverDraftId?: number | null;
   serverDraftVersion?: number | null;
 };
