@@ -97,6 +97,22 @@ function getHogaresRealesConIndice(input: FinalizacionValidationInput) {
     .filter(({ hogar }) => hogarTieneDatosOperativosReales(input, hogar));
 }
 
+function getHogaresEntrevistadosAValidarConIndice(input: FinalizacionValidationInput) {
+  return input.hogares
+    .map((hogar, index) => ({ hogar, index }))
+    .filter(({ hogar, index }) => {
+      if (!hogarEstaEntrevistado(hogar)) {
+        return false;
+      }
+
+      if (index === 0) {
+        return true;
+      }
+
+      return hogarTieneDatosOperativosReales(input, hogar);
+    });
+}
+
 function parseNumber(value: string) {
   const normalizedValue = value.trim().replace(',', '.');
 
@@ -261,12 +277,8 @@ function validateViviendaHogaresFields(
     );
   }
 
-  getHogaresRealesConIndice(input).forEach(({ hogar, index: hogarIndex }) => {
+  getHogaresEntrevistadosAValidarConIndice(input).forEach(({ hogar, index: hogarIndex }) => {
     const hogarLabel = `Hogar ${hogarIndex + 1}`;
-
-    if (!hogarEstaEntrevistado(hogar)) {
-      return;
-    }
 
     if (isBlank(hogar.tiempoViveBarrio)) {
       addError(
@@ -307,12 +319,8 @@ function validatePersonasContactosFields(
 ) {
   const documentos = new Map<string, number>();
 
-  getHogaresRealesConIndice(input).forEach(({ hogar, index: hogarIndex }) => {
+  getHogaresEntrevistadosAValidarConIndice(input).forEach(({ hogar, index: hogarIndex }) => {
     const hogarLabel = `Hogar ${hogarIndex + 1}`;
-
-    if (!hogarEstaEntrevistado(hogar)) {
-      return;
-    }
 
     const datosHogar = input.personasContactosPorHogar[hogar.id];
     const personas = datosHogar?.personas ?? [];
