@@ -12,6 +12,7 @@ import {
 } from '../mock/territorioMock';
 import type {
   CuadranteOption,
+  CrearPredioInput,
   PredioDetalle,
   PredioOption,
   TerritorioDataSource,
@@ -30,24 +31,76 @@ function getTerritorioDataSource(): TerritorioDataSource {
     : DEFAULT_DATA_SOURCE;
 }
 
-async function requestTerritorioJson(path: string): Promise<unknown> {
+function getTerritorioErrorMessage(payload: unknown, fallback: string) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return fallback;
+  }
+
+  const record = payload as Record<string, unknown>;
+  const message = record.message;
+
+  if (typeof message === 'string' && message.trim()) {
+    return message;
+  }
+
+  const errors = record.errors;
+
+  if (errors && typeof errors === 'object' && !Array.isArray(errors)) {
+    const firstError = Object.values(errors as Record<string, unknown>)[0];
+
+    if (Array.isArray(firstError) && firstError.length > 0) {
+      return String(firstError[0]);
+    }
+
+    if (typeof firstError === 'string' && firstError.trim()) {
+      return firstError;
+    }
+  }
+
+  return fallback;
+}
+
+async function requestTerritorioJson(
+  path: string,
+  options: RequestInit = {},
+): Promise<unknown> {
   const apiBaseUrl = getApiBaseUrl();
 
   if (!apiBaseUrl) {
     throw new Error('No está configurada la conexión con la red territorial.');
   }
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    headers: {
-      Accept: 'application/json',
-    },
-  });
+  const headers = new Headers(options.headers);
 
-  if (!response.ok) {
-    throw new Error(`No se pudo obtener la información territorial. Código ${response.status}.`);
+  headers.set('Accept', 'application/json');
+
+  if (options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
   }
 
-  return response.json();
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...options,
+    headers,
+  });
+
+  let payload: unknown = null;
+
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      getTerritorioErrorMessage(
+        payload,
+        `No se pudo obtener la información territorial. Código ${response.status}.`,
+      ),
+    );
+  }
+
+  return payload;
 }
 
 function getZonasMock(): ZonaOption[] {
@@ -104,4 +157,29 @@ export async function getPredioById(predioId: string): Promise<PredioDetalle | n
 
   const payload = await requestTerritorioJson(`/predios/${predioId}`);
   return adaptPredioDetallePayloadFromApi(payload);
+}
+
+export async function crearPredio(input: CrearPredioInput): Promise<PredioDetalle> {
+  if (getTerritorioDataSource() === 'mock') {
+    throw new Error('La creación de predios requiere conexión con la red interna.');
+  }
+
+  const payload = await requestTerritorioJson('/predios/create', {
+    method: 'POST',
+    body: JSON.stringify({
+      calle: input.calle,
+      nro_puerta: input.nroPuerta,
+      id_cuadrante: input.idCuadrante,
+    }),
+  });
+
+  const predio = adaptPredioDetallePayloadFromApi(payload);
+
+  if (!predio?.id) {
+    throw new Error(
+      'El predio fue creado, pero la respuesta no pudo interpretarse. Actualizá la lista de predios o consultá con soporte.',
+    );
+  }
+
+  return predio;
 }
