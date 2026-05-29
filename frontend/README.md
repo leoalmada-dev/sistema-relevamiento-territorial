@@ -90,9 +90,9 @@ Crear un archivo `.env` local a partir de `.env.example` cuando se trabaje contr
 
 Valores esperados:
 
-- VITE_API_BASE_URL=http://10.100.0.10/sistema-censo/api/v1
+- VITE_API_BASE_URL=http://1.1.1.1/sistema-censo/api/v1
 - VITE_TERRITORIO_DATA_SOURCE=api
-- VITE_CUADRANTE_IMAGE_BASE_URL=http://10.100.0.10/sistema-censo/zona1
+- VITE_CUADRANTE_IMAGE_BASE_URL=http://1.1.1.1/sistema-censo/zona1
 
 Para trabajar sin red interna se puede usar:
 
@@ -100,7 +100,7 @@ Para trabajar sin red interna se puede usar:
 
 La visualización de imágenes de cuadrante usa:
 
-- VITE_CUADRANTE_IMAGE_BASE_URL=http://10.100.0.10/sistema-censo/zona1
+- VITE_CUADRANTE_IMAGE_BASE_URL=http://1.1.1.1/sistema-censo/zona1
 
 La integración real actual cubre únicamente lectura territorial:
 
