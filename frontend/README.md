@@ -133,7 +133,7 @@ La base pública esperada para Vite es:
 /sistema-relevamiento-territorial/
 ~~~
 
-El build público no debe consumir la API interna 10.100.x.x ni imágenes internas. Si no se configura base de imágenes, el visualizador de cuadrante muestra el mensaje de imagen no disponible.
+El build público no debe consumir la API interna x.x.x.x ni imágenes internas. Si no se configura base de imágenes, el visualizador de cuadrante muestra el mensaje de imagen no disponible.
 
 <!-- API-3B-CONFIG-AMBIENTES:START -->
 ## Configuración de ambientes frontend/backend
@@ -185,7 +185,7 @@ Para probar integración real:
 ~~~env
 VITE_TERRITORIO_DATA_SOURCE=api
 VITE_RELEVAMIENTO_FINALIZATION_MODE=backend
-VITE_API_BASE_URL=http://10.100.66.32:8000/api/v1
+VITE_API_BASE_URL=http://1.1.1.1/api/v1
 ~~~
 
 Advertencia: desde `http://localhost:5173` el navegador puede bloquear la comunicación por CORS si Laravel/infraestructura no permite ese origen.
