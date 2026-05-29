@@ -35,6 +35,7 @@ import {
   getRelevamientoEnvironmentKey,
   getRelevamientoFinalizationMode,
   guardarBorradorServidor,
+  isBorradorServidorNoExisteError,
   isPredioConCargaExistenteError,
   listarBorradoresServidorPendientes,
   listarBorradoresServidorPorPredio,
@@ -617,6 +618,21 @@ export function RelevamientoFlowPage() {
       serverDraftSyncStatus: 'SIN_BORRADOR_SERVIDOR',
       serverDraftSyncError: draft.environmentKey ? BORRADOR_SERVIDOR_INEXISTENTE_MESSAGE : '',
     };
+  };
+
+  const clearInvalidServerDraftBinding = (message = BORRADOR_SERVIDOR_INEXISTENTE_MESSAGE) => {
+    clearServerDraftBinding();
+    setFinalizationError(message);
+    saveLocalDraft(
+      buildLocalDraft({
+        serverDraftId: null,
+        serverDraftVersion: null,
+        serverDraftLastSyncedAt: '',
+        serverDraftSyncStatus: 'SIN_BORRADOR_SERVIDOR',
+        serverDraftSyncError: message,
+      }),
+    );
+    refreshLocalDraftsIndex();
   };
 
   const selectedPredioReference = () => ({
@@ -1419,6 +1435,11 @@ export function RelevamientoFlowPage() {
         setShowPredioYaRelevadoModal(true);
       }
 
+      if (isBorradorServidorNoExisteError(error)) {
+        clearInvalidServerDraftBinding();
+        return;
+      }
+
       const backendValidationErrors = buildBackendValidationErrors(error);
 
       if (backendValidationErrors.length > 0) {
@@ -1491,6 +1512,11 @@ export function RelevamientoFlowPage() {
 
       if (isPredioConCargaExistenteError(error)) {
         setShowPredioYaRelevadoModal(true);
+        return false;
+      }
+
+      if (isBorradorServidorNoExisteError(error)) {
+        clearInvalidServerDraftBinding();
         return false;
       }
 
@@ -2007,6 +2033,11 @@ export function RelevamientoFlowPage() {
         error instanceof Error && error.message
           ? error.message
           : 'No se pudo guardar la información en el servidor. Verifique la conexión e intente nuevamente.';
+      if (isBorradorServidorNoExisteError(error)) {
+        clearInvalidServerDraftBinding();
+        return;
+      }
+
       const backendValidationErrors = buildBackendValidationErrors(error);
 
       if (backendValidationErrors.length > 0) {
