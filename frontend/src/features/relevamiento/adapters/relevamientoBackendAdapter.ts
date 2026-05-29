@@ -220,11 +220,13 @@ function buildBackendHogares(
   }
 
   const hogares = options.filterEmptyHouseholdsForFinalPayload
-    ? snapshot.hogares.filter((hogar) =>
-        hogarTieneDatosOperativosReales(
-          hogar,
-          snapshot.personasContactosPorHogar[hogar.id],
-        ),
+    ? snapshot.hogares.filter(
+        (hogar) =>
+          getEstadoHogar(hogar) === 'ENTREVISTADO' &&
+          hogarTieneDatosOperativosReales(
+            hogar,
+            snapshot.personasContactosPorHogar[hogar.id],
+          ),
       )
     : snapshot.hogares;
 
