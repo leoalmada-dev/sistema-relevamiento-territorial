@@ -306,6 +306,23 @@ function personaConsultaPayloadIndicaExistencia(value: unknown, depth = 0): bool
     return false;
   }
 
+  const code = value.code;
+  const message = normalizedText(value.message);
+
+  if (
+    (code === 404 || normalizedText(code) === '404') &&
+    (message.includes('fue registrada') ||
+      message.includes('registrada') ||
+      message.includes('ya existe') ||
+      message.includes('has already been taken'))
+  ) {
+    return true;
+  }
+
+  if ((code === 200 || normalizedText(code) === '200') && message.includes('no existe')) {
+    return false;
+  }
+
   const existenceBooleanKeys = [
     'existe',
     'exists',
