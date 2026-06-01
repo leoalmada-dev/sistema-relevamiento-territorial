@@ -72,22 +72,25 @@ export function CierreRelevamientoSection({
     setGeolocationStatus('loading');
     setGeolocationMessage('Obteniendo ubicación...');
 
-    if (window.AndroidApp) {
-      const androidResult = window.AndroidApp.getPosicion();
-      const parseResult = JSON.parse(androidResult);
-      console.log('Resultado raw de AndroidApp.getPosicion():', androidResult);
-      if (parseResult.valido) {
+    try {
+      const result = await captureCurrentLocation();
+
+      if (result.ok) {
         updateCierre({
-          latitud: formatCoordinate(parseResult.lat),
-          longitud: formatCoordinate(parseResult.lng),
+          latitud: formatCoordinate(result.latitude),
+          longitud: formatCoordinate(result.longitude),
           horaCaptura: formatCurrentTimeForInput(),
         });
         setGeolocationStatus('success');
-        setGeolocationMessage('Ubicación obtenida de la tablet correctamente.');
-      } else {
-        setGeolocationStatus('error');
-        setGeolocationMessage(`Error al obtener ubicación de la tablet: ${parseResult}`);
+        setGeolocationMessage(result.message);
+        return;
       }
+
+      setGeolocationStatus('error');
+      setGeolocationMessage(result.message);
+    } catch {
+      setGeolocationStatus('error');
+      setGeolocationMessage('No se pudo obtener la ubicación. Complete latitud, longitud y hora de captura manualmente.');
     }
   };
 
