@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert, Badge, Button, Card, Col, Form, Row, Spinner, Stack } from 'react-bootstrap';
 import { ResumenRelevamiento } from './ResumenRelevamiento';
+import { captureCurrentLocation } from '../services/locationService';
 import type { CierreRelevamientoFormState } from '../types/cierreRelevamiento';
 import type { PersonasContactosPorHogarState } from '../types/personaContacto';
 import type { ResultadoVisitaFormState } from '../types/resultadoVisita';
@@ -35,23 +36,6 @@ function formatCurrentTimeForInput(date = new Date()) {
 function formatCoordinate(value: number) {
   return value.toFixed(6);
 }
-
-function getGeolocationErrorMessage(error: GeolocationPositionError) {
-  if (error.code === error.PERMISSION_DENIED) {
-    return 'Permiso de ubicación denegado o no disponible.';
-  }
-
-  if (error.code === error.POSITION_UNAVAILABLE) {
-    return 'No se pudo obtener la ubicación. Verifique señal GPS o conexión del dispositivo.';
-  }
-
-  if (error.code === error.TIMEOUT) {
-    return 'No se pudo obtener la ubicación dentro del tiempo esperado.';
-  }
-
-  return 'No se pudo obtener la ubicación.';
-}
-
 export function CierreRelevamientoSection({
   cierre,
   selectedPredio,
@@ -84,39 +68,27 @@ export function CierreRelevamientoSection({
     updateCierre({ [field]: value });
   };
 
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setGeolocationStatus('error');
-      setGeolocationMessage('Este dispositivo/navegador no permite geolocalización.');
-      return;
-    }
-
+  const handleUseCurrentLocation = async () => {
     setGeolocationStatus('loading');
     setGeolocationMessage('Obteniendo ubicación...');
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-
+    if (window.AndroidApp) {
+      const androidResult = window.AndroidApp.getPosicion();
+      const parseResult = JSON.parse(androidResult);
+      console.log('Resultado raw de AndroidApp.getPosicion():', androidResult);
+      if (parseResult.valido) {
         updateCierre({
-          latitud: formatCoordinate(latitude),
-          longitud: formatCoordinate(longitude),
-          horaCaptura: cierre.horaCaptura || formatCurrentTimeForInput(),
+          latitud: formatCoordinate(parseResult.lat),
+          longitud: formatCoordinate(parseResult.lng),
+          horaCaptura: formatCurrentTimeForInput(),
         });
-
         setGeolocationStatus('success');
-        setGeolocationMessage('Ubicación cargada correctamente.');
-      },
-      (error) => {
+        setGeolocationMessage('Ubicación obtenida de la tablet correctamente.');
+      } else {
         setGeolocationStatus('error');
-        setGeolocationMessage(getGeolocationErrorMessage(error));
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
-      },
-    );
+        setGeolocationMessage(`Error al obtener ubicación de la tablet: ${parseResult}`);
+      }
+    }
   };
 
   return (
@@ -180,7 +152,7 @@ export function CierreRelevamientoSection({
                     Obteniendo ubicación...
                   </>
                 ) : (
-                  'Usar ubicación actual de la tablet'
+                  'Usar ubicación de la tablet'
                 )}
               </Button>
             </div>
